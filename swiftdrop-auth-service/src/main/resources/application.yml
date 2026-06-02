@@ -1,0 +1,47 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: swiftdrop-auth-service
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5439/swiftdrop_auth_db}
+    username: ${POSTGRES_USER:swiftdrop_user}
+    password: ${POSTGRES_PASSWORD:swiftdrop_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      expiration: ${JWT_ACCESS_EXPIRATION_MS:900000}
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+    cookie:
+      secure: ${COOKIE_SECURE:false}
+      same-site: ${COOKIE_SAME_SITE:Lax}
+      max-age: ${COOKIE_MAX_AGE_SECONDS:604800}
+      path: ${COOKIE_PATH:/api/v1/auth}

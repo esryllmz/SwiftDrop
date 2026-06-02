@@ -1,0 +1,28 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: swiftdrop-notification-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: swiftdrop-notification-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.swiftdrop.logistics.dto,com.swiftdrop.notification.dto"
+        spring.json.value.default.type: "com.swiftdrop.notification.dto.OrderKafkaEvent"
+        spring.json.use.type.headers: false
+
+application:
+  onesignal:
+    app-id: ${ONESIGNAL_APP_ID:}
+    api-key: ${ONESIGNAL_API_KEY:}
+    mock-enabled: ${ONESIGNAL_MOCK_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
