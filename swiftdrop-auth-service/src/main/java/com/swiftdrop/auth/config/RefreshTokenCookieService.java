@@ -1,5 +1,7 @@
 package com.swiftdrop.auth.config;
 
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -9,24 +11,24 @@ public class RefreshTokenCookieService {
 
     private final boolean secure;
     private final String sameSite;
-    private final long maxAgeSeconds;
+    private final Duration refreshTokenLifetime;
     private final String path;
 
     public RefreshTokenCookieService(
             @Value("${application.security.cookie.secure}") boolean secure,
             @Value("${application.security.cookie.same-site}") String sameSite,
-            @Value("${application.security.cookie.max-age}") long maxAgeSeconds,
+            @Value("${application.security.jwt.refresh-token.expiration}") long refreshExpirationMs,
             @Value("${application.security.cookie.path}") String path
     ) {
         this.secure = secure;
         this.sameSite = sameSite;
-        this.maxAgeSeconds = maxAgeSeconds;
+        this.refreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
         this.path = path;
     }
 
     public ResponseCookie buildRefreshTokenCookie(String token) {
         return baseCookie(token)
-                .maxAge(maxAgeSeconds)
+                .maxAge(refreshTokenLifetime)
                 .build();
     }
 

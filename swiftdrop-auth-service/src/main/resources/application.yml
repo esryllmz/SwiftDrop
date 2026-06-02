@@ -43,5 +43,4 @@ application:
     cookie:
       secure: ${COOKIE_SECURE:false}
       same-site: ${COOKIE_SAME_SITE:Lax}
-      max-age: ${COOKIE_MAX_AGE_SECONDS:604800}
       path: ${COOKIE_PATH:/api/v1/auth}
