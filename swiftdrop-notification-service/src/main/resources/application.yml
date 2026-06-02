@@ -4,8 +4,15 @@ server:
 spring:
   application:
     name: swiftdrop-notification-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
       group-id: swiftdrop-notification-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -16,6 +23,12 @@ spring:
         spring.json.use.type.headers: false
 
 application:
+  notification:
+    processed-event-ttl-hours: ${PROCESSED_EVENT_TTL_HOURS:24}
+  kafka:
+    retry:
+      max-attempts: ${KAFKA_RETRY_MAX_ATTEMPTS:3}
+      backoff-ms: ${KAFKA_RETRY_BACKOFF_MS:1000}
   onesignal:
     app-id: ${ONESIGNAL_APP_ID:}
     api-key: ${ONESIGNAL_API_KEY:}

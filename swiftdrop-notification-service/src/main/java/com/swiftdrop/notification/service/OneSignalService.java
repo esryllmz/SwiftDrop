@@ -39,9 +39,13 @@ public class OneSignalService {
     public void sendWebPushNotification(OrderKafkaEvent event) {
         log.info("Sending OneSignal push notification. targetUserId={}", event.targetUserId());
 
-        if (mockEnabled || !StringUtils.hasText(appId) || !StringUtils.hasText(apiKey)) {
-            log.info("OneSignal mock mode active or credentials missing. Skipping external API call. orderId={}", event.orderId());
+        if (mockEnabled) {
+            log.info("OneSignal mock mode active. Skipping external API call. orderId={}", event.orderId());
             return;
+        }
+
+        if (!StringUtils.hasText(appId) || !StringUtils.hasText(apiKey)) {
+            throw new IllegalStateException("OneSignal credentials are required when mock mode is disabled.");
         }
 
         Map<String, Object> requestBody = Map.of(
@@ -51,18 +55,14 @@ public class OneSignalService {
                 "include_external_user_ids", List.of(event.targetUserId().toString())
         );
 
-        try {
-            String response = restClient.post()
-                    .uri("/notifications")
-                    .header("Authorization", "Basic " + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(String.class);
+        String response = restClient.post()
+                .uri("/notifications")
+                .header("Authorization", "Basic " + apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
 
-            log.info("OneSignal notification sent. response={}", response);
-        } catch (Exception ex) {
-            log.error("OneSignal notification failed.", ex);
-        }
+        log.info("OneSignal notification sent. response={}", response);
     }
 }
