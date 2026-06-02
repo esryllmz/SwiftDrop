@@ -29,7 +29,7 @@ import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
 import com.swiftdrop.logistics.repository.OrderRepository;
 import com.swiftdrop.logistics.service.OrderService;
-import com.swiftdrop.logistics.service.kafka.LogisticsKafkaProducer;
+import com.swiftdrop.logistics.service.OutboxService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +45,7 @@ public class OrderServiceImpl implements OrderService {
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
     private final OrderMapper orderMapper;
-    private final LogisticsKafkaProducer kafkaProducer;
+    private final OutboxService outboxService;
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redissonClient;
 
@@ -64,7 +64,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        kafkaProducer.sendOrderEvent(new OrderKafkaEvent(
+        saveOrderEvent("ORDER_PLACED", savedOrder, new OrderKafkaEvent(
                 savedOrder.getId(),
                 OrderStatus.PLACED.name(),
                 "Siparisiniz basariyla alindi, kurye araniyor.",
@@ -112,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
                         orderRepository.save(order);
 
                         log.info("Order {} assigned to driver {}", order.getId(), driver.getFullName());
-                        kafkaProducer.sendOrderEvent(new OrderKafkaEvent(
+                        saveOrderEvent("ORDER_DRIVER_ASSIGNED", order, new OrderKafkaEvent(
                                 order.getId(),
                                 OrderStatus.DRIVER_ASSIGNED.name(),
                                 "Siparisiniz kurye tarafindan kabul edildi.",
@@ -150,7 +150,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order updatedOrder = orderRepository.save(order);
-        kafkaProducer.sendOrderEvent(new OrderKafkaEvent(
+        saveOrderEvent("ORDER_STATUS_UPDATED", updatedOrder, new OrderKafkaEvent(
                 updatedOrder.getId(),
                 status.name(),
                 "Siparisinizin yeni durumu: " + status.name(),
@@ -158,5 +158,15 @@ public class OrderServiceImpl implements OrderService {
         ));
 
         return orderMapper.toResponse(updatedOrder);
+    }
+
+    private void saveOrderEvent(String eventType, Order order, OrderKafkaEvent payload) {
+        outboxService.saveOrderEvent(
+                eventType,
+                order.getId(),
+                order.getId().toString(),
+                payload,
+                UUID.randomUUID().toString()
+        );
     }
 }

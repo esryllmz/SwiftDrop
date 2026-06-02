@@ -1,5 +1,8 @@
 package com.swiftdrop.logistics.service.kafka;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.springframework.kafka.support.SendResult;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +20,12 @@ public class LogisticsKafkaProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void sendOrderEvent(OrderKafkaEvent event) {
-        log.info("Sending order event. topic={}, status={}, orderId={}", TOPIC, event.status(), event.orderId());
-        kafkaTemplate.send(TOPIC, event.orderId().toString(), event);
+    public CompletableFuture<SendResult<String, Object>> sendOrderEvent(OrderKafkaEvent event) {
+        return sendOrderEvent(TOPIC, event.orderId().toString(), event);
+    }
+
+    public CompletableFuture<SendResult<String, Object>> sendOrderEvent(String topic, String eventKey, OrderKafkaEvent event) {
+        log.info("Sending order event. topic={}, status={}, orderId={}", topic, event.status(), event.orderId());
+        return kafkaTemplate.send(topic, eventKey, event);
     }
 }

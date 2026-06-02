@@ -32,3 +32,8 @@ management:
     web:
       exposure:
         include: health,info
+
+application:
+  outbox:
+    publisher-fixed-delay-ms: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:5000}
+    max-retry-attempts: ${OUTBOX_MAX_RETRY_ATTEMPTS:5}
