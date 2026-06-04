@@ -10,6 +10,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - swiftdrop-network
 
@@ -21,6 +26,11 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - swiftdrop-network
 
@@ -44,6 +54,11 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     networks:
       - swiftdrop-network
 
@@ -56,7 +71,90 @@ services:
       KAFKA_CLUSTERS_0_NAME: swiftdrop-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+    networks:
+      - swiftdrop-network
+
+  swiftdrop-auth-service:
+    build: ./swiftdrop-auth-service
+    container_name: swiftdrop-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/swiftdrop_auth_db
+      POSTGRES_USER: ${POSTGRES_USER:-swiftdrop_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swiftdrop_password}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-900000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-Lax}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - swiftdrop-network
+
+  swiftdrop-logistics-service:
+    build: ./swiftdrop-logistics-service
+    container_name: swiftdrop-logistics-service
+    ports:
+      - "8082:8082"
+    environment:
+      LOGISTICS_DB_URL: jdbc:postgresql://postgres:5432/swiftdrop_logistics_db
+      POSTGRES_USER: ${POSTGRES_USER:-swiftdrop_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swiftdrop_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      OUTBOX_PUBLISHER_FIXED_DELAY_MS: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:-5000}
+      OUTBOX_MAX_RETRY_ATTEMPTS: ${OUTBOX_MAX_RETRY_ATTEMPTS:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - swiftdrop-network
+
+  swiftdrop-notification-service:
+    build: ./swiftdrop-notification-service
+    container_name: swiftdrop-notification-service
+    ports:
+      - "8083:8083"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ONESIGNAL_APP_ID: ${ONESIGNAL_APP_ID:-your-onesignal-app-id}
+      ONESIGNAL_API_KEY: ${ONESIGNAL_API_KEY:-your-onesignal-rest-api-key}
+      ONESIGNAL_MOCK_ENABLED: ${ONESIGNAL_MOCK_ENABLED:-true}
+      PROCESSED_EVENT_TTL_HOURS: ${PROCESSED_EVENT_TTL_HOURS:-24}
+      KAFKA_RETRY_MAX_ATTEMPTS: ${KAFKA_RETRY_MAX_ATTEMPTS:-3}
+      KAFKA_RETRY_BACKOFF_MS: ${KAFKA_RETRY_BACKOFF_MS:-1000}
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - swiftdrop-network
+
+  swiftdrop-gateway:
+    build: ./swiftdrop-gateway
+    container_name: swiftdrop-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_SERVICE_URI: http://swiftdrop-auth-service:8081
+      LOGISTICS_SERVICE_URI: http://swiftdrop-logistics-service:8082
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3001}
+    depends_on:
+      - swiftdrop-auth-service
+      - swiftdrop-logistics-service
     networks:
       - swiftdrop-network
 
