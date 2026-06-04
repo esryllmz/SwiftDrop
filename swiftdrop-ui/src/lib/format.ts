@@ -49,8 +49,12 @@ export function statusBadgeClass(status?: string) {
     return "border-amber-500/30 bg-amber-500/10 text-amber-300";
   }
 
-  if (["FAILED", "DOWN", "OFFLINE"].includes(normalized)) {
+  if (["FAILED", "DOWN"].includes(normalized)) {
     return "border-red-500/30 bg-red-500/10 text-red-300";
+  }
+
+  if (normalized === "OFFLINE") {
+    return "border-slate-600 bg-slate-800 text-slate-300";
   }
 
   if (["DRIVER_ASSIGNED", "ASSIGNED", "BUSY"].includes(normalized)) {
