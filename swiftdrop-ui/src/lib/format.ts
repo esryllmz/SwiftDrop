@@ -37,7 +37,11 @@ export function statusBadgeClass(status?: string) {
     return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
   }
 
-  if (["PENDING", "PLACED"].includes(normalized)) {
+  if (normalized === "PLACED") {
+    return "border-blue-500/30 bg-blue-500/10 text-blue-300";
+  }
+
+  if (["PENDING", "PREPARING"].includes(normalized)) {
     return "border-yellow-500/30 bg-yellow-500/10 text-yellow-300";
   }
 
@@ -51,6 +55,10 @@ export function statusBadgeClass(status?: string) {
 
   if (["DRIVER_ASSIGNED", "ASSIGNED", "BUSY"].includes(normalized)) {
     return "border-violet-500/30 bg-violet-500/10 text-violet-300";
+  }
+
+  if (normalized === "ON_THE_WAY") {
+    return "border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
   }
 
   return "border-slate-700 bg-slate-800 text-slate-300";
