@@ -26,7 +26,6 @@ import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.Order;
 import com.swiftdrop.logistics.entity.OrderStatus;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
-import com.swiftdrop.logistics.mapper.OrderMapper;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
 import com.swiftdrop.logistics.repository.OrderRepository;
@@ -46,7 +45,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
-    private final OrderMapper orderMapper;
     private final OutboxService outboxService;
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redissonClient;
@@ -75,7 +73,7 @@ public class OrderServiceImpl implements OrderService {
 
         assignDriverWorkflow(savedOrder);
 
-        return orderMapper.toResponse(savedOrder);
+        return toResponse(savedOrder);
     }
 
     private void assignDriverWorkflow(Order order) {
@@ -159,14 +157,14 @@ public class OrderServiceImpl implements OrderService {
                 updatedOrder.getCustomerId()
         ));
 
-        return orderMapper.toResponse(updatedOrder);
+        return toResponse(updatedOrder);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId) {
         return orderRepository.findAllForDashboard(status, merchantId, driverId).stream()
-                .map(orderMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -176,7 +174,22 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findByIdForDashboard(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
 
-        return orderMapper.toResponse(order);
+        return toResponse(order);
+    }
+
+    private OrderResponse toResponse(Order order) {
+        Merchant merchant = order.getMerchant();
+        Driver driver = order.getDriver();
+
+        return new OrderResponse(
+                order.getId(),
+                order.getCustomerId(),
+                merchant != null ? merchant.getName() : null,
+                driver != null ? driver.getFullName() : null,
+                order.getStatus(),
+                order.getTotalAmount(),
+                order.getCreatedAt()
+        );
     }
 
     private void saveOrderEvent(String eventType, Order order, OrderKafkaEvent payload) {
