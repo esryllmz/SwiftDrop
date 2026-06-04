@@ -14,6 +14,7 @@ import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
 import com.swiftdrop.auth.dto.TokenRefreshResult;
 import com.swiftdrop.auth.entity.RefreshToken;
+import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
 import com.swiftdrop.auth.exception.AuthenticationFailedException;
 import com.swiftdrop.auth.exception.DuplicateResourceException;
@@ -59,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userMapper.toEntity(request);
+        user.setRole(Role.CUSTOMER);
         user.setPassword(passwordEncoder.encode(request.password()));
         User savedUser = userRepository.save(user);
 

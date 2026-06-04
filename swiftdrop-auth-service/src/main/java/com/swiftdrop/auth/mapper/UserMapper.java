@@ -14,6 +14,7 @@ public interface UserMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "enabled", constant = "true")
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "role", ignore = true)
     User toEntity(RegisterRequest request);
 
     @Mapping(target = "accessToken", source = "token")

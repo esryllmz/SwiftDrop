@@ -51,8 +51,7 @@ Body:
 ```json
 {
   "email": "customer@swiftdrop.com",
-  "password": "123456",
-  "role": "CUSTOMER"
+  "password": "123456"
 }
 ```
 
@@ -60,6 +59,7 @@ Expected:
 
 - `200 OK` or `201 Created`
 - Response may include `accessToken`
+- Response role is `CUSTOMER`
 
 ### Login
 
