@@ -1,0 +1,71 @@
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+type ApiFetchOptions = RequestInit & {
+  baseUrl?: string;
+};
+
+export class ApiError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(message: string, status: number, details: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const { baseUrl = API_BASE_URL, headers, ...init } = options;
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    },
+  });
+
+  const text = await response.text();
+  const data = text ? safeJsonParse(text) : null;
+
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "message" in data
+        ? String(data.message)
+        : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status, data);
+  }
+
+  return data as T;
+}
+
+export function getJson<T>(path: string, options?: ApiFetchOptions) {
+  return apiFetch<T>(path, { ...options, method: "GET" });
+}
+
+export function postJson<T>(
+  path: string,
+  body?: unknown,
+  options?: ApiFetchOptions,
+) {
+  return apiFetch<T>(path, {
+    ...options,
+    method: "POST",
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
+function safeJsonParse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
