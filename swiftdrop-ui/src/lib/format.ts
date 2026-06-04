@@ -41,6 +41,10 @@ export function statusBadgeClass(status?: string) {
     return "border-yellow-500/30 bg-yellow-500/10 text-yellow-300";
   }
 
+  if (normalized === "UNKNOWN") {
+    return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+  }
+
   if (["FAILED", "DOWN", "OFFLINE"].includes(normalized)) {
     return "border-red-500/30 bg-red-500/10 text-red-300";
   }
