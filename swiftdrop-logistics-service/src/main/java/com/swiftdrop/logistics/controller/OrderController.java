@@ -1,9 +1,11 @@
 package com.swiftdrop.logistics.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.OrderCreateRequest;
 import com.swiftdrop.logistics.dto.OrderResponse;
+import com.swiftdrop.logistics.entity.OrderStatus;
 import com.swiftdrop.logistics.service.OrderService;
 
 import jakarta.validation.Valid;
@@ -29,6 +32,20 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderCreateRequest request) {
         return new ResponseEntity<>(orderService.createOrder(request), HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> findOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) UUID merchantId,
+            @RequestParam(required = false) UUID driverId
+    ) {
+        return ResponseEntity.ok(orderService.findOrders(status, merchantId, driverId));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> findOrder(@PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.findOrder(id));
     }
 
     @PutMapping("/{id}/status")

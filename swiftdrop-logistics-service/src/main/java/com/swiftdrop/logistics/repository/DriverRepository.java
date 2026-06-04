@@ -10,4 +10,6 @@ import com.swiftdrop.logistics.entity.DriverStatus;
 
 public interface DriverRepository extends JpaRepository<Driver, UUID> {
     List<Driver> findByStatus(DriverStatus status);
+
+    long countByStatus(DriverStatus status);
 }

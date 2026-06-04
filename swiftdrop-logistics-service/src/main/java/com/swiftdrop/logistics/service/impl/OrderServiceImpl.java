@@ -1,5 +1,6 @@
 package com.swiftdrop.logistics.service.impl;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +25,7 @@ import com.swiftdrop.logistics.entity.DriverStatus;
 import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.Order;
 import com.swiftdrop.logistics.entity.OrderStatus;
+import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.mapper.OrderMapper;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
@@ -138,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Siparis bulunamadi."));
+                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
 
         OrderStatus status = OrderStatus.valueOf(newStatus);
         order.setStatus(status);
@@ -158,6 +160,23 @@ public class OrderServiceImpl implements OrderService {
         ));
 
         return orderMapper.toResponse(updatedOrder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId) {
+        return orderRepository.findAllForDashboard(status, merchantId, driverId).stream()
+                .map(orderMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse findOrder(UUID orderId) {
+        Order order = orderRepository.findByIdForDashboard(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
+
+        return orderMapper.toResponse(order);
     }
 
     private void saveOrderEvent(String eventType, Order order, OrderKafkaEvent payload) {
