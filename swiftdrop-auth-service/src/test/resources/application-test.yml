@@ -9,3 +9,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+
+application:
+  seed:
+    admin:
+      enabled: false

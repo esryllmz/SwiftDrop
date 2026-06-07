@@ -35,6 +35,11 @@ management:
         enabled: true
 
 application:
+  seed:
+    admin:
+      enabled: ${SEED_ADMIN_ENABLED:true}
+      email: ${SEED_ADMIN_EMAIL:admin@swiftdrop.com}
+      password: ${SEED_ADMIN_PASSWORD:Admin123!}
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
