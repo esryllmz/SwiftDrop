@@ -4,11 +4,10 @@ import java.util.UUID;
 
 import com.swiftdrop.auth.entity.Role;
 
-public record TokenRefreshResult(
-        String accessToken,
-        String refreshToken,
+public record CurrentUserResponse(
         UUID userId,
         String email,
-        Role role
+        Role role,
+        boolean enabled
 ) {
 }

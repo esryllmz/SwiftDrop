@@ -18,7 +18,7 @@ public interface UserMapper {
     User toEntity(RegisterRequest request);
 
     @Mapping(target = "accessToken", source = "token")
+    @Mapping(target = "tokenType", constant = "Bearer")
     @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "role", expression = "java(user.getRole().name())")
     AuthResponse toAuthResponse(User user, String token);
 }

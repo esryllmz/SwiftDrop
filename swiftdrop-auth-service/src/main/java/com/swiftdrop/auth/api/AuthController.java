@@ -4,8 +4,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +16,12 @@ import java.util.Map;
 import com.swiftdrop.auth.config.RefreshTokenCookieService;
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
+import com.swiftdrop.auth.dto.CurrentUserResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
 import com.swiftdrop.auth.dto.TokenRefreshResponse;
 import com.swiftdrop.auth.dto.TokenRefreshResult;
+import com.swiftdrop.auth.exception.AuthenticationFailedException;
 import com.swiftdrop.auth.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -53,7 +57,21 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(new TokenRefreshResponse(result.accessToken()));
+                .body(new TokenRefreshResponse(
+                        result.accessToken(),
+                        "Bearer",
+                        result.userId(),
+                        result.email(),
+                        result.role()
+                ));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<CurrentUserResponse> me(
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
+    ) {
+        String accessToken = extractBearerToken(authorizationHeader);
+        return ResponseEntity.ok(authService.getCurrentUserFromToken(accessToken));
     }
 
     @PostMapping("/logout")
@@ -74,5 +92,18 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(result.response());
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new AuthenticationFailedException("Authorization header bulunamadi.");
+        }
+
+        String prefix = "Bearer ";
+        if (!authorizationHeader.startsWith(prefix) || authorizationHeader.length() <= prefix.length()) {
+            throw new AuthenticationFailedException("Authorization header Bearer token formatinda olmalidir.");
+        }
+
+        return authorizationHeader.substring(prefix.length()).trim();
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
+import com.swiftdrop.auth.dto.CurrentUserResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
 import com.swiftdrop.auth.dto.TokenRefreshResult;
@@ -25,6 +26,8 @@ import com.swiftdrop.auth.repository.RefreshTokenRepository;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.auth.service.AuthService;
 import com.swiftdrop.auth.service.JwtService;
+
+import io.jsonwebtoken.JwtException;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -103,7 +106,32 @@ public class AuthServiceImpl implements AuthService {
         User user = refreshToken.getUser();
         String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
         RefreshToken newRefreshToken = createRefreshToken(user);
-        return new TokenRefreshResult(newAccessToken, newRefreshToken.getToken());
+        return new TokenRefreshResult(
+                newAccessToken,
+                newRefreshToken.getToken(),
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CurrentUserResponse getCurrentUserFromToken(String accessToken) {
+        String email = extractEmail(accessToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthenticationFailedException("Gecersiz access token."));
+
+        if (!jwtService.isTokenValid(accessToken, user.getEmail()) || !user.isEnabled()) {
+            throw new AuthenticationFailedException("Gecersiz access token.");
+        }
+
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getRole(),
+                user.isEnabled()
+        );
     }
 
     @Override
@@ -139,5 +167,13 @@ public class AuthServiceImpl implements AuthService {
                 .revoked(false)
                 .build();
         return refreshTokenRepository.save(refreshToken);
+    }
+
+    private String extractEmail(String accessToken) {
+        try {
+            return jwtService.extractEmail(accessToken);
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new AuthenticationFailedException("Gecersiz access token.");
+        }
     }
 }
