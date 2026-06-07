@@ -60,6 +60,11 @@ const stackItems = ["Gateway", "Auth", "Logistics", "Notification", "Kafka", "Re
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
   const current = navItems.find((item) => pathname.startsWith(item.href));
   const title = current?.title ?? "SwiftDrop";
 
