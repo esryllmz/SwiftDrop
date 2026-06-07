@@ -152,6 +152,7 @@ services:
       AUTH_SERVICE_URI: http://swiftdrop-auth-service:8081
       LOGISTICS_SERVICE_URI: http://swiftdrop-logistics-service:8082
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3001}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     depends_on:
       - swiftdrop-auth-service
       - swiftdrop-logistics-service
