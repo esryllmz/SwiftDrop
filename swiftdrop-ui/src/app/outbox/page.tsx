@@ -12,6 +12,7 @@ import {
   SecondaryButton,
   StatusBadge,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
 import { formatDateTime, prettyJson, statusBadgeClass } from "@/lib/format";
 import type { OutboxEventResponse } from "@/types/api";
@@ -20,6 +21,7 @@ const filters = ["All", "PENDING", "SENT", "FAILED"] as const;
 type Filter = (typeof filters)[number];
 
 export default function OutboxPage() {
+  const { accessToken } = useAuth();
   const [events, setEvents] = useState<OutboxEventResponse[]>([]);
   const [selectedEvent, setSelectedEvent] =
     useState<OutboxEventResponse | null>(null);
@@ -36,6 +38,8 @@ export default function OutboxPage() {
       const query = filter === "All" ? "" : `?status=${filter}`;
       const response = await getJson<OutboxEventResponse[]>(
         `/api/v1/outbox-events${query}`,
+        undefined,
+        accessToken,
       );
       setEvents(response);
     } catch (err) {
@@ -43,7 +47,7 @@ export default function OutboxPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [accessToken, filter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -55,7 +59,11 @@ export default function OutboxPage() {
     setDetailError(null);
     try {
       setSelectedEvent(
-        await getJson<OutboxEventResponse>(`/api/v1/outbox-events/${eventId}`),
+        await getJson<OutboxEventResponse>(
+          `/api/v1/outbox-events/${eventId}`,
+          undefined,
+          accessToken,
+        ),
       );
     } catch (err) {
       setDetailError(err instanceof Error ? err.message : "Event detail failed");

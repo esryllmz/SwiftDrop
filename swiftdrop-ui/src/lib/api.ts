@@ -20,6 +20,7 @@ export class ApiError extends Error {
 export async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {},
+  accessToken?: string | null,
 ): Promise<T> {
   const { baseUrl = API_BASE_URL, headers, ...init } = options;
   const response = await fetch(`${baseUrl}${path}`, {
@@ -28,6 +29,7 @@ export async function apiFetch<T>(
     headers: {
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
   });
@@ -46,20 +48,25 @@ export async function apiFetch<T>(
   return data as T;
 }
 
-export function getJson<T>(path: string, options?: ApiFetchOptions) {
-  return apiFetch<T>(path, { ...options, method: "GET" });
+export function getJson<T>(
+  path: string,
+  options?: ApiFetchOptions,
+  accessToken?: string | null,
+) {
+  return apiFetch<T>(path, { ...options, method: "GET" }, accessToken);
 }
 
 export function postJson<T>(
   path: string,
   body?: unknown,
   options?: ApiFetchOptions,
+  accessToken?: string | null,
 ) {
   return apiFetch<T>(path, {
     ...options,
     method: "POST",
     body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  }, accessToken);
 }
 
 function safeJsonParse(text: string): unknown {

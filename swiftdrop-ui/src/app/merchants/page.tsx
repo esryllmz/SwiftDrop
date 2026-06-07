@@ -11,12 +11,14 @@ import {
   PageHeader,
   SecondaryButton,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
 import type { MerchantResponse } from "@/types/api";
 
 const demoMerchantId = "11111111-1111-1111-1111-111111111111";
 
 export default function MerchantsPage() {
+  const { accessToken } = useAuth();
   const [merchants, setMerchants] = useState<MerchantResponse[]>([]);
   const [selectedMerchant, setSelectedMerchant] =
     useState<MerchantResponse | null>(null);
@@ -27,7 +29,7 @@ export default function MerchantsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await getJson<MerchantResponse[]>("/api/v1/merchants");
+      const response = await getJson<MerchantResponse[]>("/api/v1/merchants", undefined, accessToken);
       setMerchants(response);
       setSelectedMerchant((current) => current ?? response[0] ?? null);
     } catch (err) {
@@ -35,7 +37,7 @@ export default function MerchantsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);

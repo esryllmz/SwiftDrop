@@ -1,8 +1,18 @@
+export type UserRole = "CUSTOMER" | "MERCHANT" | "DRIVER" | "ADMIN";
+
 export type AuthResponse = {
   accessToken: string;
+  tokenType: string;
   userId: string;
   email: string;
-  role: string;
+  role: UserRole;
+};
+
+export type CurrentUserResponse = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  enabled: boolean;
 };
 
 export type DashboardSummaryResponse = {

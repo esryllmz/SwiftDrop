@@ -14,6 +14,7 @@ import {
   SecondaryButton,
   StatusBadge,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type { OrderResponse } from "@/types/api";
@@ -30,6 +31,7 @@ const statuses = [
 type OrderStatusFilter = (typeof statuses)[number];
 
 export default function OrdersPage() {
+  const { accessToken } = useAuth();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatusFilter>("All");
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
@@ -54,13 +56,13 @@ export default function OrdersPage() {
     try {
       const query =
         selectedStatus === "All" ? "" : `?status=${selectedStatus}`;
-      setOrders(await getJson<OrderResponse[]>(`/api/v1/orders${query}`));
+      setOrders(await getJson<OrderResponse[]>(`/api/v1/orders${query}`, undefined, accessToken));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Orders request failed");
     } finally {
       setLoading(false);
     }
-  }, [selectedStatus]);
+  }, [accessToken, selectedStatus]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -76,7 +78,7 @@ export default function OrdersPage() {
         customerId,
         merchantId,
         totalAmount: Number(totalAmount),
-      });
+      }, undefined, accessToken);
       setCreateResult(result);
       setSelectedOrder(result);
       await load();
@@ -91,7 +93,7 @@ export default function OrdersPage() {
     setDetailLoading(true);
     setDetailError(null);
     try {
-      setSelectedOrder(await getJson<OrderResponse>(`/api/v1/orders/${orderId}`));
+      setSelectedOrder(await getJson<OrderResponse>(`/api/v1/orders/${orderId}`, undefined, accessToken));
     } catch (err) {
       setDetailError(err instanceof Error ? err.message : "Order detail failed");
     } finally {

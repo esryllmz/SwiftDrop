@@ -2,7 +2,9 @@
 
 import type React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const navItems = [
   {
@@ -47,22 +49,74 @@ const navItems = [
     marker: "UP",
     title: "System Health",
   },
-  {
-    href: "/auth",
-    label: "Auth",
-    description: "Token playground",
-    marker: "AU",
-    title: "Auth Playground",
-  },
 ];
 
 const stackItems = ["Gateway", "Auth", "Logistics", "Notification", "Kafka", "Redis"];
+const publicRoutes = ["/", "/auth", "/staff-login"];
+const protectedRoutes = [
+  "/dashboard",
+  "/orders",
+  "/drivers",
+  "/merchants",
+  "/event-stream",
+  "/outbox",
+  "/system-monitoring",
+  "/health",
+  "/users-approvals",
+  "/settings",
+  "/profile",
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isLoading, user, logout } = useAuth();
 
-  if (pathname === "/") {
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+  const isProtectedRoute = protectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  useEffect(() => {
+    if (!isLoading && isProtectedRoute && !user) {
+      router.replace("/auth?portal=staff");
+    }
+  }, [isLoading, isProtectedRoute, router, user]);
+
+  if (isPublicRoute) {
     return <>{children}</>;
+  }
+
+  if (isProtectedRoute && isLoading) {
+    return (
+      <FullPageState
+        title="Restoring session"
+        message="Checking the HttpOnly refresh cookie before opening the operations console."
+      />
+    );
+  }
+
+  if (isProtectedRoute && !user) {
+    return (
+      <FullPageState
+        title="Authentication required"
+        message="Redirecting to staff login."
+      />
+    );
+  }
+
+  if (isProtectedRoute && user && user.role !== "ADMIN") {
+    return (
+      <AccessDenied
+        email={user.email}
+        role={user.role}
+        onLogout={() => {
+          void logout().finally(() => router.replace("/"));
+        }}
+      />
+    );
   }
 
   const current = navItems.find((item) => pathname.startsWith(item.href));
@@ -148,6 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex flex-wrap gap-2">
               <HeaderBadge label="API Gateway" value="localhost:8080" />
+              {user ? <HeaderBadge label="Signed in" value={`${user.email} (${user.role})`} /> : null}
               <a
                 href="http://localhost:8090"
                 target="_blank"
@@ -158,11 +213,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </a>
               <HeaderBadge label="Environment" value="Docker Local" />
               <Link
-                href="/auth"
+                href="/auth?portal=staff"
                 className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
               >
-                Auth Playground
+                Staff Login
               </Link>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => void logout().finally(() => router.replace("/"))}
+                  className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-100 transition hover:bg-rose-500/20"
+                >
+                  Logout
+                </button>
+              ) : null}
             </div>
           </div>
         </header>
@@ -170,6 +234,53 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="min-w-0 px-5 py-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {children}
         </main>
+      </div>
+    </div>
+  );
+}
+
+function FullPageState({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md rounded-md border border-slate-800 bg-slate-900 p-5">
+        <h1 className="text-xl font-semibold text-white">{title}</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-400">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function AccessDenied({
+  email,
+  role,
+  onLogout,
+}: {
+  email: string;
+  role: string;
+  onLogout: () => void;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-lg rounded-md border border-rose-500/30 bg-rose-500/10 p-5">
+        <h1 className="text-xl font-semibold text-white">Access denied</h1>
+        <p className="mt-2 text-sm leading-6 text-rose-100">
+          {email} is signed in with role {role}. The operations console requires ADMIN.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/"
+            className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-slate-900"
+          >
+            Home
+          </Link>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="rounded-md border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/30"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );

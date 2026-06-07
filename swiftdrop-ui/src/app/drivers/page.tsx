@@ -11,6 +11,7 @@ import {
   SecondaryButton,
   StatusBadge,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
 import type { DriverResponse } from "@/types/api";
 
@@ -18,6 +19,7 @@ const filters = ["All", "AVAILABLE", "BUSY", "OFFLINE"] as const;
 type DriverFilter = (typeof filters)[number];
 
 export default function DriversPage() {
+  const { accessToken } = useAuth();
   const [drivers, setDrivers] = useState<DriverResponse[]>([]);
   const [allDrivers, setAllDrivers] = useState<DriverResponse[]>([]);
   const [filter, setFilter] = useState<DriverFilter>("All");
@@ -30,8 +32,8 @@ export default function DriversPage() {
     try {
       const query = filter === "All" ? "" : `?status=${filter}`;
       const [filteredResponse, allResponse] = await Promise.all([
-        getJson<DriverResponse[]>(`/api/v1/drivers${query}`),
-        getJson<DriverResponse[]>("/api/v1/drivers"),
+        getJson<DriverResponse[]>(`/api/v1/drivers${query}`, undefined, accessToken),
+        getJson<DriverResponse[]>("/api/v1/drivers", undefined, accessToken),
       ]);
       setDrivers(filteredResponse);
       setAllDrivers(allResponse);
@@ -40,7 +42,7 @@ export default function DriversPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [accessToken, filter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);

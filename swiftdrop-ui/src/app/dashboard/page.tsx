@@ -12,6 +12,7 @@ import {
   StatusBadge,
   SecondaryButton,
 } from "@/components/ui";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type {
@@ -41,6 +42,7 @@ const demoOrderPayload = {
 };
 
 export default function DashboardPage() {
+  const { accessToken } = useAuth();
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [outboxEvents, setOutboxEvents] = useState<OutboxEventResponse[]>([]);
@@ -56,9 +58,9 @@ export default function DashboardPage() {
     try {
       const [summaryResponse, ordersResponse, outboxResponse] =
         await Promise.all([
-          getJson<DashboardSummaryResponse>("/api/v1/dashboard/summary"),
-          getJson<OrderResponse[]>("/api/v1/orders"),
-          getJson<OutboxEventResponse[]>("/api/v1/outbox-events"),
+          getJson<DashboardSummaryResponse>("/api/v1/dashboard/summary", undefined, accessToken),
+          getJson<OrderResponse[]>("/api/v1/orders", undefined, accessToken),
+          getJson<OutboxEventResponse[]>("/api/v1/outbox-events", undefined, accessToken),
         ]);
 
       setSummary(summaryResponse);
@@ -69,7 +71,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadDashboardData(), 0);
@@ -84,6 +86,8 @@ export default function DashboardPage() {
       const created = await postJson<OrderResponse>(
         "/api/v1/orders",
         demoOrderPayload,
+        undefined,
+        accessToken,
       );
       setLastDemoOrder(created);
       await loadDashboardData();
