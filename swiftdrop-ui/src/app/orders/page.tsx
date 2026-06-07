@@ -26,7 +26,10 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import type { OrderResponse } from "@/types/api";
+import type { MerchantResponse, OrderResponse } from "@/types/api";
+
+const fallbackCustomerId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const fallbackMerchantId = "11111111-1111-1111-1111-111111111111";
 
 const statuses = [
   "All",
@@ -46,12 +49,8 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [customerId, setCustomerId] = useState(
-    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-  );
-  const [merchantId, setMerchantId] = useState(
-    "11111111-1111-1111-1111-111111111111",
-  );
+  const [customerId, setCustomerId] = useState(fallbackCustomerId);
+  const [merchantId, setMerchantId] = useState(fallbackMerchantId);
   const [totalAmount, setTotalAmount] = useState("249.90");
   const [createResult, setCreateResult] = useState<OrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +99,28 @@ export default function OrdersPage() {
     }
   }
 
+  async function openCreateOrderModal() {
+    setCreateError(null);
+    setCreateModalOpen(true);
+
+    if (!accessToken || (merchantId && merchantId !== fallbackMerchantId)) {
+      return;
+    }
+
+    try {
+      const merchants = await getJson<MerchantResponse[]>(
+        "/api/v1/merchants",
+        undefined,
+        accessToken,
+      );
+      if (merchants[0]?.id) {
+        setMerchantId(merchants[0].id);
+      }
+    } catch {
+      // Keep the fallback id; create errors are shown inside the modal.
+    }
+  }
+
   async function viewOrder(orderId: string) {
     setDetailModalOpen(true);
     setSelectedOrder(null);
@@ -123,10 +144,7 @@ export default function OrdersPage() {
           <div className="flex flex-wrap gap-2">
             <SecondaryButton onClick={load}>Refresh</SecondaryButton>
             <Button
-              onClick={() => {
-                setCreateError(null);
-                setCreateModalOpen(true);
-              }}
+              onClick={() => void openCreateOrderModal()}
             >
               Create Demo Order
             </Button>
@@ -201,9 +219,9 @@ export default function OrdersPage() {
               <EmptyState message="No orders found. Create a demo order to start the event flow." />
             ) : null}
             {orders.length > 0 ? (
-              <div className="overflow-x-auto rounded-md border border-slate-200">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-white text-left text-slate-600">
+                  <thead className="bg-slate-50 text-left text-slate-600">
                     <tr>
                       {[
                         "Order ID",
@@ -221,9 +239,9 @@ export default function OrdersPage() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
+                  <tbody className="divide-y divide-slate-100 bg-white">
                     {orders.map((order) => (
-                      <tr key={order.id} className="align-top">
+                      <tr key={order.id} className="align-top transition hover:bg-slate-50">
                         <td className="px-3 py-2 text-slate-700" title={order.id}>
                           {shortId(order.id)}
                         </td>

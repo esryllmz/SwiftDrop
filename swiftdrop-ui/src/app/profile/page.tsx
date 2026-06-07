@@ -51,7 +51,7 @@ export default function ProfilePage() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                   >
                     {item.label}
                   </Link>
@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3">
+    <div className="grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
       <dt className="text-xs uppercase text-slate-500">{label}</dt>
       <dd className="break-all text-slate-900">{value}</dd>
     </div>

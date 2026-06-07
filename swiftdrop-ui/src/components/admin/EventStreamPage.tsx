@@ -134,7 +134,7 @@ export function EventStreamPage() {
             Event Stream
           </h3>
           {events.length > 0 ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50 text-left text-slate-500">
                   <tr>
@@ -156,9 +156,9 @@ export function EventStreamPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {events.map((event) => (
-                    <tr key={event.id} className="align-top">
+                    <tr key={event.id} className="align-top transition hover:bg-slate-50">
                       <td className="px-3 py-2 text-slate-700" title={event.id}>
                         {shortId(event.id)}
                       </td>
@@ -308,7 +308,7 @@ function shortId(value?: string) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3">
+    <div className="grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
       <dt className="text-xs uppercase text-slate-500">{label}</dt>
       <dd className="break-all text-slate-800">{value}</dd>
     </div>

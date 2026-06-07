@@ -113,9 +113,9 @@ export default function MerchantsPage() {
             <EmptyState message="No merchants found. Check Logistics seed data or service health." />
           ) : null}
           {merchants.length > 0 ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-white text-left text-slate-600">
+                <thead className="bg-slate-50 text-left text-slate-600">
                   <tr>
                     {[
                       "Merchant ID",
@@ -131,9 +131,9 @@ export default function MerchantsPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {merchants.map((merchant) => (
-                    <tr key={merchant.id}>
+                    <tr key={merchant.id} className="transition hover:bg-slate-50">
                       <td
                         className="px-3 py-2 text-slate-700"
                         title={merchant.id}

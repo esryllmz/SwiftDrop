@@ -25,9 +25,9 @@ export default function SettingsPage() {
           <h3 className="text-lg font-semibold text-slate-950">
             Runtime Configuration
           </h3>
-          <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <tbody className="divide-y divide-slate-200 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {settings.map((item) => (
                   <tr key={item.label}>
                     <th className="w-56 bg-slate-50 px-3 py-3 text-left font-medium text-slate-600">

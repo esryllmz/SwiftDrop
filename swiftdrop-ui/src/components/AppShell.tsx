@@ -158,17 +158,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const subtitle = current?.subtitle ?? metadata?.subtitle ?? "Admin console";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[280px_1fr] lg:overflow-hidden">
-      <aside className="border-b border-slate-200 bg-white px-4 py-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
-        <Link href="/dashboard" className="block rounded-md border border-slate-200 bg-slate-50 p-4">
+    <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[240px_1fr] lg:overflow-hidden">
+      <aside className="border-b border-slate-200 bg-white px-3 py-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
+        <Link href="/dashboard" className="block rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xl font-semibold text-slate-950">SwiftDrop</div>
+              <div className="text-lg font-semibold text-slate-950">SwiftDrop</div>
               <div className="mt-1 text-sm text-slate-500">
-                Event-driven delivery ops
+                Operations Console
               </div>
             </div>
-            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+            <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
               Docker Local
             </span>
           </div>
@@ -181,7 +181,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`min-w-[180px] rounded-md border px-3 py-3 transition lg:min-w-0 ${
+                className={`min-w-[180px] rounded-xl border px-3 py-2.5 transition lg:min-w-0 ${
                   active
                     ? "border-blue-200 bg-blue-50 text-blue-700 shadow-[inset_3px_0_0_rgba(37,99,235,0.9)]"
                     : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
@@ -189,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-semibold ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold ${
                       active
                         ? "border-blue-200 bg-white text-blue-700"
                         : "border-slate-200 bg-slate-50 text-slate-500"
@@ -209,13 +209,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 lg:mt-auto">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:mt-auto">
           <div className="text-xs font-semibold uppercase text-slate-500">Backend Stack</div>
           <div className="mt-3 flex flex-wrap gap-2">
             {stackItems.map((item) => (
               <span
                 key={item}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600"
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600"
               >
                 {item}
               </span>
@@ -223,47 +223,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <Link
             href="/profile"
-            className="mt-3 block rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="mt-3 block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           >
             Profile
           </Link>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => void logout().finally(() => router.replace("/"))}
+              className="mt-2 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Log out
+            </button>
+          ) : null}
         </div>
       </aside>
 
       <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col">
-        <header className="border-b border-slate-200 bg-white px-5 py-4">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <header className="border-b border-slate-200 bg-white px-5 py-3">
+          <div className="flex min-h-14 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-950">{title}</h1>
+              <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
               <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <HeaderBadge label="API Gateway" value="localhost:8080" />
-              {user ? <HeaderBadge label="Signed in" value={`${user.email} (${user.role})`} /> : null}
+              <HeaderBadge label="Docker" value="Local" />
+              <HeaderBadge label="API" value="8080" />
               <a
                 href="http://localhost:8090"
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+                className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
               >
-                Kafka UI: localhost:8090
+                Kafka UI · 8090
               </a>
-              <HeaderBadge label="Environment" value="Docker Local" />
-              <Link
-                href="/auth?portal=staff"
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                Staff Login
-              </Link>
-              {user ? (
-                <button
-                  type="button"
-                  onClick={() => void logout().finally(() => router.replace("/"))}
-                  className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                >
-                  Logout
-                </button>
-              ) : null}
+              {user ? <UserBadge email={user.email} role={user.role} /> : null}
             </div>
           </div>
         </header>
@@ -325,9 +319,22 @@ function AccessDenied({
 
 function HeaderBadge({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-      <span className="text-slate-500">{label}: </span>
+    <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <span className="text-slate-500">{label} · </span>
       <span className="font-medium text-slate-950">{value}</span>
+    </span>
+  );
+}
+
+function UserBadge({ email, role }: { email: string; role: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
+        {email.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="font-medium text-slate-950">{email}</span>
+      <span className="text-slate-400">·</span>
+      <span>{role}</span>
     </span>
   );
 }
