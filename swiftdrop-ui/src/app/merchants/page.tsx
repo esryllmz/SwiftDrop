@@ -2,11 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AdminButton,
+  AdminModal,
+  AdvancedDetails,
+  DetailField,
+  DetailGrid,
+  JsonPreview,
+  ModalFooter,
+} from "@/components/admin/modal";
+import {
   Button,
   Card,
   EmptyState,
   ErrorState,
-  JsonBlock,
   LoadingState,
   PageHeader,
   SecondaryButton,
@@ -22,6 +30,7 @@ export default function MerchantsPage() {
   const [merchants, setMerchants] = useState<MerchantResponse[]>([]);
   const [selectedMerchant, setSelectedMerchant] =
     useState<MerchantResponse | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +40,6 @@ export default function MerchantsPage() {
     try {
       const response = await getJson<MerchantResponse[]>("/api/v1/merchants", undefined, accessToken);
       setMerchants(response);
-      setSelectedMerchant((current) => current ?? response[0] ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Merchants request failed");
     } finally {
@@ -79,7 +87,7 @@ export default function MerchantsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="grid gap-4">
         <Card>
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -154,7 +162,10 @@ export default function MerchantsPage() {
                       </td>
                       <td className="px-3 py-2">
                         <SecondaryButton
-                          onClick={() => setSelectedMerchant(merchant)}
+                          onClick={() => {
+                            setSelectedMerchant(merchant);
+                            setDetailModalOpen(true);
+                          }}
                         >
                           View
                         </SecondaryButton>
@@ -166,36 +177,52 @@ export default function MerchantsPage() {
             </div>
           ) : null}
         </Card>
-
-        <Card className="h-fit">
-          <h3 className="text-lg font-semibold text-slate-950">Merchant Detail</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Select a merchant to inspect the location payload.
-          </p>
-          {!selectedMerchant ? (
-            <div className="mt-4">
-              <EmptyState message="Select a merchant from the table." />
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-4">
-              <dl className="grid gap-3 text-sm">
-                <DetailRow label="id" value={selectedMerchant.id} />
-                <DetailRow label="userId" value={selectedMerchant.userId} />
-                <DetailRow label="name" value={selectedMerchant.name} />
-                <DetailRow
-                  label="latitude"
-                  value={String(selectedMerchant.latitude)}
-                />
-                <DetailRow
-                  label="longitude"
-                  value={String(selectedMerchant.longitude)}
-                />
-              </dl>
-              <JsonBlock value={selectedMerchant} />
-            </div>
-          )}
-        </Card>
       </div>
+
+      <AdminModal
+        open={detailModalOpen}
+        title="Merchant Detail"
+        subtitle={selectedMerchant?.name}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedMerchant(null);
+        }}
+        footer={
+          <ModalFooter>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setDetailModalOpen(false);
+                setSelectedMerchant(null);
+              }}
+            >
+              Close
+            </AdminButton>
+          </ModalFooter>
+        }
+      >
+        {selectedMerchant ? (
+          <div className="grid gap-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
+              Merchant location is used as the center point for driver proximity search.
+            </div>
+            <DetailGrid>
+              <DetailField label="Merchant ID" value={selectedMerchant.id} mono />
+              <DetailField label="User ID" value={selectedMerchant.userId} mono />
+              <DetailField label="Name" value={selectedMerchant.name} />
+              <DetailField label="Latitude" value={String(selectedMerchant.latitude)} />
+              <DetailField label="Longitude" value={String(selectedMerchant.longitude)} />
+            </DetailGrid>
+            <AdvancedDetails>
+              <JsonPreview value={selectedMerchant} />
+            </AdvancedDetails>
+          </div>
+        ) : (
+          <EmptyState message="No merchant selected." />
+        )}
+      </AdminModal>
     </div>
   );
 }
@@ -215,13 +242,4 @@ function shortId(value?: string) {
   }
 
   return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
-      <dt className="text-xs uppercase text-slate-500">{label}</dt>
-      <dd className="break-all text-slate-200">{value}</dd>
-    </div>
-  );
 }

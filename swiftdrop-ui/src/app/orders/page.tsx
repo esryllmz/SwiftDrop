@@ -3,12 +3,21 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
+  AdminButton,
+  AdminModal,
+  AdvancedDetails,
+  DetailField,
+  DetailGrid,
+  JsonPreview,
+  ModalFooter,
+  ModalSection,
+} from "@/components/admin/modal";
+import {
   Button,
   Card,
   EmptyState,
   ErrorState,
   Field,
-  JsonBlock,
   LoadingState,
   PageHeader,
   SecondaryButton,
@@ -35,6 +44,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatusFilter>("All");
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [customerId, setCustomerId] = useState(
     "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   );
@@ -80,8 +91,8 @@ export default function OrdersPage() {
         totalAmount: Number(totalAmount),
       }, undefined, accessToken);
       setCreateResult(result);
-      setSelectedOrder(result);
       await load();
+      setCreateModalOpen(false);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Create order failed");
     } finally {
@@ -90,6 +101,8 @@ export default function OrdersPage() {
   }
 
   async function viewOrder(orderId: string) {
+    setDetailModalOpen(true);
+    setSelectedOrder(null);
     setDetailLoading(true);
     setDetailError(null);
     try {
@@ -106,11 +119,22 @@ export default function OrdersPage() {
       <PageHeader
         title="Orders"
         description="Filter, inspect, and create demo orders through the Gateway."
-        action={<Button onClick={load}>Refresh</Button>}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <SecondaryButton onClick={load}>Refresh</SecondaryButton>
+            <Button
+              onClick={() => {
+                setCreateError(null);
+                setCreateModalOpen(true);
+              }}
+            >
+              Create Demo Order
+            </Button>
+          </div>
+        }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <div className="grid gap-4">
+      <div className="grid gap-4">
           <Card>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -130,28 +154,6 @@ export default function OrdersPage() {
                 </Link>
               ) : null}
             </div>
-            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_160px_150px]">
-              <Field
-                label="Customer ID"
-                value={customerId}
-                onChange={setCustomerId}
-              />
-              <Field
-                label="Merchant ID"
-                value={merchantId}
-                onChange={setMerchantId}
-              />
-              <Field
-                label="Total Amount"
-                value={totalAmount}
-                onChange={setTotalAmount}
-              />
-              <div className="flex items-end">
-                <Button className="w-full" disabled={creating} onClick={createOrder}>
-                  {creating ? "Creating..." : "Create Order"}
-                </Button>
-              </div>
-            </div>
             {createResult ? (
               <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
                 Order created successfully. The list was refreshed.
@@ -162,9 +164,6 @@ export default function OrdersPage() {
                 <ErrorState message={createError} />
               </div>
             ) : null}
-            <div className="mt-4">
-              <JsonBlock value={createResult ?? "No create request yet."} />
-            </div>
           </Card>
 
           <Card>
@@ -264,51 +263,102 @@ export default function OrdersPage() {
               </div>
             ) : null}
           </Card>
-        </div>
+      </div>
 
-        <Card className="h-fit">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">Order Detail</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Uses GET /api/v1/orders/id.
-              </p>
-            </div>
-            {selectedOrder ? <StatusBadge status={selectedOrder.status} /> : null}
+      <AdminModal
+        open={createModalOpen}
+        title="Create Demo Order"
+        subtitle="Triggers the full order to Kafka pipeline"
+        onClose={() => {
+          if (!creating) {
+            setCreateModalOpen(false);
+          }
+        }}
+        footer={
+          <ModalFooter>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              disabled={creating}
+              onClick={() => setCreateModalOpen(false)}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton type="submit" form="create-order-form" disabled={creating}>
+              {creating ? "Creating..." : "Create Order"}
+            </AdminButton>
+          </ModalFooter>
+        }
+      >
+        <form
+          id="create-order-form"
+          className="grid gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createOrder();
+          }}
+        >
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
+            Creates an order, assigns a driver, stores outbox events and publishes Kafka messages.
           </div>
+          {createError ? <ErrorState message={createError} /> : null}
+          <ModalSection>
+            <Field label="Customer ID" value={customerId} onChange={setCustomerId} />
+            <Field label="Merchant ID" value={merchantId} onChange={setMerchantId} />
+            <Field label="Total Amount" value={totalAmount} onChange={setTotalAmount} />
+          </ModalSection>
+        </form>
+      </AdminModal>
+
+      <AdminModal
+        open={detailModalOpen}
+        title="Order Detail"
+        subtitle={selectedOrder ? shortId(selectedOrder.id) : "Loading order details"}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedOrder(null);
+          setDetailError(null);
+        }}
+        footer={
+          <ModalFooter>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setDetailModalOpen(false);
+                setSelectedOrder(null);
+                setDetailError(null);
+              }}
+            >
+              Close
+            </AdminButton>
+          </ModalFooter>
+        }
+      >
+        <div className="grid gap-4">
           {detailLoading ? <LoadingState /> : null}
           {detailError ? <ErrorState message={detailError} /> : null}
-          {!detailLoading && !selectedOrder ? (
-            <EmptyState message="Select an order from the table." />
+          {!detailLoading && !detailError && !selectedOrder ? (
+            <EmptyState message="No order details are available." />
           ) : null}
           {selectedOrder ? (
-            <div className="grid gap-4">
-              <dl className="grid gap-3 text-sm">
-                <DetailRow label="id" value={selectedOrder.id} />
-                <DetailRow label="customerId" value={selectedOrder.customerId} />
-                <DetailRow
-                  label="merchantName"
-                  value={selectedOrder.merchantName ?? "-"}
-                />
-                <DetailRow
-                  label="driverName"
-                  value={selectedOrder.driverName ?? "-"}
-                />
-                <DetailRow label="status" value={selectedOrder.status} />
-                <DetailRow
-                  label="totalAmount"
-                  value={formatMoney(Number(selectedOrder.totalAmount))}
-                />
-                <DetailRow
-                  label="createdAt"
-                  value={formatDateTime(selectedOrder.createdAt)}
-                />
-              </dl>
-              <JsonBlock value={selectedOrder} />
-            </div>
+            <>
+              <DetailGrid>
+                <DetailField label="Status" value={<StatusBadge status={selectedOrder.status} />} />
+                <DetailField label="Amount" value={formatMoney(Number(selectedOrder.totalAmount))} />
+                <DetailField label="Merchant" value={selectedOrder.merchantName} />
+                <DetailField label="Driver" value={selectedOrder.driverName ?? "Unassigned"} />
+                <DetailField label="Customer ID" value={selectedOrder.customerId} mono />
+                <DetailField label="Created At" value={formatDateTime(selectedOrder.createdAt)} />
+              </DetailGrid>
+              <AdvancedDetails>
+                <JsonPreview value={selectedOrder} />
+              </AdvancedDetails>
+            </>
           ) : null}
-        </Card>
-      </div>
+        </div>
+      </AdminModal>
     </div>
   );
 }
@@ -319,13 +369,4 @@ function shortId(value?: string) {
   }
 
   return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
-      <dt className="text-xs uppercase text-slate-500">{label}</dt>
-      <dd className="break-all text-slate-200">{value}</dd>
-    </div>
-  );
 }
