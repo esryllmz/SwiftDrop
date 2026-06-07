@@ -23,6 +23,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String AUTHENTICATED_USER_HEADER = "X-Authenticated-User";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLE_HEADER = "X-User-Role";
+    private static final String ADMIN_ROLE = "ADMIN";
+
+    private static final String[] ADMIN_ONLY_PATH_PREFIXES = {
+            "/api/v1/dashboard",
+            "/api/v1/orders",
+            "/api/v1/drivers",
+            "/api/v1/merchants",
+            "/api/v1/outbox-events"
+    };
 
     private final JwtValidator jwtValidator;
 
@@ -51,6 +60,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         try {
             JwtClaims claims = jwtValidator.validate(token);
+            if (isAdminOnlyPath(path) && !hasAdminRole(claims.role())) {
+                return forbidden(exchange, path);
+            }
+
             ServerHttpRequest.Builder requestBuilder = request.mutate()
                     .headers(headers -> {
                         headers.remove(AUTHENTICATED_USER_HEADER);
@@ -97,14 +110,59 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return expectedMethod.equals(method) && expectedPath.equals(path);
     }
 
+    private boolean isAdminOnlyPath(String path) {
+        for (String prefix : ADMIN_ONLY_PATH_PREFIXES) {
+            if (path.equals(prefix) || path.startsWith(prefix + "/")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hasAdminRole(String role) {
+        if (role == null || role.isBlank()) {
+            return false;
+        }
+
+        String normalizedRole = role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role;
+        return ADMIN_ROLE.equals(normalizedRole);
+    }
+
     private Mono<Void> unauthorized(ServerWebExchange exchange, String path) {
+        return writeErrorResponse(
+                exchange,
+                path,
+                HttpStatus.UNAUTHORIZED,
+                "Unauthorized",
+                "Missing or invalid access token"
+        );
+    }
+
+    private Mono<Void> forbidden(ServerWebExchange exchange, String path) {
+        return writeErrorResponse(
+                exchange,
+                path,
+                HttpStatus.FORBIDDEN,
+                "Forbidden",
+                "Admin role is required"
+        );
+    }
+
+    private Mono<Void> writeErrorResponse(
+            ServerWebExchange exchange,
+            String path,
+            HttpStatus status,
+            String error,
+            String message
+    ) {
         var response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         String body = """
-                {"timestamp":"%s","status":401,"error":"Unauthorized","message":"Missing or invalid access token","path":"%s"}\
-                """.formatted(LocalDateTime.now(), path);
+                {"timestamp":"%s","status":%d,"error":"%s","message":"%s","path":"%s"}\
+                """.formatted(LocalDateTime.now(), status.value(), error, message, path);
 
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
