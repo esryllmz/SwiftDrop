@@ -61,8 +61,8 @@ export default function MerchantsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <SummaryCard label="Total Merchants" value={merchants.length} />
           <Card>
-            <div className="text-sm text-slate-400">Active Demo Location</div>
-            <div className="mt-2 text-3xl font-semibold text-white">
+            <div className="text-sm text-slate-600">Active Demo Location</div>
+            <div className="mt-2 text-3xl font-semibold text-slate-950">
               {activeDemoLocation ? "Yes" : "No"}
             </div>
             <div className="mt-2 break-all text-xs text-slate-500">
@@ -71,8 +71,8 @@ export default function MerchantsPage() {
           </Card>
         </div>
         <Card>
-          <h3 className="text-lg font-semibold text-white">Geo Search Input</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
+          <h3 className="text-lg font-semibold text-slate-950">Geo Search Input</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
             Merchant location is used as the center point for Redis Geo driver
             search.
           </p>
@@ -83,14 +83,14 @@ export default function MerchantsPage() {
         <Card>
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-slate-950">
                 Merchant List
               </h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-slate-600">
                 Seeded demo merchants from Logistics Service.
               </p>
             </div>
-            <span className="w-fit rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-200">
+            <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
               Demo merchant: {shortId(demoMerchantId)}
             </span>
           </div>
@@ -105,9 +105,9 @@ export default function MerchantsPage() {
             <EmptyState message="No merchants found. Check Logistics seed data or service health." />
           ) : null}
           {merchants.length > 0 ? (
-            <div className="overflow-x-auto rounded-md border border-slate-800">
-              <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="bg-slate-950 text-left text-slate-400">
+            <div className="overflow-x-auto rounded-md border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-white text-left text-slate-600">
                   <tr>
                     {[
                       "Merchant ID",
@@ -123,33 +123,33 @@ export default function MerchantsPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 bg-slate-950">
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {merchants.map((merchant) => (
                     <tr key={merchant.id}>
                       <td
-                        className="px-3 py-2 text-slate-300"
+                        className="px-3 py-2 text-slate-700"
                         title={merchant.id}
                       >
                         <div className="flex flex-col gap-1">
                           <span>{shortId(merchant.id)}</span>
                           {merchant.id === demoMerchantId ? (
-                            <span className="w-fit rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+                            <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
                               Use for Demo Order
                             </span>
                           ) : null}
                         </div>
                       </td>
                       <td
-                        className="px-3 py-2 text-slate-300"
+                        className="px-3 py-2 text-slate-700"
                         title={merchant.userId}
                       >
                         {shortId(merchant.userId)}
                       </td>
-                      <td className="px-3 py-2 text-white">{merchant.name}</td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-950">{merchant.name}</td>
+                      <td className="px-3 py-2 text-slate-700">
                         {merchant.latitude}
                       </td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">
                         {merchant.longitude}
                       </td>
                       <td className="px-3 py-2">
@@ -168,8 +168,8 @@ export default function MerchantsPage() {
         </Card>
 
         <Card className="h-fit">
-          <h3 className="text-lg font-semibold text-white">Merchant Detail</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="text-lg font-semibold text-slate-950">Merchant Detail</h3>
+          <p className="mt-1 text-sm text-slate-600">
             Select a merchant to inspect the location payload.
           </p>
           {!selectedMerchant ? (
@@ -203,8 +203,8 @@ export default function MerchantsPage() {
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <div className="text-sm text-slate-400">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+      <div className="text-sm text-slate-600">{label}</div>
+      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
     </Card>
   );
 }
@@ -219,7 +219,7 @@ function shortId(value?: string) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-md border border-slate-800 bg-slate-950 p-3">
+    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
       <dt className="text-xs uppercase text-slate-500">{label}</dt>
       <dd className="break-all text-slate-200">{value}</dd>
     </div>

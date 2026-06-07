@@ -34,36 +34,36 @@ export function statusBadgeClass(status?: string) {
   const normalized = status?.toUpperCase() ?? "";
 
   if (["UP", "SENT", "AVAILABLE", "DELIVERED"].includes(normalized)) {
-    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
   if (normalized === "PLACED") {
-    return "border-blue-500/30 bg-blue-500/10 text-blue-300";
+    return "border-blue-200 bg-blue-50 text-blue-700";
   }
 
   if (["PENDING", "PREPARING"].includes(normalized)) {
-    return "border-yellow-500/30 bg-yellow-500/10 text-yellow-300";
+    return "border-yellow-200 bg-yellow-50 text-yellow-700";
   }
 
   if (normalized === "UNKNOWN") {
-    return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+    return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
   if (["FAILED", "DOWN"].includes(normalized)) {
-    return "border-red-500/30 bg-red-500/10 text-red-300";
+    return "border-red-200 bg-red-50 text-red-700";
   }
 
   if (normalized === "OFFLINE") {
-    return "border-slate-600 bg-slate-800 text-slate-300";
+    return "border-slate-200 bg-slate-50 text-slate-600";
   }
 
   if (["DRIVER_ASSIGNED", "ASSIGNED", "BUSY"].includes(normalized)) {
-    return "border-violet-500/30 bg-violet-500/10 text-violet-300";
+    return "border-violet-200 bg-violet-50 text-violet-700";
   }
 
   if (normalized === "ON_THE_WAY") {
-    return "border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
   }
 
-  return "border-slate-700 bg-slate-800 text-slate-300";
+  return "border-slate-200 bg-slate-50 text-slate-600";
 }

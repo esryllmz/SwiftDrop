@@ -114,17 +114,17 @@ export default function OrdersPage() {
           <Card>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-slate-950">
                   Create Demo Order
                 </h3>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-slate-600">
                   Creates a real order and starts the backend event flow.
                 </p>
               </div>
               {createResult ? (
                 <Link
-                  href="/outbox"
-                  className="w-fit rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20"
+                  href="/event-stream"
+                  className="w-fit rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100"
                 >
                   View Outbox Events
                 </Link>
@@ -153,7 +153,7 @@ export default function OrdersPage() {
               </div>
             </div>
             {createResult ? (
-              <div className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+              <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
                 Order created successfully. The list was refreshed.
               </div>
             ) : null}
@@ -170,8 +170,8 @@ export default function OrdersPage() {
           <Card>
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Order List</h3>
-                <p className="mt-1 text-sm text-slate-400">
+                <h3 className="text-lg font-semibold text-slate-950">Order List</h3>
+                <p className="mt-1 text-sm text-slate-600">
                   Status filter calls the real query endpoint.
                 </p>
               </div>
@@ -182,7 +182,7 @@ export default function OrdersPage() {
                     onClick={() => setSelectedStatus(status)}
                     className={
                       selectedStatus === status
-                        ? "border-blue-500 bg-blue-500/20 text-blue-100"
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
                         : ""
                     }
                   >
@@ -202,9 +202,9 @@ export default function OrdersPage() {
               <EmptyState message="No orders found. Create a demo order to start the event flow." />
             ) : null}
             {orders.length > 0 ? (
-              <div className="overflow-x-auto rounded-md border border-slate-800">
-                <table className="min-w-full divide-y divide-slate-800 text-sm">
-                  <thead className="bg-slate-950 text-left text-slate-400">
+              <div className="overflow-x-auto rounded-md border border-slate-200">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-white text-left text-slate-600">
                     <tr>
                       {[
                         "Order ID",
@@ -222,31 +222,31 @@ export default function OrdersPage() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 bg-slate-950">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {orders.map((order) => (
                       <tr key={order.id} className="align-top">
-                        <td className="px-3 py-2 text-slate-300" title={order.id}>
+                        <td className="px-3 py-2 text-slate-700" title={order.id}>
                           {shortId(order.id)}
                         </td>
                         <td
-                          className="px-3 py-2 text-slate-300"
+                          className="px-3 py-2 text-slate-700"
                           title={order.customerId}
                         >
                           {shortId(order.customerId)}
                         </td>
-                        <td className="px-3 py-2 text-slate-300">
+                        <td className="px-3 py-2 text-slate-700">
                           {order.merchantName ?? "-"}
                         </td>
-                        <td className="px-3 py-2 text-slate-300">
+                        <td className="px-3 py-2 text-slate-700">
                           {order.driverName ?? "-"}
                         </td>
                         <td className="px-3 py-2">
                           <StatusBadge status={order.status} />
                         </td>
-                        <td className="px-3 py-2 text-slate-300">
+                        <td className="px-3 py-2 text-slate-700">
                           {formatMoney(Number(order.totalAmount))}
                         </td>
-                        <td className="px-3 py-2 text-slate-300">
+                        <td className="px-3 py-2 text-slate-700">
                           {formatDateTime(order.createdAt)}
                         </td>
                         <td className="px-3 py-2">
@@ -269,8 +269,8 @@ export default function OrdersPage() {
         <Card className="h-fit">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-white">Order Detail</h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <h3 className="text-lg font-semibold text-slate-950">Order Detail</h3>
+              <p className="mt-1 text-sm text-slate-600">
                 Uses GET /api/v1/orders/id.
               </p>
             </div>
@@ -323,7 +323,7 @@ function shortId(value?: string) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 rounded-md border border-slate-800 bg-slate-950 p-3">
+    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
       <dt className="text-xs uppercase text-slate-500">{label}</dt>
       <dd className="break-all text-slate-200">{value}</dd>
     </div>

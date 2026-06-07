@@ -67,10 +67,10 @@ export default function DriversPage() {
           <SummaryCard label="Offline" value={summary.offline} />
         </div>
         <Card>
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-lg font-semibold text-slate-950">
             Assignment Logic
           </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
+          <p className="mt-2 text-sm leading-6 text-slate-600">
             Driver assignment is decided by Logistics Service. Redis Geo finds
             nearby drivers and Redisson lock prevents double assignment.
           </p>
@@ -80,8 +80,8 @@ export default function DriversPage() {
       <Card>
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Driver List</h3>
-            <p className="mt-1 text-sm text-slate-400">
+            <h3 className="text-lg font-semibold text-slate-950">Driver List</h3>
+            <p className="mt-1 text-sm text-slate-600">
               Filter calls the real driver query endpoint.
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function DriversPage() {
                 onClick={() => setFilter(item)}
                 className={
                   filter === item
-                    ? "border-violet-500 bg-violet-500/20 text-violet-100"
+                    ? "border-violet-500 bg-violet-50 text-violet-700"
                     : ""
                 }
               >
@@ -112,9 +112,9 @@ export default function DriversPage() {
           <EmptyState message="No drivers found. Check Logistics seed data or service health." />
         ) : null}
         {drivers.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border border-slate-800">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
-              <thead className="bg-slate-950 text-left text-slate-400">
+          <div className="overflow-x-auto rounded-md border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-white text-left text-slate-600">
                 <tr>
                   {["Driver ID", "User ID", "Full Name", "Status"].map(
                     (heading) => (
@@ -125,19 +125,19 @@ export default function DriversPage() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 bg-slate-950">
+              <tbody className="divide-y divide-slate-200 bg-white">
                 {drivers.map((driver) => (
                   <tr key={driver.id}>
-                    <td className="px-3 py-2 text-slate-300" title={driver.id}>
+                    <td className="px-3 py-2 text-slate-700" title={driver.id}>
                       {shortId(driver.id)}
                     </td>
                     <td
-                      className="px-3 py-2 text-slate-300"
+                      className="px-3 py-2 text-slate-700"
                       title={driver.userId}
                     >
                       {shortId(driver.userId)}
                     </td>
-                    <td className="px-3 py-2 text-white">{driver.fullName}</td>
+                    <td className="px-3 py-2 text-slate-950">{driver.fullName}</td>
                     <td className="px-3 py-2">
                       <StatusBadge status={driver.status} />
                     </td>
@@ -164,8 +164,8 @@ function buildDriverSummary(drivers: DriverResponse[]) {
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
     <Card>
-      <div className="text-sm text-slate-400">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+      <div className="text-sm text-slate-600">{label}</div>
+      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
     </Card>
   );
 }

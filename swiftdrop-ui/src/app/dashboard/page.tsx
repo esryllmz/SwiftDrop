@@ -131,8 +131,8 @@ export default function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
             <Card key={metric.key}>
-              <div className="text-sm text-slate-400">{metric.label}</div>
-              <div className="mt-2 text-3xl font-semibold text-white">
+              <div className="text-sm text-slate-600">{metric.label}</div>
+              <div className="mt-2 text-3xl font-semibold text-slate-950">
                 {summary[metric.key]}
               </div>
             </Card>
@@ -144,10 +144,10 @@ export default function DashboardPage() {
         <Card>
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-slate-950">
                 Live Delivery Flow
               </h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-slate-600">
                 Run Demo Order triggers the real backend create-order flow.
               </p>
             </div>
@@ -159,17 +159,17 @@ export default function DashboardPage() {
                 <div
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
                     step.completed
-                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
-                      : "border-slate-700 bg-slate-950 text-slate-500"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-white text-slate-500"
                   }`}
                 >
                   {index + 1}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-slate-950">
                     {step.label}
                   </div>
-                  <div className="text-sm text-slate-400">{step.detail}</div>
+                  <div className="text-sm text-slate-600">{step.detail}</div>
                 </div>
               </div>
             ))}
@@ -177,8 +177,8 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <h3 className="text-lg font-semibold text-white">Last Demo Result</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="text-lg font-semibold text-slate-950">Last Demo Result</h3>
+          <p className="mt-1 text-sm text-slate-600">
             The response from the latest POST /api/v1/orders call.
           </p>
           <div className="mt-4">
@@ -189,15 +189,15 @@ export default function DashboardPage() {
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <Card>
-          <h3 className="mb-3 text-lg font-semibold text-white">
+          <h3 className="mb-3 text-lg font-semibold text-slate-950">
             Recent Orders
           </h3>
           {orders.length === 0 ? (
             <EmptyState message="No recent orders found." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="text-left text-slate-400">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="text-left text-slate-600">
                   <tr>
                     {["id", "merchant", "driver", "status", "amount", "created"].map(
                       (heading) => (
@@ -208,23 +208,23 @@ export default function DashboardPage() {
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200">
                   {orders.map((order) => (
                     <tr key={order.id}>
-                      <td className="px-3 py-2 text-slate-300">{order.id}</td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">{order.id}</td>
+                      <td className="px-3 py-2 text-slate-700">
                         {order.merchantName ?? "-"}
                       </td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">
                         {order.driverName ?? "-"}
                       </td>
                       <td className="px-3 py-2">
                         <StatusBadge status={order.status} />
                       </td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">
                         {formatMoney(Number(order.totalAmount))}
                       </td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">
                         {formatDateTime(order.createdAt)}
                       </td>
                     </tr>
@@ -236,15 +236,15 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <h3 className="mb-3 text-lg font-semibold text-white">
+          <h3 className="mb-3 text-lg font-semibold text-slate-950">
             Recent Outbox Events
           </h3>
           {outboxEvents.length === 0 ? (
             <EmptyState message="No recent outbox events found." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-800 text-sm">
-                <thead className="text-left text-slate-400">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="text-left text-slate-600">
                   <tr>
                     {["event", "aggregate", "topic", "status", "created"].map(
                       (heading) => (
@@ -255,18 +255,18 @@ export default function DashboardPage() {
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200">
                   {outboxEvents.map((event) => (
                     <tr key={event.id}>
-                      <td className="px-3 py-2 text-white">{event.eventType}</td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-950">{event.eventType}</td>
+                      <td className="px-3 py-2 text-slate-700">
                         {event.aggregateType}
                       </td>
-                      <td className="px-3 py-2 text-slate-300">{event.topic}</td>
+                      <td className="px-3 py-2 text-slate-700">{event.topic}</td>
                       <td className="px-3 py-2">
                         <StatusBadge status={event.status} />
                       </td>
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className="px-3 py-2 text-slate-700">
                         {formatDateTime(event.createdAt)}
                       </td>
                     </tr>

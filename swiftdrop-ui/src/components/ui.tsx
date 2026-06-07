@@ -13,8 +13,8 @@ export function PageHeader({
   return (
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 className="text-2xl font-semibold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
+        <h2 className="text-2xl font-semibold text-slate-950">{title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
       </div>
       {action}
     </div>
@@ -28,7 +28,7 @@ export function Button({
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`rounded-md border border-slate-700 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`rounded-md border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}
@@ -43,7 +43,7 @@ export function SecondaryButton({
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={`rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {children}
@@ -60,7 +60,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-md border border-slate-800 bg-slate-900 p-4 ${className}`}
+      className={`rounded-md border border-slate-200 bg-white p-4 shadow-sm ${className}`}
     >
       {children}
     </section>
@@ -80,12 +80,12 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-slate-300">{label}</span>
+      <span className="text-sm font-medium text-slate-700">{label}</span>
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-slate-500"
+        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
       />
     </label>
   );
@@ -103,7 +103,7 @@ export function StatusBadge({ status }: { status?: string }) {
 
 export function LoadingState() {
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-900 p-4 text-slate-300">
+    <div className="rounded-md border border-slate-200 bg-white p-4 text-slate-600 shadow-sm">
       Loading...
     </div>
   );
@@ -119,7 +119,7 @@ export function ErrorState({ message }: { message: string }) {
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
       {message}
     </div>
   );
@@ -127,7 +127,7 @@ export function EmptyState({ message }: { message: string }) {
 
 export function JsonBlock({ value }: { value: unknown }) {
   return (
-    <pre className="max-h-80 overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-5 text-slate-300">
+    <pre className="max-h-80 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
       {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
     </pre>
   );

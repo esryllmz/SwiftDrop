@@ -164,7 +164,7 @@ function AuthPageContent() {
     <AuthShell>
       <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
         <Card className="h-fit">
-          <Link href="/" className="text-xl font-semibold text-white">SwiftDrop</Link>
+          <Link href="/" className="text-xl font-semibold text-slate-950">SwiftDrop</Link>
           <div className="mt-4 grid gap-2">
             {portalLinks.map((item) => (
               <Link
@@ -172,8 +172,8 @@ function AuthPageContent() {
                 href={item.href}
                 className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
                   item.active
-                    ? "border-blue-500/40 bg-blue-500/10 text-blue-100"
-                    : "border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700"
+                    ? "border-blue-200 bg-blue-50 text-blue-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                 }`}
               >
                 {item.label}
@@ -186,8 +186,8 @@ function AuthPageContent() {
           <Card>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-white">{config.title}</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                <h1 className="text-2xl font-semibold text-slate-950">{config.title}</h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                   {config.description}
                 </p>
               </div>
@@ -197,14 +197,14 @@ function AuthPageContent() {
             <div className="mt-5 flex flex-wrap gap-2">
               <SecondaryButton
                 onClick={() => setMode("login")}
-                className={mode === "login" ? "border-blue-500 bg-blue-500/20 text-blue-100" : ""}
+                className={mode === "login" ? "border-blue-500 bg-blue-50 text-blue-700" : ""}
               >
                 Login
               </SecondaryButton>
               {config.registerAllowed ? (
                 <SecondaryButton
                   onClick={() => setMode("register")}
-                  className={mode === "register" ? "border-blue-500 bg-blue-500/20 text-blue-100" : ""}
+                  className={mode === "register" ? "border-blue-500 bg-blue-50 text-blue-700" : ""}
                 >
                   Register
                 </SecondaryButton>
@@ -222,8 +222,8 @@ function AuthPageContent() {
 
           {!config.registerAllowed && config.futureTitle ? (
             <Card>
-              <h2 className="text-lg font-semibold text-white">{config.futureTitle}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{config.futureCopy}</p>
+              <h2 className="text-lg font-semibold text-slate-950">{config.futureTitle}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{config.futureCopy}</p>
             </Card>
           ) : null}
 
@@ -231,8 +231,8 @@ function AuthPageContent() {
             <Card>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-sm text-slate-400">Current session</div>
-                  <div className="mt-1 text-sm font-medium text-white">
+                  <div className="text-sm text-slate-500">Current session</div>
+                  <div className="mt-1 text-sm font-medium text-slate-950">
                     {auth.user.email} ({auth.user.role})
                   </div>
                 </div>
@@ -251,8 +251,8 @@ function AuthPageContent() {
           {error ? <ErrorState message={error} /> : null}
           {lastResponse ? (
             <Card>
-              <h2 className="text-lg font-semibold text-white">Authenticated</h2>
-              <p className="mt-2 text-sm text-slate-400">
+              <h2 className="text-lg font-semibold text-slate-950">Authenticated</h2>
+              <p className="mt-2 text-sm text-slate-600">
                 Access token is held in React memory state. Refresh restores the session through the HttpOnly cookie.
               </p>
             </Card>

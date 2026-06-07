@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/outbox",
+        destination: "/event-stream",
+        permanent: false,
+      },
+      {
+        source: "/health",
+        destination: "/system-monitoring",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
