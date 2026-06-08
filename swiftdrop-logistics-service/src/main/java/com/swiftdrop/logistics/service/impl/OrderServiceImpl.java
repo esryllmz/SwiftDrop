@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.service.impl;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -62,7 +63,7 @@ public class OrderServiceImpl implements OrderService {
                 .totalAmount(request.totalAmount())
                 .build();
 
-        Order savedOrder = orderRepository.save(order);
+        Order savedOrder = Objects.requireNonNull(orderRepository.save(order), "saved order must not be null");
 
         saveOrderEvent("ORDER_PLACED", savedOrder, new OrderKafkaEvent(
                 savedOrder.getId(),
@@ -86,8 +87,13 @@ public class OrderServiceImpl implements OrderService {
                 .includeCoordinates()
                 .sortAscending();
 
-        GeoResults<RedisGeoCommands.GeoLocation<String>> results = redisTemplate.opsForGeo()
-                .search(DRIVER_GEO_KEY, GeoReference.fromCoordinate(merchantLocation), searchRadius, args);
+        var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
+        GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.search(
+                DRIVER_GEO_KEY,
+                GeoReference.fromCoordinate(merchantLocation),
+                searchRadius,
+                args
+        );
 
         if (results == null || results.getContent().isEmpty()) {
             log.warn("No available nearby driver found for order {}", order.getId());
@@ -95,8 +101,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : results.getContent()) {
-            String driverIdValue = result.getContent().getName();
-            UUID driverId = UUID.fromString(driverIdValue);
+            String driverIdValue = Objects.requireNonNull(result.getContent().getName(), "driver id must not be null");
+            UUID driverId = Objects.requireNonNull(UUID.fromString(driverIdValue), "driver UUID must not be null");
             RLock driverLock = redissonClient.getLock("lock:driver:" + driverIdValue);
 
             try {
@@ -149,7 +155,7 @@ public class OrderServiceImpl implements OrderService {
             driverRepository.save(driver);
         }
 
-        Order updatedOrder = orderRepository.save(order);
+        Order updatedOrder = Objects.requireNonNull(orderRepository.save(order), "updated order must not be null");
         saveOrderEvent("ORDER_STATUS_UPDATED", updatedOrder, new OrderKafkaEvent(
                 updatedOrder.getId(),
                 status.name(),

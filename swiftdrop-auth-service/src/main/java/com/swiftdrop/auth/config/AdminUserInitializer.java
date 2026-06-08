@@ -1,5 +1,7 @@
 package com.swiftdrop.auth.config;
 
+import java.util.Objects;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,11 +31,11 @@ public class AdminUserInitializer implements CommandLineRunner {
             @Value("${application.seed.admin.email}") String email,
             @Value("${application.seed.admin.password}") String password
     ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
+        this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder must not be null");
         this.enabled = enabled;
-        this.email = email;
-        this.password = password;
+        this.email = Objects.requireNonNull(email, "seed admin email must not be null");
+        this.password = Objects.requireNonNull(password, "seed admin password must not be null");
     }
 
     @Override

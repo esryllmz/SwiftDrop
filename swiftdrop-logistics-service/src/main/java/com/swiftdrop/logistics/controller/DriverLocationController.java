@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.controller;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,7 +29,8 @@ public class DriverLocationController {
     public ResponseEntity<Map<String, String>> updateLocation(
             @Valid @RequestBody DriverLocationUpdateRequest request
     ) {
-        redisTemplate.opsForGeo().add(
+        var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
+        geoOperations.add(
                 DRIVER_GEO_KEY,
                 new Point(request.longitude(), request.latitude()),
                 request.driverId().toString()

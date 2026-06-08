@@ -1,6 +1,7 @@
 package com.swiftdrop.auth.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -47,11 +48,11 @@ public class AuthServiceImpl implements AuthService {
             UserMapper userMapper,
             @Value("${application.security.jwt.refresh-token.expiration}") long refreshTokenExpiration
     ) {
-        this.userRepository = userRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.userMapper = userMapper;
+        this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
+        this.refreshTokenRepository = Objects.requireNonNull(refreshTokenRepository, "refreshTokenRepository must not be null");
+        this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder must not be null");
+        this.jwtService = Objects.requireNonNull(jwtService, "jwtService must not be null");
+        this.userMapper = Objects.requireNonNull(userMapper, "userMapper must not be null");
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
@@ -62,10 +63,10 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("Bu email adresi zaten kayitli.");
         }
 
-        User user = userMapper.toEntity(request);
+        User user = Objects.requireNonNull(userMapper.toEntity(request), "mapped user must not be null");
         user.setRole(Role.CUSTOMER);
         user.setPassword(passwordEncoder.encode(request.password()));
-        User savedUser = userRepository.save(user);
+        User savedUser = Objects.requireNonNull(userRepository.save(user), "saved user must not be null");
 
         return createAuthResult(savedUser);
     }
@@ -103,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
 
-        User user = refreshToken.getUser();
+        User user = Objects.requireNonNull(refreshToken.getUser(), "refresh token user must not be null");
         String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
         RefreshToken newRefreshToken = createRefreshToken(user);
         return new TokenRefreshResult(
@@ -166,7 +167,7 @@ public class AuthServiceImpl implements AuthService {
                 .expiryDate(LocalDateTime.now().plusNanos(refreshTokenExpiration * 1_000_000))
                 .revoked(false)
                 .build();
-        return refreshTokenRepository.save(refreshToken);
+        return Objects.requireNonNull(refreshTokenRepository.save(refreshToken), "saved refresh token must not be null");
     }
 
     private String extractEmail(String accessToken) {

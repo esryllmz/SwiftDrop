@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +33,7 @@ public class OutboxQueryService {
                 ? outboxEventRepository.findAllByOrderByCreatedAtDesc(pageable)
                 : outboxEventRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
 
-        return events.stream()
+        return Objects.requireNonNull(events, "outbox events must not be null").stream()
                 .map(this::toResponse)
                 .toList();
     }

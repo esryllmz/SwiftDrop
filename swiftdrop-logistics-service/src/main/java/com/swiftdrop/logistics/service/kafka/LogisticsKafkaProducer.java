@@ -1,9 +1,10 @@
 package com.swiftdrop.logistics.service.kafka;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import org.springframework.kafka.support.SendResult;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
 import com.swiftdrop.logistics.dto.OrderKafkaEvent;
@@ -21,11 +22,18 @@ public class LogisticsKafkaProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public CompletableFuture<SendResult<String, Object>> sendOrderEvent(OrderKafkaEvent event) {
-        return sendOrderEvent(TOPIC, event.orderId().toString(), event);
+        OrderKafkaEvent orderEvent = Objects.requireNonNull(event, "order event must not be null");
+        return sendOrderEvent(TOPIC, orderEvent.orderId().toString(), orderEvent);
     }
 
     public CompletableFuture<SendResult<String, Object>> sendOrderEvent(String topic, String eventKey, OrderKafkaEvent event) {
-        log.info("Sending order event. topic={}, status={}, orderId={}", topic, event.status(), event.orderId());
-        return kafkaTemplate.send(topic, eventKey, event);
+        String resolvedTopic = Objects.requireNonNull(topic, "Kafka topic must not be null");
+        String resolvedEventKey = Objects.requireNonNull(eventKey, "Kafka event key must not be null");
+        OrderKafkaEvent orderEvent = Objects.requireNonNull(event, "order event must not be null");
+        log.info("Sending order event. topic={}, status={}, orderId={}", resolvedTopic, orderEvent.status(), orderEvent.orderId());
+        return Objects.requireNonNull(
+                kafkaTemplate.send(resolvedTopic, resolvedEventKey, orderEvent),
+                "Kafka send future must not be null"
+        );
     }
 }

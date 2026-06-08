@@ -1,6 +1,7 @@
 package com.swiftdrop.auth.config;
 
 import java.time.Duration;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -21,13 +22,14 @@ public class RefreshTokenCookieService {
             @Value("${application.security.cookie.path}") String path
     ) {
         this.secure = secure;
-        this.sameSite = sameSite;
         this.refreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
-        this.path = path;
+        this.path = Objects.requireNonNull(path, "cookie path must not be null");
+        this.sameSite = Objects.requireNonNull(sameSite, "cookie same-site value must not be null");
     }
 
     public ResponseCookie buildRefreshTokenCookie(String token) {
-        return baseCookie(token)
+        String cookieValue = Objects.requireNonNull(token, "refresh token must not be null");
+        return baseCookie(cookieValue)
                 .maxAge(refreshTokenLifetime)
                 .build();
     }
@@ -39,7 +41,8 @@ public class RefreshTokenCookieService {
     }
 
     private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {
-        return ResponseCookie.from("refreshToken", value)
+        String cookieValue = Objects.requireNonNull(value, "cookie value must not be null");
+        return ResponseCookie.from("refreshToken", cookieValue)
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite(sameSite)

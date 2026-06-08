@@ -1,5 +1,7 @@
 package com.swiftdrop.notification.config;
 
+import java.util.Objects;
+
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,13 +38,15 @@ public class KafkaRetryConfig {
             int maxAttempts,
             long backoffMs
     ) {
+        KafkaTemplate<String, Object> template = Objects.requireNonNull(kafkaTemplate, "kafkaTemplate must not be null");
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
-                kafkaTemplate,
+                template,
                 (record, ex) -> {
-                    String dltTopic = record.topic() + ".DLT";
+                    String sourceTopic = Objects.requireNonNull(record.topic(), "Kafka record topic must not be null");
+                    String dltTopic = sourceTopic + ".DLT";
                     log.warn(
                             "Publishing failed notification event to DLT. sourceTopic={}, dltTopic={}, partition={}, offset={}",
-                            record.topic(),
+                            sourceTopic,
                             dltTopic,
                             record.partition(),
                             record.offset(),

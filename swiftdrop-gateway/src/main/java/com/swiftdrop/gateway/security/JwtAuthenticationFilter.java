@@ -3,6 +3,7 @@ package com.swiftdrop.gateway.security;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
@@ -164,7 +165,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 {"timestamp":"%s","status":%d,"error":"%s","message":"%s","path":"%s"}\
                 """.formatted(LocalDateTime.now(), status.value(), error, message, path);
 
-        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+        final byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
+        final DataBuffer responseBuffer = response.bufferFactory().wrap(responseBytes);
+        return response.writeWith(Mono.just(responseBuffer));
     }
 }

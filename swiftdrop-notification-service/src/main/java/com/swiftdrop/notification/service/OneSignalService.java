@@ -2,6 +2,7 @@ package com.swiftdrop.notification.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -28,7 +29,7 @@ public class OneSignalService {
             @Value("${application.onesignal.api-key}") String apiKey,
             @Value("${application.onesignal.mock-enabled}") boolean mockEnabled
     ) {
-        this.restClient = restClientBuilder
+        this.restClient = Objects.requireNonNull(restClientBuilder, "restClientBuilder must not be null")
                 .baseUrl("https://onesignal.com/api/v1")
                 .build();
         this.appId = appId;
@@ -48,17 +49,20 @@ public class OneSignalService {
             throw new IllegalStateException("OneSignal credentials are required when mock mode is disabled.");
         }
 
+        String targetUserId = Objects.requireNonNull(event.targetUserId(), "target user id must not be null").toString();
+        String message = Objects.requireNonNull(event.message(), "notification message must not be null");
+        MediaType contentType = MediaType.APPLICATION_JSON;
         Map<String, Object> requestBody = Map.of(
                 "app_id", appId,
-                "contents", Map.of("en", event.message()),
+                "contents", Map.of("en", message),
                 "headings", Map.of("en", "SwiftDrop Order Update"),
-                "include_external_user_ids", List.of(event.targetUserId().toString())
+                "include_external_user_ids", List.of(targetUserId)
         );
 
         String response = restClient.post()
                 .uri("/notifications")
                 .header("Authorization", "Basic " + apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(contentType)
                 .body(requestBody)
                 .retrieve()
                 .body(String.class);

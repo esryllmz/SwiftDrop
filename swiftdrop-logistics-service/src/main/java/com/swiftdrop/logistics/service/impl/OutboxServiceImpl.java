@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -47,7 +48,7 @@ public class OutboxServiceImpl implements OutboxService {
                 payload
         );
 
-        outboxEventRepository.save(OutboxEvent.builder()
+        OutboxEvent outboxEvent = OutboxEvent.builder()
                 .id(eventId)
                 .aggregateType(ORDER_AGGREGATE_TYPE)
                 .aggregateId(aggregateId)
@@ -59,7 +60,8 @@ public class OutboxServiceImpl implements OutboxService {
                 .retryCount(0)
                 .correlationId(correlationId)
                 .version(EVENT_VERSION)
-                .build());
+                .build();
+        outboxEventRepository.save(Objects.requireNonNull(outboxEvent, "outbox event must not be null"));
     }
 
     private String serialize(EventEnvelope envelope) {
