@@ -73,6 +73,37 @@ export type OutboxEventResponse = {
   version: number;
 };
 
+export type ApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type VehicleType = "MOTORBIKE" | "CAR" | "BICYCLE" | "WALKING";
+
+export type MerchantApplicationResponse = {
+  id: string;
+  businessName: string;
+  contactEmail: string;
+  message: string | null;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+};
+
+export type CourierApplicationResponse = {
+  id: string;
+  fullName: string;
+  contactEmail: string;
+  vehicleType: VehicleType;
+  message: string | null;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+};
+
+export type ApplicationReviewRequest = {
+  reviewNote?: string;
+};
+
 export type HealthResponse = {
   status?: string;
   [key: string]: unknown;

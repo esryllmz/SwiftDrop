@@ -33,7 +33,7 @@ export function prettyJson(value: unknown) {
 export function statusBadgeClass(status?: string) {
   const normalized = status?.toUpperCase() ?? "";
 
-  if (["UP", "SENT", "AVAILABLE", "DELIVERED"].includes(normalized)) {
+  if (["UP", "SENT", "AVAILABLE", "DELIVERED", "APPROVED"].includes(normalized)) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
@@ -49,7 +49,7 @@ export function statusBadgeClass(status?: string) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  if (["FAILED", "DOWN"].includes(normalized)) {
+  if (["FAILED", "DOWN", "REJECTED"].includes(normalized)) {
     return "border-red-200 bg-red-50 text-red-700";
   }
 
