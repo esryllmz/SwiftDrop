@@ -22,51 +22,56 @@ const accentClasses: Record<
     icon: string;
     primary: string;
     ring: string;
+    rule: string;
   }
 > = {
   blue: {
     icon: "border-blue-200 bg-blue-50 text-blue-700",
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-blue-600",
     ring: "hover:border-blue-300 hover:shadow-blue-100/80",
+    rule: "bg-blue-600",
   },
   violet: {
     icon: "border-violet-200 bg-violet-50 text-violet-700",
     primary:
       "bg-violet-600 text-white hover:bg-violet-700 focus-visible:outline-violet-600",
     ring: "hover:border-violet-300 hover:shadow-violet-100/80",
+    rule: "bg-violet-600",
   },
   emerald: {
     icon: "border-emerald-200 bg-emerald-50 text-emerald-700",
     primary:
       "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-emerald-600",
     ring: "hover:border-emerald-300 hover:shadow-emerald-100/80",
+    rule: "bg-emerald-600",
   },
 };
 
 const buttonBase =
-  "flex h-10 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+  "flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export function PortalCard({ card }: { card: PortalCardData }) {
   const classes = accentClasses[card.accent];
 
   return (
     <article
-      className={`flex min-h-[316px] w-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition ${classes.ring}`}
+      className={`relative flex min-h-[338px] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition ${classes.ring}`}
     >
+      <div className={`absolute inset-x-0 top-0 h-1 ${classes.rule}`} aria-hidden="true" />
       <div
-        className={`flex h-11 w-11 items-center justify-center rounded-xl border ${classes.icon}`}
+        className={`flex h-12 w-12 items-center justify-center rounded-lg border ${classes.icon}`}
         aria-hidden="true"
       >
         {card.icon}
       </div>
       <div className="mt-5">
-        <h2 className="text-lg font-semibold text-slate-950">{card.title}</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <h2 className="text-xl font-semibold text-slate-950">{card.title}</h2>
+        <p className="mt-2 min-h-[72px] text-sm leading-6 text-slate-600">
           {card.description}
         </p>
       </div>
 
-      <div className="mt-auto space-y-2 pt-5">
+      <div className="mt-auto space-y-2 pt-6">
         <Link href={card.primaryHref} className={`${buttonBase} ${classes.primary}`}>
           {card.primaryLabel}
         </Link>
@@ -87,7 +92,9 @@ export function PortalCard({ card }: { card: PortalCardData }) {
           </button>
         )}
       </div>
-      <p className="mt-4 text-xs leading-5 text-slate-500">{card.note}</p>
+      <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500">
+        {card.note}
+      </p>
     </article>
   );
 }

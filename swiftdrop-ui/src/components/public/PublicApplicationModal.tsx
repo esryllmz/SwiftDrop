@@ -69,7 +69,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
   const theme = isMerchant ? merchantTheme : courierTheme;
   const title = isMerchant ? "Request Merchant Access" : "Apply as Courier";
   const description = isMerchant
-    ? "Share your store details and operations will review your request."
+    ? "Share your store details for operations review."
     : "Send your courier application for operations review.";
 
   const canSubmit = useMemo(() => {
@@ -126,16 +126,23 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="public-application-title"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div className={`h-1 ${theme.rule}`} aria-hidden="true" />
         <div className="border-b border-slate-200 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 id="public-application-title" className="text-lg font-semibold text-slate-950">
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${theme.badge}`}>
+                {isMerchant ? "MERCHANT" : "COURIER"}
+              </span>
+              <h2
+                id="public-application-title"
+                className="mt-3 text-lg font-semibold text-slate-950"
+              >
                 {title}
               </h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
@@ -143,7 +150,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
             <button
               type="button"
               onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300"
               aria-label="Close modal"
             >
               <CloseIcon />
@@ -153,7 +160,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
 
         {result ? (
           <div className="px-6 py-6">
-            <div className={`rounded-xl border px-4 py-4 ${theme.successBox}`}>
+            <div className={`rounded-lg border px-4 py-4 ${theme.successBox}`}>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-950">{result.message}</p>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${theme.badge}`}>
@@ -167,7 +174,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
             <button
               type="button"
               onClick={onClose}
-              className={`mt-5 flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition ${theme.primary}`}
+              className={`mt-5 flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold text-white transition ${theme.primary}`}
             >
               Close
             </button>
@@ -263,14 +270,14 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="flex h-11 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !canSubmit}
-                className={`flex h-11 flex-1 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${theme.primary}`}
+                className={`flex h-11 flex-1 items-center justify-center rounded-lg px-4 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${theme.primary}`}
               >
                 {isSubmitting ? "Submitting..." : "Submit"}
               </button>
@@ -384,15 +391,17 @@ function resolveSubmitError(error: unknown) {
 }
 
 const merchantTheme = {
-  primary: "bg-violet-600 hover:bg-violet-700",
+  primary: "bg-violet-600 hover:bg-violet-700 focus:ring-violet-500",
   badge: "bg-violet-100 text-violet-700",
   successBox: "border-violet-200 bg-violet-50",
+  rule: "bg-violet-600",
 };
 
 const courierTheme = {
-  primary: "bg-emerald-600 hover:bg-emerald-700",
+  primary: "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500",
   badge: "bg-emerald-100 text-emerald-700",
   successBox: "border-emerald-200 bg-emerald-50",
+  rule: "bg-emerald-600",
 };
 
 function CloseIcon() {
