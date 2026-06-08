@@ -31,6 +31,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/orders",
             "/api/v1/drivers",
             "/api/v1/merchants",
+            "/api/v1/admin/applications",
             "/api/v1/outbox-events"
     };
 
@@ -98,6 +99,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 || isAuthEndpoint(method, path, "/api/v1/auth/login", HttpMethod.POST)
                 || isAuthEndpoint(method, path, "/api/v1/auth/refresh", HttpMethod.POST)
                 || isAuthEndpoint(method, path, "/api/v1/auth/logout", HttpMethod.POST)
+                || isPublicApplicationEndpoint(method, path)
                 || isEndpoint(method, path, "/actuator/health", HttpMethod.GET)
                 || isEndpoint(method, path, "/actuator/info", HttpMethod.GET)
                 || isEndpoint(method, path, "/api/v1/health", HttpMethod.GET);
@@ -109,6 +111,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isEndpoint(HttpMethod method, String path, String expectedPath, HttpMethod expectedMethod) {
         return expectedMethod.equals(method) && expectedPath.equals(path);
+    }
+
+    private boolean isPublicApplicationEndpoint(HttpMethod method, String path) {
+        return HttpMethod.POST.equals(method)
+                && ("/api/v1/applications/merchant".equals(path) || "/api/v1/applications/courier".equals(path));
     }
 
     private boolean isAdminOnlyPath(String path) {
