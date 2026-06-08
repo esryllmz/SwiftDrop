@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AdminButton,
+  AdminModal,
+  AdvancedDetails,
+  DetailField,
+  DetailGrid,
+  JsonPreview,
+  ModalFooter,
+} from "@/components/admin/modal";
+import {
   Button,
   Card,
   EmptyState,
@@ -22,6 +31,8 @@ export default function DriversPage() {
   const { accessToken } = useAuth();
   const [drivers, setDrivers] = useState<DriverResponse[]>([]);
   const [allDrivers, setAllDrivers] = useState<DriverResponse[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<DriverResponse | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [filter, setFilter] = useState<DriverFilter>("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +127,7 @@ export default function DriversPage() {
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-slate-600">
                 <tr>
-                  {["Driver ID", "User ID", "Full Name", "Status"].map(
+                  {["Driver ID", "Full Name", "Status", "Actions"].map(
                     (heading) => (
                       <th key={heading} className="px-3 py-2 font-medium">
                         {heading}
@@ -131,15 +142,19 @@ export default function DriversPage() {
                     <td className="px-3 py-2 text-slate-700" title={driver.id}>
                       {shortId(driver.id)}
                     </td>
-                    <td
-                      className="px-3 py-2 text-slate-700"
-                      title={driver.userId}
-                    >
-                      {shortId(driver.userId)}
-                    </td>
                     <td className="px-3 py-2 text-slate-950">{driver.fullName}</td>
                     <td className="px-3 py-2">
                       <StatusBadge status={driver.status} />
+                    </td>
+                    <td className="px-3 py-2">
+                      <SecondaryButton
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setDetailModalOpen(true);
+                        }}
+                      >
+                        View
+                      </SecondaryButton>
                     </td>
                   </tr>
                 ))}
@@ -148,6 +163,51 @@ export default function DriversPage() {
           </div>
         ) : null}
       </Card>
+
+      <AdminModal
+        open={detailModalOpen}
+        title="Driver Detail"
+        subtitle={selectedDriver?.fullName}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedDriver(null);
+        }}
+        footer={
+          <ModalFooter>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setDetailModalOpen(false);
+                setSelectedDriver(null);
+              }}
+            >
+              Close
+            </AdminButton>
+          </ModalFooter>
+        }
+      >
+        {selectedDriver ? (
+          <div className="grid gap-4">
+            <DetailGrid>
+              <DetailField label="Status" value={<StatusBadge status={selectedDriver.status} />} />
+              <DetailField label="Full Name" value={selectedDriver.fullName} />
+              <DetailField label="Driver ID" value={selectedDriver.id} mono />
+              <DetailField label="User ID" value={selectedDriver.userId} mono />
+              <DetailField
+                label="Assignment Availability"
+                value={assignmentAvailability(selectedDriver.status)}
+              />
+            </DetailGrid>
+            <AdvancedDetails>
+              <JsonPreview value={selectedDriver} />
+            </AdvancedDetails>
+          </div>
+        ) : (
+          <EmptyState message="No driver selected." />
+        )}
+      </AdminModal>
     </div>
   );
 }
@@ -176,4 +236,20 @@ function shortId(value?: string) {
   }
 
   return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+}
+
+function assignmentAvailability(status: string) {
+  if (status === "AVAILABLE") {
+    return "Can receive orders";
+  }
+
+  if (status === "BUSY") {
+    return "Currently assigned or on delivery";
+  }
+
+  if (status === "OFFLINE") {
+    return "Not available for assignment";
+  }
+
+  return "Unknown assignment state";
 }

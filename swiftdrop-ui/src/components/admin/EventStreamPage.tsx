@@ -1,20 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AdminButton,
+  AdminModal,
+  AdvancedDetails,
+  DetailField,
+  DetailGrid,
+  JsonPreview,
+  ModalFooter,
+} from "@/components/admin/modal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
-  JsonBlock,
   LoadingState,
   PageHeader,
   SecondaryButton,
   StatusBadge,
 } from "@/components/ui";
 import { getJson } from "@/lib/api";
-import { formatDateTime, prettyJson, statusBadgeClass } from "@/lib/format";
+import { formatDateTime, statusBadgeClass } from "@/lib/format";
 import type { OutboxEventResponse } from "@/types/api";
 
 const filters = ["All", "PENDING", "SENT", "FAILED"] as const;
@@ -25,6 +33,7 @@ export function EventStreamPage() {
   const [events, setEvents] = useState<OutboxEventResponse[]>([]);
   const [selectedEvent, setSelectedEvent] =
     useState<OutboxEventResponse | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("All");
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -55,6 +64,8 @@ export function EventStreamPage() {
   }, [load]);
 
   async function viewEvent(eventId: string) {
+    setDetailModalOpen(true);
+    setSelectedEvent(null);
     setDetailLoading(true);
     setDetailError(null);
     try {
@@ -128,7 +139,7 @@ export function EventStreamPage() {
         <EmptyState message="No outbox events found. Create a demo order from Dashboard or Orders page." />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="grid gap-4">
         <Card>
           <h3 className="mb-3 text-lg font-semibold text-slate-950">
             Event Stream
@@ -141,13 +152,11 @@ export function EventStreamPage() {
                     {[
                       "Event ID",
                       "Event Type",
-                      "Aggregate Type",
-                      "Aggregate ID",
+                      "Aggregate",
                       "Topic",
                       "Status",
-                      "Retry Count",
-                      "Created At",
-                      "Sent At",
+                      "Retry",
+                      "Created",
                       "Actions",
                     ].map((heading) => (
                       <th key={heading} className="px-3 py-2 font-medium">
@@ -166,13 +175,10 @@ export function EventStreamPage() {
                         <EventTypeBadge eventType={event.eventType} />
                       </td>
                       <td className="px-3 py-2 text-slate-700">
-                        {event.aggregateType}
-                      </td>
-                      <td
-                        className="px-3 py-2 text-slate-700"
-                        title={event.aggregateId}
-                      >
-                        {shortId(event.aggregateId)}
+                        <div className="font-medium text-slate-900">{event.aggregateType}</div>
+                        <div className="mt-1 text-xs text-slate-500" title={event.aggregateId}>
+                          {shortId(event.aggregateId)}
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-slate-700">{event.topic}</td>
                       <td className="px-3 py-2">
@@ -183,9 +189,6 @@ export function EventStreamPage() {
                       </td>
                       <td className="px-3 py-2 text-slate-700">
                         {formatDateTime(event.createdAt)}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {formatDateTime(event.sentAt)}
                       </td>
                       <td className="px-3 py-2">
                         <SecondaryButton
@@ -202,53 +205,64 @@ export function EventStreamPage() {
             </div>
           ) : null}
         </Card>
+      </div>
 
-        <Card className="h-fit">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">
-                Event Detail
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Uses GET /api/v1/outbox-events/id.
-              </p>
-            </div>
-            {selectedEvent ? <StatusBadge status={selectedEvent.status} /> : null}
-          </div>
-
+      <AdminModal
+        open={detailModalOpen}
+        title="Event Detail"
+        subtitle={selectedEvent ? shortId(selectedEvent.id) : "Loading event details"}
+        maxWidth="lg"
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedEvent(null);
+          setDetailError(null);
+        }}
+        footer={
+          <ModalFooter>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                setDetailModalOpen(false);
+                setSelectedEvent(null);
+                setDetailError(null);
+              }}
+            >
+              Close
+            </AdminButton>
+          </ModalFooter>
+        }
+      >
+        <div className="grid gap-4">
           {detailLoading ? <LoadingState /> : null}
           {detailError ? <ErrorState message={detailError} /> : null}
-          {!detailLoading && !selectedEvent ? (
-            <EmptyState message="Select an event from the stream." />
+          {!detailLoading && !detailError && !selectedEvent ? (
+            <EmptyState message="No event details are available." />
           ) : null}
-
           {selectedEvent ? (
-            <div className="grid gap-4">
-              <dl className="grid gap-3 text-sm">
-                <DetailRow label="id" value={selectedEvent.id} />
-                <DetailRow label="aggregateType" value={selectedEvent.aggregateType} />
-                <DetailRow label="aggregateId" value={selectedEvent.aggregateId} />
-                <DetailRow label="eventType" value={selectedEvent.eventType} />
-                <DetailRow label="topic" value={selectedEvent.topic} />
-                <DetailRow label="eventKey" value={selectedEvent.eventKey} />
-                <DetailRow label="status" value={selectedEvent.status} />
-                <DetailRow label="retryCount" value={String(selectedEvent.retryCount)} />
-                <DetailRow label="lastError" value={selectedEvent.lastError ?? "-"} />
-                <DetailRow label="createdAt" value={formatDateTime(selectedEvent.createdAt)} />
-                <DetailRow label="sentAt" value={formatDateTime(selectedEvent.sentAt)} />
-                <DetailRow label="correlationId" value={selectedEvent.correlationId ?? "-"} />
-                <DetailRow label="version" value={String(selectedEvent.version)} />
-              </dl>
-              <div>
-                <h4 className="mb-2 text-sm font-semibold text-slate-950">
-                  Payload JSON Preview
-                </h4>
-                <JsonBlock value={prettyJson(selectedEvent.payload)} />
-              </div>
-            </div>
+            <>
+              <DetailGrid>
+                <DetailField label="Event Type" value={<EventTypeBadge eventType={selectedEvent.eventType} />} />
+                <DetailField label="Status" value={<StatusBadge status={selectedEvent.status} />} />
+                <DetailField label="Aggregate Type" value={selectedEvent.aggregateType} />
+                <DetailField label="Aggregate ID" value={selectedEvent.aggregateId} mono />
+                <DetailField label="Topic" value={selectedEvent.topic} />
+                <DetailField label="Event Key" value={selectedEvent.eventKey} mono />
+                <DetailField label="Retry Count" value={String(selectedEvent.retryCount)} />
+                <DetailField label="Created At" value={formatDateTime(selectedEvent.createdAt)} />
+                <DetailField label="Sent At" value={formatDateTime(selectedEvent.sentAt)} />
+                <DetailField label="Correlation ID" value={selectedEvent.correlationId} mono />
+                <DetailField label="Version" value={String(selectedEvent.version)} />
+                <DetailField label="Last Error" value={selectedEvent.lastError} />
+              </DetailGrid>
+              <AdvancedDetails title="Payload">
+                <JsonPreview value={selectedEvent.payload} />
+              </AdvancedDetails>
+            </>
           ) : null}
-        </Card>
-      </div>
+        </div>
+      </AdminModal>
     </div>
   );
 }
@@ -304,13 +318,4 @@ function shortId(value?: string) {
   }
 
   return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <dt className="text-xs uppercase text-slate-500">{label}</dt>
-      <dd className="break-all text-slate-800">{value}</dd>
-    </div>
-  );
 }
