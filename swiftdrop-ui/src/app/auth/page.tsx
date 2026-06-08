@@ -13,9 +13,11 @@ import {
   SecondaryButton,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
+type ApplicationModalKind = "merchant" | "courier";
 
 type PortalConfig = {
   key: PortalKey;
@@ -30,56 +32,62 @@ type PortalConfig = {
   panelCopy: string;
   actionCopy: string;
   icon: React.ReactNode;
+  requestLabel?: string;
+  requestKind?: ApplicationModalKind;
 };
 
 const portalConfigs: Record<PortalKey, PortalConfig> = {
   customer: {
     key: "customer",
-    title: "Customer Portal",
-    registerTitle: "Create Customer Account",
-    description: "Sign in to continue to the customer delivery experience.",
+    title: "Customer login",
+    registerTitle: "Create an account",
+    description: "Sign in to track your orders.",
     expectedRole: "CUSTOMER",
     badgeLabel: "Customer access",
     registerAllowed: true,
     accent: "blue",
-    panelTitle: "Customer access",
-    panelCopy: "Create an account or sign in to continue with delivery requests.",
-    actionCopy: "Customer registration creates a customer account only.",
+    panelTitle: "New to SwiftDrop?",
+    panelCopy: "Create an account to start ordering with SwiftDrop.",
+    actionCopy: "Start ordering with SwiftDrop.",
     icon: <CustomerIcon />,
   },
   merchant: {
     key: "merchant",
-    title: "Merchant Portal",
-    registerTitle: "Merchant Portal",
-    description: "Approved store operators can access merchant tools here.",
+    title: "Merchant login",
+    registerTitle: "Merchant login",
+    description: "Access your store dashboard.",
     expectedRole: "MERCHANT",
     badgeLabel: "Merchant access",
     registerAllowed: false,
     accent: "violet",
     panelTitle: "Need merchant access?",
-    panelCopy: "Return to the welcome page and submit a merchant access request.",
+    panelCopy: "Submit a request and operations will review your store details.",
     actionCopy: "Only approved merchant accounts can use this portal.",
     icon: <StoreIcon />,
+    requestLabel: "Request access",
+    requestKind: "merchant",
   },
   courier: {
     key: "courier",
-    title: "Courier Portal",
-    registerTitle: "Courier Portal",
-    description: "Approved drivers can access courier operations here.",
+    title: "Courier login",
+    registerTitle: "Courier login",
+    description: "Access your delivery dashboard.",
     expectedRole: "DRIVER",
     badgeLabel: "Courier access",
     registerAllowed: false,
     accent: "emerald",
     panelTitle: "Need courier access?",
-    panelCopy: "Return to the welcome page and submit a courier application.",
+    panelCopy: "Submit an application and operations will review your details.",
     actionCopy: "Only approved courier accounts can use this portal.",
     icon: <CourierIcon />,
+    requestLabel: "Apply as courier",
+    requestKind: "courier",
   },
   staff: {
     key: "staff",
     title: "Operations Console",
     registerTitle: "Operations Console",
-    description: "Authorized operations access for SwiftDrop staff.",
+    description: "Internal staff access only.",
     expectedRole: "ADMIN",
     badgeLabel: "Staff access",
     registerAllowed: false,
@@ -142,18 +150,25 @@ function AuthPageContent() {
   const auth = useAuth();
   const portal = resolvePortal(searchParams.get("portal"));
   const config = portalConfigs[portal];
-  const initialMode =
+  const mode =
     searchParams.get("mode") === "register" && config.registerAllowed
       ? "register"
       : "login";
 
-  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [activeModal, setActiveModal] = useState<ApplicationModalKind | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const accent = accentClass[config.accent];
+
+  function clearFormState() {
+    setEmail("");
+    setPassword("");
+    setError(null);
+    setSuccess(null);
+  }
 
   async function handleSubmit() {
     setLoading(true);
@@ -205,28 +220,23 @@ function AuthPageContent() {
 
   return (
     <AuthShell>
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center py-6">
         <Link
           href="/"
-          className="mb-6 inline-flex w-fit items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-950"
+          className="mb-4 inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
         >
           <BackIcon />
           Back to Welcome
         </Link>
 
         <Card className="overflow-hidden p-0">
-          <div className="border-b border-slate-200 px-6 pb-5 pt-6 text-center">
+          <div className="border-b border-slate-200 px-6 pb-4 pt-5 text-center">
             <div
-              className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl border ${accent.icon}`}
+              className={`mx-auto flex h-11 w-11 items-center justify-center rounded-lg border ${accent.icon}`}
               aria-hidden="true"
             >
               {config.icon}
             </div>
-            <span
-              className={`mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-medium ${accent.badge}`}
-            >
-              {config.badgeLabel}
-            </span>
             <h1 className="mt-4 text-2xl font-semibold text-slate-950">
               {mode === "register" ? config.registerTitle : config.title}
             </h1>
@@ -235,36 +245,9 @@ function AuthPageContent() {
             </p>
           </div>
 
-          <div className="px-6 py-6">
-            {config.registerAllowed ? (
-              <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
-                <button
-                  type="button"
-                  onClick={() => setMode("login")}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition ${
-                    mode === "login"
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-600 hover:text-slate-950"
-                  }`}
-                >
-                  Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("register")}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition ${
-                    mode === "register"
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-600 hover:text-slate-950"
-                  }`}
-                >
-                  Register
-                </button>
-              </div>
-            ) : null}
-
+          <div className="px-6 py-5">
             <form
-              className="mt-5 grid gap-4"
+              className="grid gap-4"
               onSubmit={(event) => {
                 event.preventDefault();
                 void handleSubmit();
@@ -277,10 +260,53 @@ function AuthPageContent() {
               </Button>
             </form>
 
-            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <h2 className="text-sm font-semibold text-slate-950">{config.panelTitle}</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">{config.panelCopy}</p>
+            <div className="mt-4 text-center text-sm text-slate-600">
+              {config.registerAllowed && mode === "login" ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    href="/auth?mode=register&portal=customer"
+                    onClick={clearFormState}
+                    className="font-semibold text-blue-600 transition hover:text-blue-700"
+                  >
+                    Create account
+                  </Link>
+                </>
+              ) : null}
+              {config.registerAllowed && mode === "register" ? (
+                <>
+                  Already have an account?{" "}
+                  <Link
+                    href="/auth?portal=customer"
+                    onClick={clearFormState}
+                    className="font-semibold text-blue-600 transition hover:text-blue-700"
+                  >
+                    Sign in
+                  </Link>
+                </>
+              ) : null}
+              {config.requestKind && config.requestLabel ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(config.requestKind ?? null)}
+                  className="font-semibold text-blue-600 transition hover:text-blue-700"
+                >
+                  {config.requestLabel}
+                </button>
+              ) : null}
             </div>
+
+            {!config.registerAllowed && portal !== "staff" ? (
+              <p className="mt-2 text-center text-xs leading-5 text-slate-500">
+                {config.panelCopy}
+              </p>
+            ) : null}
+
+            {portal === "staff" ? (
+              <p className="mt-4 text-center text-xs font-medium text-slate-500">
+                Authorized staff only.
+              </p>
+            ) : null}
 
             {auth.user ? (
               <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
@@ -307,15 +333,54 @@ function AuthPageContent() {
           </div>
         </Card>
       </div>
+      {activeModal ? (
+        <PublicApplicationModal kind={activeModal} onClose={() => setActiveModal(null)} />
+      ) : null}
     </AuthShell>
   );
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      {children}
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <PublicHeader />
+      <section className="px-4 sm:px-6 lg:px-8">{children}</section>
     </main>
+  );
+}
+
+function PublicHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3" aria-label="SwiftDrop home">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+            <LightningIcon />
+          </span>
+          <span className="text-base font-semibold text-slate-950">SwiftDrop</span>
+        </Link>
+        <Link
+          href="/auth?portal=staff"
+          className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
+        >
+          Staff access
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function LightningIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M13 2 5 13h6l-1 9 9-13h-6l1-7Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
 

@@ -13,42 +13,42 @@ export function PublicHome() {
   const portalCards: PortalCardData[] = [
     {
       title: "Customer Portal",
-      description: "Place delivery requests and follow active orders from one customer account.",
+      description: "Order and track deliveries from one customer account.",
       icon: <PackageIcon />,
       accent: "blue",
       primaryLabel: "Login",
       primaryHref: "/auth?portal=customer",
       secondaryLabel: "Create Account",
       secondaryHref: "/auth?mode=register&portal=customer",
-      note: "Customer accounts can be created instantly.",
+      note: "Instant customer access.",
     },
     {
       title: "Merchant Portal",
-      description: "Review store requests, manage order flow and keep preparation moving.",
+      description: "Manage store orders and preparation flow.",
       icon: <StoreIcon />,
       accent: "violet",
       primaryLabel: "Merchant Login",
       primaryHref: "/auth?portal=merchant",
       secondaryLabel: "Request merchant access",
       secondaryAction: () => setActiveModal("merchant"),
-      note: "Merchant access requires operations approval.",
+      note: "Approval required.",
     },
     {
       title: "Courier Portal",
-      description: "Accept assigned deliveries, update progress and complete routes.",
+      description: "Accept deliveries and update route progress.",
       icon: <TruckIcon />,
       accent: "emerald",
       primaryLabel: "Courier Login",
       primaryHref: "/auth?portal=courier",
       secondaryLabel: "Apply as courier",
       secondaryAction: () => setActiveModal("courier"),
-      note: "Courier accounts are reviewed by operations.",
+      note: "Reviewed by operations.",
     },
   ];
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
-      <nav className="border-b border-slate-200 bg-white/95">
+      <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3" aria-label="SwiftDrop home">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
@@ -65,28 +65,21 @@ export function PublicHome() {
         </div>
       </nav>
 
-      <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center px-4 pb-14 pt-14 text-center sm:px-6 sm:pt-16 lg:px-8">
-        <div className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-sm">
-          Public access
-        </div>
-        <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-normal text-slate-950 sm:text-5xl lg:text-6xl">
+      <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center px-4 pb-8 pt-10 text-center sm:px-6 sm:pt-12 lg:px-8">
+        <h1 className="max-w-4xl text-4xl font-semibold tracking-normal text-slate-950 sm:text-5xl lg:text-6xl">
           SwiftDrop Delivery Operations
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
           Real-time order orchestration for customers, merchants, couriers and
           operations teams.
         </p>
 
-        <div className="mt-11 grid w-full max-w-5xl gap-5 md:grid-cols-3">
+        <div className="mt-8 grid w-full max-w-5xl gap-4 md:grid-cols-3">
           {portalCards.map((card) => (
             <PortalCard key={card.title} card={card} />
           ))}
         </div>
       </section>
-
-      <footer className="border-t border-slate-200 bg-white px-4 py-5 text-center text-xs font-medium text-slate-500">
-        Authorized operations staff only
-      </footer>
 
       {activeModal && (
         <PublicApplicationModal kind={activeModal} onClose={() => setActiveModal(null)} />

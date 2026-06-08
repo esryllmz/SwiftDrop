@@ -55,23 +55,23 @@ export function PortalCard({ card }: { card: PortalCardData }) {
 
   return (
     <article
-      className={`relative flex min-h-[338px] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition ${classes.ring}`}
+      className={`relative flex min-h-[286px] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition ${classes.ring}`}
     >
       <div className={`absolute inset-x-0 top-0 h-1 ${classes.rule}`} aria-hidden="true" />
       <div
-        className={`flex h-12 w-12 items-center justify-center rounded-lg border ${classes.icon}`}
+        className={`flex h-11 w-11 items-center justify-center rounded-lg border ${classes.icon}`}
         aria-hidden="true"
       >
         {card.icon}
       </div>
-      <div className="mt-5">
-        <h2 className="text-xl font-semibold text-slate-950">{card.title}</h2>
-        <p className="mt-2 min-h-[72px] text-sm leading-6 text-slate-600">
+      <div className="mt-4">
+        <h2 className="text-lg font-semibold text-slate-950">{card.title}</h2>
+        <p className="mt-2 min-h-[48px] text-sm leading-6 text-slate-600">
           {card.description}
         </p>
       </div>
 
-      <div className="mt-auto space-y-2 pt-6">
+      <div className="mt-auto space-y-2 pt-4">
         <Link href={card.primaryHref} className={`${buttonBase} ${classes.primary}`}>
           {card.primaryLabel}
         </Link>
@@ -92,7 +92,7 @@ export function PortalCard({ card }: { card: PortalCardData }) {
           </button>
         )}
       </div>
-      <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500">
+      <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-500">
         {card.note}
       </p>
     </article>
