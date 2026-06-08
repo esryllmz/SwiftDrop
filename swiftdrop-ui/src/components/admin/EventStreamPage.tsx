@@ -89,7 +89,7 @@ export function EventStreamPage() {
     <div>
       <PageHeader
         title="Event Stream"
-        description="Transactional Outbox to Kafka pipeline for logistics events."
+        description="Outbox events and publish status."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
@@ -102,13 +102,9 @@ export function EventStreamPage() {
           <SummaryCard label="Total Retries" value={summary.totalRetries} />
         </div>
         <Card>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Transactional Outbox
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-950">Transactional Outbox</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Outbox stores event intent in the same database transaction as order
-            changes. Kafka publishing happens asynchronously after commit. SENT
-            means the publisher successfully delivered the event to Kafka.
+            Event details and payload are available in the detail modal.
           </p>
         </Card>
       </div>

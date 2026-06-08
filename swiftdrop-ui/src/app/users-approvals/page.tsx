@@ -160,10 +160,9 @@ export default function UsersApprovalsPage() {
     <div>
       <PageHeader
         title="Users & Approvals"
-        description="Review merchant and courier applications from the logistics service."
+        description="Review merchant and courier access requests."
         action={
           <div className="flex flex-wrap gap-2">
-            <StatusBadge status="ADMIN_ONLY" />
             <SecondaryButton disabled={loading} onClick={() => void load()}>
               Refresh
             </SecondaryButton>
@@ -183,7 +182,7 @@ export default function UsersApprovalsPage() {
           <div>
             <h3 className="text-lg font-semibold text-slate-950">Application Review Queue</h3>
             <p className="mt-1 text-sm text-slate-600">
-              Filters call the real admin application endpoints.
+              Review pending applications and inspect prior decisions.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -568,7 +567,7 @@ function ReviewModal({
             <span className="font-semibold text-slate-950">
               {applicationName(selection.application)}
             </span>
-            . This only updates the application review status.
+            . This updates the application review status.
           </div>
         ) : null}
         {error ? <ErrorState message={error} /> : null}

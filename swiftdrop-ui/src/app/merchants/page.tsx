@@ -61,7 +61,7 @@ export default function MerchantsPage() {
     <div>
       <PageHeader
         title="Merchants"
-        description="Demo merchant locations used by logistics order flow."
+        description="Store records and delivery locations."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
@@ -79,10 +79,9 @@ export default function MerchantsPage() {
           </Card>
         </div>
         <Card>
-          <h3 className="text-lg font-semibold text-slate-950">Geo Search Input</h3>
+          <h3 className="text-lg font-semibold text-slate-950">Delivery Location</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Merchant location is used as the center point for Redis Geo driver
-            search.
+            Merchant coordinates are used by logistics when assigning nearby drivers.
           </p>
         </Card>
       </div>
@@ -94,9 +93,7 @@ export default function MerchantsPage() {
               <h3 className="text-lg font-semibold text-slate-950">
                 Merchant List
               </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Seeded demo merchants from Logistics Service.
-              </p>
+              <p className="mt-1 text-sm text-slate-600">Active merchant records.</p>
             </div>
             <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
               Demo merchant: {shortId(demoMerchantId)}
@@ -142,7 +139,7 @@ export default function MerchantsPage() {
                           <span>{shortId(merchant.id)}</span>
                           {merchant.id === demoMerchantId ? (
                             <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
-                              Use for Demo Order
+                              Demo Order
                             </span>
                           ) : null}
                         </div>
@@ -206,7 +203,7 @@ export default function MerchantsPage() {
         {selectedMerchant ? (
           <div className="grid gap-4">
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-              Merchant location is used as the center point for driver proximity search.
+              Merchant location is used for driver proximity matching.
             </div>
             <DetailGrid>
               <DetailField label="Merchant ID" value={selectedMerchant.id} mono />

@@ -552,7 +552,7 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
                 {shortId(order.id)}
               </td>
               <td className="px-3 py-2 text-slate-700">{order.merchantName ?? "-"}</td>
-              <td className="px-3 py-2 text-slate-700">{order.driverName ?? "—"}</td>
+              <td className="px-3 py-2 text-slate-700">{order.driverName ?? "-"}</td>
               <td className="px-3 py-2">
                 <StatusBadge status={order.status} />
               </td>

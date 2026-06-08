@@ -139,7 +139,7 @@ export default function OrdersPage() {
     <div>
       <PageHeader
         title="Orders"
-        description="Filter, inspect, and create demo orders through the Gateway."
+        description="Create, filter, and inspect platform orders."
         action={
           <div className="flex flex-wrap gap-2">
             <SecondaryButton onClick={load}>Refresh</SecondaryButton>
@@ -160,7 +160,7 @@ export default function OrdersPage() {
                   Create Demo Order
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Creates a real order and starts the backend event flow.
+                  Creates a real order and refreshes this list.
                 </p>
               </div>
               {createResult ? (
@@ -189,7 +189,7 @@ export default function OrdersPage() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-950">Order List</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Status filter calls the real query endpoint.
+                  Filter by status and open order details.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -286,7 +286,7 @@ export default function OrdersPage() {
       <AdminModal
         open={createModalOpen}
         title="Create Demo Order"
-        subtitle="Triggers the full order to Kafka pipeline"
+        subtitle="Create a real demo order"
         onClose={() => {
           if (!creating) {
             setCreateModalOpen(false);
@@ -317,7 +317,7 @@ export default function OrdersPage() {
           }}
         >
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-            Creates an order, assigns a driver, stores outbox events and publishes Kafka messages.
+            Creates an order using the current demo IDs.
           </div>
           {createError ? <ErrorState message={createError} /> : null}
           <ModalSection>

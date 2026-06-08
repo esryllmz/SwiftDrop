@@ -66,7 +66,7 @@ export default function DriversPage() {
     <div>
       <PageHeader
         title="Drivers"
-        description="Driver availability and assignment readiness from Logistics Service."
+        description="Courier availability and assignment readiness."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
@@ -78,12 +78,10 @@ export default function DriversPage() {
           <SummaryCard label="Offline" value={summary.offline} />
         </div>
         <Card>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Assignment Logic
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-950">Assignment Readiness</h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Driver assignment is decided by Logistics Service. Redis Geo finds
-            nearby drivers and Redisson lock prevents double assignment.
+            Available drivers can receive new orders. Busy and offline drivers
+            are excluded from assignment.
           </p>
         </Card>
       </div>
@@ -93,7 +91,7 @@ export default function DriversPage() {
           <div>
             <h3 className="text-lg font-semibold text-slate-950">Driver List</h3>
             <p className="mt-1 text-sm text-slate-600">
-              Filter calls the real driver query endpoint.
+              Filter by current driver status.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
