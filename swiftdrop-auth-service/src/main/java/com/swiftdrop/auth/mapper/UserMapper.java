@@ -1,24 +1,28 @@
 package com.swiftdrop.auth.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.stereotype.Component;
 
 import com.swiftdrop.auth.dto.AuthResponse;
 import com.swiftdrop.auth.dto.RegisterRequest;
 import com.swiftdrop.auth.entity.User;
 
-@Mapper(componentModel = "spring")
-public interface UserMapper {
+@Component
+public class UserMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "enabled", constant = "true")
-    @Mapping(target = "password", ignore = true)
-    @Mapping(target = "role", ignore = true)
-    User toEntity(RegisterRequest request);
+    public User toEntity(RegisterRequest request) {
+        return User.builder()
+                .email(request.email())
+                .enabled(true)
+                .build();
+    }
 
-    @Mapping(target = "accessToken", source = "token")
-    @Mapping(target = "tokenType", constant = "Bearer")
-    @Mapping(target = "userId", source = "user.id")
-    AuthResponse toAuthResponse(User user, String token);
+    public AuthResponse toAuthResponse(User user, String accessToken) {
+        return new AuthResponse(
+                accessToken,
+                "Bearer",
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
 }
