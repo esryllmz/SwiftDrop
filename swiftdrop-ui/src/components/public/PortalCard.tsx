@@ -11,7 +11,8 @@ export type PortalCardData = {
   primaryLabel: string;
   primaryHref: string;
   secondaryLabel: string;
-  secondaryHref: string;
+  secondaryHref?: string;
+  secondaryAction?: () => void;
   note: string;
 };
 
@@ -50,7 +51,7 @@ export function PortalCard({ card }: { card: PortalCardData }) {
 
   return (
     <article
-      className={`flex min-h-[292px] w-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition ${classes.ring}`}
+      className={`flex min-h-[316px] w-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition ${classes.ring}`}
     >
       <div
         className={`flex h-11 w-11 items-center justify-center rounded-xl border ${classes.icon}`}
@@ -69,12 +70,22 @@ export function PortalCard({ card }: { card: PortalCardData }) {
         <Link href={card.primaryHref} className={`${buttonBase} ${classes.primary}`}>
           {card.primaryLabel}
         </Link>
-        <Link
-          href={card.secondaryHref}
-          className={`${buttonBase} border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-500`}
-        >
-          {card.secondaryLabel}
-        </Link>
+        {card.secondaryHref ? (
+          <Link
+            href={card.secondaryHref}
+            className={`${buttonBase} border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-500`}
+          >
+            {card.secondaryLabel}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={card.secondaryAction}
+            className={`${buttonBase} border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-500`}
+          >
+            {card.secondaryLabel}
+          </button>
+        )}
       </div>
       <p className="mt-4 text-xs leading-5 text-slate-500">{card.note}</p>
     </article>
