@@ -51,19 +51,23 @@ public class OneSignalService {
 
         String targetUserId = Objects.requireNonNull(event.targetUserId(), "target user id must not be null").toString();
         String message = Objects.requireNonNull(event.message(), "notification message must not be null");
-        MediaType contentType = MediaType.APPLICATION_JSON;
+        MediaType contentType = Objects.requireNonNull(MediaType.APPLICATION_JSON, "content type must not be null");
         Map<String, Object> requestBody = Map.of(
                 "app_id", appId,
                 "contents", Map.of("en", message),
                 "headings", Map.of("en", "SwiftDrop Order Update"),
                 "include_external_user_ids", List.of(targetUserId)
         );
+        Map<String, Object> notificationRequestBody = Objects.requireNonNull(
+                requestBody,
+                "OneSignal request body must not be null"
+        );
 
         String response = restClient.post()
                 .uri("/notifications")
                 .header("Authorization", "Basic " + apiKey)
                 .contentType(contentType)
-                .body(requestBody)
+                .body(notificationRequestBody)
                 .retrieve()
                 .body(String.class);
 

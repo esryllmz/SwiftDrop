@@ -97,14 +97,20 @@ public class AuthServiceImpl implements AuthService {
 
         if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             refreshToken.setRevoked(true);
-            refreshTokenRepository.save(refreshToken);
+            Objects.requireNonNull(
+                    refreshTokenRepository.save(refreshToken),
+                    "revoked expired refresh token must not be null"
+            );
             throw new TokenExpiredException("Refresh token suresi dolmus. Lutfen tekrar giris yapin.");
         }
 
         refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
+        RefreshToken revokedRefreshToken = Objects.requireNonNull(
+                refreshTokenRepository.save(refreshToken),
+                "revoked refresh token must not be null"
+        );
 
-        User user = Objects.requireNonNull(refreshToken.getUser(), "refresh token user must not be null");
+        User user = Objects.requireNonNull(revokedRefreshToken.getUser(), "refresh token user must not be null");
         String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
         RefreshToken newRefreshToken = createRefreshToken(user);
         return new TokenRefreshResult(
@@ -144,7 +150,10 @@ public class AuthServiceImpl implements AuthService {
 
         refreshTokenRepository.findByToken(token).ifPresent(refreshToken -> {
             refreshToken.setRevoked(true);
-            refreshTokenRepository.save(refreshToken);
+            Objects.requireNonNull(
+                    refreshTokenRepository.save(refreshToken),
+                    "logout refresh token must not be null"
+            );
         });
     }
 
@@ -167,7 +176,11 @@ public class AuthServiceImpl implements AuthService {
                 .expiryDate(LocalDateTime.now().plusNanos(refreshTokenExpiration * 1_000_000))
                 .revoked(false)
                 .build();
-        return Objects.requireNonNull(refreshTokenRepository.save(refreshToken), "saved refresh token must not be null");
+        RefreshToken savedRefreshToken = Objects.requireNonNull(
+                refreshTokenRepository.save(refreshToken),
+                "saved refresh token must not be null"
+        );
+        return savedRefreshToken;
     }
 
     private String extractEmail(String accessToken) {

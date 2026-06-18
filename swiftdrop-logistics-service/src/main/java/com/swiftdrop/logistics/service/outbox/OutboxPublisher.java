@@ -2,6 +2,7 @@ package com.swiftdrop.logistics.service.outbox;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +54,10 @@ public class OutboxPublisher {
             event.setStatus(OutboxStatus.SENT);
             event.setSentAt(LocalDateTime.now());
             event.setLastError(null);
-            outboxEventRepository.save(event);
+            Objects.requireNonNull(
+                    outboxEventRepository.save(event),
+                    "sent outbox event must not be null"
+            );
         } catch (Exception ex) {
             markFailedOrRetry(event, ex);
         }
@@ -77,12 +81,15 @@ public class OutboxPublisher {
             event.setStatus(OutboxStatus.FAILED);
         }
 
-        outboxEventRepository.save(event);
+        OutboxEvent savedEvent = Objects.requireNonNull(
+                outboxEventRepository.save(event),
+                "failed outbox event must not be null"
+        );
         log.warn(
                 "Outbox event publish failed. eventId={}, retryCount={}, status={}",
-                event.getId(),
-                event.getRetryCount(),
-                event.getStatus(),
+                savedEvent.getId(),
+                savedEvent.getRetryCount(),
+                savedEvent.getStatus(),
                 ex
         );
     }

@@ -22,7 +22,11 @@ public class RefreshTokenCookieService {
             @Value("${application.security.cookie.path}") String path
     ) {
         this.secure = secure;
-        this.refreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
+        Duration configuredRefreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
+        this.refreshTokenLifetime = Objects.requireNonNull(
+                configuredRefreshTokenLifetime,
+                "refresh token lifetime must not be null"
+        );
         this.path = Objects.requireNonNull(path, "cookie path must not be null");
         this.sameSite = Objects.requireNonNull(sameSite, "cookie same-site value must not be null");
     }

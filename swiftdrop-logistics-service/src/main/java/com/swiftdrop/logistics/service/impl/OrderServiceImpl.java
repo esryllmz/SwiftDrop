@@ -102,7 +102,8 @@ public class OrderServiceImpl implements OrderService {
 
         for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : results.getContent()) {
             String driverIdValue = Objects.requireNonNull(result.getContent().getName(), "driver id must not be null");
-            UUID driverId = Objects.requireNonNull(UUID.fromString(driverIdValue), "driver UUID must not be null");
+            final UUID parsedDriverId = UUID.fromString(driverIdValue);
+            UUID driverId = Objects.requireNonNull(parsedDriverId, "driver UUID must not be null");
             RLock driverLock = redissonClient.getLock("lock:driver:" + driverIdValue);
 
             try {
@@ -111,18 +112,24 @@ public class OrderServiceImpl implements OrderService {
 
                     if (driver != null && driver.getStatus() == DriverStatus.AVAILABLE) {
                         driver.setStatus(DriverStatus.BUSY);
-                        driverRepository.save(driver);
+                        Driver busyDriver = Objects.requireNonNull(
+                                driverRepository.save(driver),
+                                "busy driver must not be null"
+                        );
 
-                        order.setDriver(driver);
+                        order.setDriver(busyDriver);
                         order.setStatus(OrderStatus.DRIVER_ASSIGNED);
-                        orderRepository.save(order);
+                        Order assignedOrder = Objects.requireNonNull(
+                                orderRepository.save(order),
+                                "assigned order must not be null"
+                        );
 
-                        log.info("Order {} assigned to driver {}", order.getId(), driver.getFullName());
-                        saveOrderEvent("ORDER_DRIVER_ASSIGNED", order, new OrderKafkaEvent(
-                                order.getId(),
+                        log.info("Order {} assigned to driver {}", assignedOrder.getId(), busyDriver.getFullName());
+                        saveOrderEvent("ORDER_DRIVER_ASSIGNED", assignedOrder, new OrderKafkaEvent(
+                                assignedOrder.getId(),
                                 OrderStatus.DRIVER_ASSIGNED.name(),
                                 "Siparisiniz kurye tarafindan kabul edildi.",
-                                order.getCustomerId()
+                                assignedOrder.getCustomerId()
                         ));
                         return;
                     }
@@ -152,7 +159,11 @@ public class OrderServiceImpl implements OrderService {
         if (status == OrderStatus.DELIVERED && order.getDriver() != null) {
             Driver driver = order.getDriver();
             driver.setStatus(DriverStatus.AVAILABLE);
-            driverRepository.save(driver);
+            Driver availableDriver = Objects.requireNonNull(
+                    driverRepository.save(driver),
+                    "available driver must not be null"
+            );
+            order.setDriver(availableDriver);
         }
 
         Order updatedOrder = Objects.requireNonNull(orderRepository.save(order), "updated order must not be null");

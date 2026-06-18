@@ -29,7 +29,8 @@ public class ApplicationController {
             @Valid @RequestBody MerchantApplicationRequest request
     ) {
         MerchantApplicationResponse response = applicationService.createMerchantApplication(request);
-        return ResponseEntity.created(URI.create("/api/v1/applications/merchant/" + response.id()))
+        final URI location = URI.create("/api/v1/applications/merchant/" + response.id());
+        return ResponseEntity.created(location)
                 .body(response);
     }
 
@@ -38,7 +39,8 @@ public class ApplicationController {
             @Valid @RequestBody CourierApplicationRequest request
     ) {
         CourierApplicationResponse response = applicationService.createCourierApplication(request);
-        return ResponseEntity.created(URI.create("/api/v1/applications/courier/" + response.id()))
+        final URI location = URI.create("/api/v1/applications/courier/" + response.id());
+        return ResponseEntity.created(location)
                 .body(response);
     }
 }

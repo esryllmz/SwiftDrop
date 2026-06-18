@@ -60,8 +60,8 @@ public class AdminUserInitializer implements CommandLineRunner {
                 .enabled(true)
                 .build();
 
-        userRepository.save(admin);
-        log.info("Local admin seed user created for email={}.", email);
+        User savedAdmin = Objects.requireNonNull(userRepository.save(admin), "saved admin user must not be null");
+        log.info("Local admin seed user created for email={}.", savedAdmin.getEmail());
     }
 
     private void validateSeedConfig() {

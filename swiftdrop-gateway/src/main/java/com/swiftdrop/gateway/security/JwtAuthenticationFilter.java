@@ -174,6 +174,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         final byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
         final DataBuffer responseBuffer = response.bufferFactory().wrap(responseBytes);
-        return response.writeWith(Mono.just(responseBuffer));
+        final Mono<DataBuffer> responseBody = Mono.just(responseBuffer);
+        return response.writeWith(responseBody);
     }
 }

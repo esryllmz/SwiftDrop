@@ -34,29 +34,13 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         final Merchant burgerLab = merchantRepository.findById(BURGER_LAB_ID)
-                .orElseGet(() -> Objects.requireNonNull(merchantRepository.save(Merchant.builder()
-                        .id(BURGER_LAB_ID)
-                        .userId(UUID.randomUUID())
-                        .name("Burger Lab Kadikoy")
-                        .latitude(41.0200)
-                        .longitude(29.0250)
-                        .build()), "saved merchant must not be null"));
+                .orElseGet(this::saveBurgerLabMerchant);
 
         final Driver nearDriver = driverRepository.findById(NEAR_DRIVER_ID)
-                .orElseGet(() -> Objects.requireNonNull(driverRepository.save(Driver.builder()
-                        .id(NEAR_DRIVER_ID)
-                        .userId(UUID.randomUUID())
-                        .fullName("Ahmet Yilmaz (Yakin Kurye)")
-                        .status(DriverStatus.AVAILABLE)
-                        .build()), "saved near driver must not be null"));
+                .orElseGet(this::saveNearDriver);
 
         final Driver farDriver = driverRepository.findById(FAR_DRIVER_ID)
-                .orElseGet(() -> Objects.requireNonNull(driverRepository.save(Driver.builder()
-                        .id(FAR_DRIVER_ID)
-                        .userId(UUID.randomUUID())
-                        .fullName("Mehmet Demir (Uzak Kurye)")
-                        .status(DriverStatus.AVAILABLE)
-                        .build()), "saved far driver must not be null"));
+                .orElseGet(this::saveFarDriver);
 
         var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
         geoOperations.add(DRIVER_GEO_KEY, new Point(29.0260, 41.0205), nearDriver.getId().toString());
@@ -67,6 +51,41 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private static UUID uuid(String value) {
-        return Objects.requireNonNull(UUID.fromString(value), "seed UUID must not be null");
+        final UUID seedUuid = UUID.fromString(value);
+        return Objects.requireNonNull(seedUuid, "seed UUID must not be null");
+    }
+
+    private Merchant saveBurgerLabMerchant() {
+        Merchant merchant = Merchant.builder()
+                .id(BURGER_LAB_ID)
+                .userId(UUID.randomUUID())
+                .name("Burger Lab Kadikoy")
+                .latitude(41.0200)
+                .longitude(29.0250)
+                .build();
+        Merchant savedMerchant = Objects.requireNonNull(merchantRepository.save(merchant), "saved merchant must not be null");
+        return savedMerchant;
+    }
+
+    private Driver saveNearDriver() {
+        Driver driver = Driver.builder()
+                .id(NEAR_DRIVER_ID)
+                .userId(UUID.randomUUID())
+                .fullName("Ahmet Yilmaz (Yakin Kurye)")
+                .status(DriverStatus.AVAILABLE)
+                .build();
+        Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved near driver must not be null");
+        return savedDriver;
+    }
+
+    private Driver saveFarDriver() {
+        Driver driver = Driver.builder()
+                .id(FAR_DRIVER_ID)
+                .userId(UUID.randomUUID())
+                .fullName("Mehmet Demir (Uzak Kurye)")
+                .status(DriverStatus.AVAILABLE)
+                .build();
+        Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved far driver must not be null");
+        return savedDriver;
     }
 }

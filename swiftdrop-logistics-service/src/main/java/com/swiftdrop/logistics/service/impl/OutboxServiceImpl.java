@@ -61,7 +61,8 @@ public class OutboxServiceImpl implements OutboxService {
                 .correlationId(correlationId)
                 .version(EVENT_VERSION)
                 .build();
-        outboxEventRepository.save(Objects.requireNonNull(outboxEvent, "outbox event must not be null"));
+        OutboxEvent eventToSave = Objects.requireNonNull(outboxEvent, "outbox event must not be null");
+        Objects.requireNonNull(outboxEventRepository.save(eventToSave), "saved outbox event must not be null");
     }
 
     private String serialize(EventEnvelope envelope) {
