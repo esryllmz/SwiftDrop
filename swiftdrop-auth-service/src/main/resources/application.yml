@@ -35,6 +35,10 @@ management:
         enabled: true
 
 application:
+  internal:
+    api-key: ${INTERNAL_API_KEY:local-internal-api-key}
+  provisioning:
+    temporary-password-length: ${PROVISIONING_TEMP_PASSWORD_LENGTH:12}
   seed:
     admin:
       enabled: ${SEED_ADMIN_ENABLED:true}

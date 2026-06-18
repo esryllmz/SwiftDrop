@@ -44,6 +44,16 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Authentication Failed", ex.getMessage(), null);
     }
 
+    @ExceptionHandler(InvalidInternalApiKeyException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInternalApiKey(InvalidInternalApiKeyException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(UnsupportedProvisioningRoleException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedProvisioningRole(UnsupportedProvisioningRoleException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), null);
+    }
+
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid Refresh Token", ex.getMessage(), null);
@@ -57,6 +67,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
         return buildResponse(HttpStatus.CONFLICT, "Duplicate Resource", ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(UserRoleConflictException.class)
+    public ResponseEntity<ErrorResponse> handleUserRoleConflict(UserRoleConflictException ex) {
+        return buildResponse(HttpStatus.CONFLICT, "User Role Conflict", ex.getMessage(), null);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
