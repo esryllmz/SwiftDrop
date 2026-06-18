@@ -86,6 +86,7 @@ export type MerchantApplicationResponse = {
   createdAt: string;
   reviewedAt: string | null;
   reviewNote: string | null;
+  provisionedUserId?: string | null;
 };
 
 export type CourierApplicationResponse = {
@@ -98,10 +99,30 @@ export type CourierApplicationResponse = {
   createdAt: string;
   reviewedAt: string | null;
   reviewNote: string | null;
+  provisionedUserId?: string | null;
 };
 
 export type ApplicationReviewRequest = {
   reviewNote?: string;
+};
+
+export type ProvisionedAccountResponse = {
+  userId: string;
+  email: string;
+  role: "MERCHANT" | "DRIVER";
+  enabled?: boolean;
+  created: boolean;
+  temporaryPassword?: string | null;
+};
+
+export type MerchantApplicationReviewResponse = {
+  application: MerchantApplicationResponse;
+  provisionedAccount?: ProvisionedAccountResponse | null;
+};
+
+export type CourierApplicationReviewResponse = {
+  application: CourierApplicationResponse;
+  provisionedAccount?: ProvisionedAccountResponse | null;
 };
 
 export type HealthResponse = {

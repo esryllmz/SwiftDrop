@@ -2,7 +2,9 @@ import { getJson, postJson } from "./api";
 import type {
   ApplicationReviewRequest,
   ApplicationStatus,
+  CourierApplicationReviewResponse,
   CourierApplicationResponse,
+  MerchantApplicationReviewResponse,
   MerchantApplicationResponse,
 } from "@/types/api";
 
@@ -33,7 +35,7 @@ export function approveMerchantApplication(
   id: string,
   reviewNote?: string,
 ) {
-  return postJson<MerchantApplicationResponse>(
+  return postJson<MerchantApplicationReviewResponse>(
     `/api/v1/admin/applications/merchants/${id}/approve`,
     reviewBody(reviewNote),
     undefined,
@@ -59,7 +61,7 @@ export function approveCourierApplication(
   id: string,
   reviewNote?: string,
 ) {
-  return postJson<CourierApplicationResponse>(
+  return postJson<CourierApplicationReviewResponse>(
     `/api/v1/admin/applications/couriers/${id}/approve`,
     reviewBody(reviewNote),
     undefined,

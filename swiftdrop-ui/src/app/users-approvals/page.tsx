@@ -34,6 +34,7 @@ import { formatDateTime } from "@/lib/format";
 import type {
   CourierApplicationResponse,
   MerchantApplicationResponse,
+  ProvisionedAccountResponse,
   VehicleType,
 } from "@/types/api";
 
@@ -53,6 +54,19 @@ type ReviewSelection =
   | { kind: "courier"; action: ReviewAction; application: CourierApplicationResponse }
   | null;
 
+type ApprovalSuccessSelection =
+  | {
+      kind: "merchant";
+      application: MerchantApplicationResponse;
+      provisionedAccount: ProvisionedAccountResponse | null;
+    }
+  | {
+      kind: "courier";
+      application: CourierApplicationResponse;
+      provisionedAccount: ProvisionedAccountResponse | null;
+    }
+  | null;
+
 export default function UsersApprovalsPage() {
   const { accessToken } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("merchant");
@@ -68,6 +82,9 @@ export default function UsersApprovalsPage() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [detailSelection, setDetailSelection] = useState<DetailSelection>(null);
   const [reviewSelection, setReviewSelection] = useState<ReviewSelection>(null);
+  const [approvalSuccess, setApprovalSuccess] = useState<ApprovalSuccessSelection>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
   const load = useCallback(async () => {
@@ -126,6 +143,23 @@ export default function UsersApprovalsPage() {
     setReviewError(null);
   }
 
+  function closeApprovalSuccess() {
+    setApprovalSuccess(null);
+    setPasswordCopied(false);
+    setCopyError(null);
+  }
+
+  async function copyTemporaryPassword(password: string) {
+    setCopyError(null);
+    try {
+      await navigator.clipboard.writeText(password);
+      setPasswordCopied(true);
+      window.setTimeout(() => setPasswordCopied(false), 1800);
+    } catch {
+      setCopyError("Unable to copy password.");
+    }
+  }
+
   async function submitReview() {
     if (!reviewSelection) {
       return;
@@ -136,14 +170,44 @@ export default function UsersApprovalsPage() {
     try {
       if (reviewSelection.kind === "merchant") {
         if (reviewSelection.action === "approve") {
-          await approveMerchantApplication(accessToken, reviewSelection.application.id, reviewNote);
+          const response = await approveMerchantApplication(
+            accessToken,
+            reviewSelection.application.id,
+            reviewNote,
+          );
+          updateMerchantApplication(response.application);
+          setApprovalSuccess({
+            kind: "merchant",
+            application: response.application,
+            provisionedAccount: response.provisionedAccount ?? null,
+          });
         } else {
-          await rejectMerchantApplication(accessToken, reviewSelection.application.id, reviewNote);
+          const application = await rejectMerchantApplication(
+            accessToken,
+            reviewSelection.application.id,
+            reviewNote,
+          );
+          updateMerchantApplication(application);
         }
       } else if (reviewSelection.action === "approve") {
-        await approveCourierApplication(accessToken, reviewSelection.application.id, reviewNote);
+        const response = await approveCourierApplication(
+          accessToken,
+          reviewSelection.application.id,
+          reviewNote,
+        );
+        updateCourierApplication(response.application);
+        setApprovalSuccess({
+          kind: "courier",
+          application: response.application,
+          provisionedAccount: response.provisionedAccount ?? null,
+        });
       } else {
-        await rejectCourierApplication(accessToken, reviewSelection.application.id, reviewNote);
+        const application = await rejectCourierApplication(
+          accessToken,
+          reviewSelection.application.id,
+          reviewNote,
+        );
+        updateCourierApplication(application);
       }
 
       setReviewSelection(null);
@@ -154,6 +218,16 @@ export default function UsersApprovalsPage() {
     } finally {
       setReviewing(false);
     }
+  }
+
+  function updateMerchantApplication(application: MerchantApplicationResponse) {
+    setAllMerchants((current) => replaceById(current, application));
+    setMerchants((current) => replaceById(current, application));
+  }
+
+  function updateCourierApplication(application: CourierApplicationResponse) {
+    setAllCouriers((current) => replaceById(current, application));
+    setCouriers((current) => replaceById(current, application));
   }
 
   return (
@@ -265,6 +339,14 @@ export default function UsersApprovalsPage() {
           }
         }}
         onSubmit={() => void submitReview()}
+      />
+
+      <ApprovalSuccessModal
+        selection={approvalSuccess}
+        copied={passwordCopied}
+        copyError={copyError}
+        onCopy={(password) => void copyTemporaryPassword(password)}
+        onClose={closeApprovalSuccess}
       />
     </div>
   );
@@ -507,10 +589,115 @@ function ApplicationDetailModal({
             />
             <DetailField label="Review Note" value={selection.application.reviewNote} />
             <DetailField label="Message" value={selection.application.message} />
+            <DetailField
+              label="Provisioned User ID"
+              value={selection.application.provisionedUserId}
+              mono
+            />
           </DetailGrid>
           <AdvancedDetails>
             <JsonPreview value={selection.application} />
           </AdvancedDetails>
+        </div>
+      ) : null}
+    </AdminModal>
+  );
+}
+
+function ApprovalSuccessModal({
+  selection,
+  copied,
+  copyError,
+  onCopy,
+  onClose,
+}: {
+  selection: ApprovalSuccessSelection;
+  copied: boolean;
+  copyError: string | null;
+  onCopy: (password: string) => void;
+  onClose: () => void;
+}) {
+  const account = selection?.provisionedAccount ?? null;
+  const temporaryPassword = account?.created ? account.temporaryPassword : null;
+  const hasTemporaryPassword = Boolean(temporaryPassword);
+  const title = selection?.kind === "courier" ? "Courier approved" : "Merchant approved";
+
+  return (
+    <AdminModal
+      open={Boolean(selection)}
+      title={title}
+      subtitle={selection ? shortId(selection.application.id) : undefined}
+      onClose={onClose}
+      maxWidth="lg"
+      footer={
+        <ModalFooter>
+          {temporaryPassword ? (
+            <AdminButton
+              type="button"
+              variant="primary"
+              onClick={() => onCopy(temporaryPassword)}
+            >
+              {copied ? "Copied" : "Copy password"}
+            </AdminButton>
+          ) : null}
+          <AdminButton type="button" variant="secondary" onClick={onClose}>
+            Close
+          </AdminButton>
+        </ModalFooter>
+      }
+    >
+      {selection ? (
+        <div className="grid gap-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3">
+            <div className="text-sm font-medium text-emerald-900">
+              Application approved successfully.
+            </div>
+            <StatusBadge status="APPROVED" />
+          </div>
+
+          {account ? (
+            <ModalSection title="Provisioned account">
+              <DetailGrid>
+                <DetailField label="Email" value={account.email} />
+                <DetailField label="Role" value={account.role} />
+                <DetailField label="User ID" value={account.userId} mono />
+                <DetailField label="Created" value={account.created ? "Yes" : "No"} />
+              </DetailGrid>
+            </ModalSection>
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+              Application was approved.
+            </div>
+          )}
+
+          {account && !account.created ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+              Account already existed for this role. No new temporary password was generated.
+            </div>
+          ) : null}
+
+          {hasTemporaryPassword && temporaryPassword ? (
+            <ModalSection
+              title="Temporary password"
+              description="Temporary password is shown only once. Copy it now and share it through a secure channel."
+            >
+              <div className="grid gap-2">
+                <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="break-all font-mono text-sm font-semibold text-slate-950">
+                    {temporaryPassword}
+                  </div>
+                  <AdminButton
+                    type="button"
+                    variant="secondary"
+                    onClick={() => onCopy(temporaryPassword)}
+                  >
+                    {copied ? "Copied" : "Copy temporary password"}
+                  </AdminButton>
+                </div>
+                {copyError ? <ErrorState message={copyError} /> : null}
+              </div>
+            </ModalSection>
+          ) : null}
         </div>
       ) : null}
     </AdminModal>
@@ -601,6 +788,9 @@ function resolveReviewError(error: unknown) {
     if (error.status === 409) {
       return "This application has already been reviewed.";
     }
+    if ([502, 503, 504].includes(error.status)) {
+      return "User provisioning is currently unavailable. The application was not approved.";
+    }
     if (error.status === 404) {
       return "Application not found.";
     }
@@ -632,4 +822,8 @@ function shortId(value?: string) {
   }
 
   return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+}
+
+function replaceById<T extends { id: string }>(items: T[], updatedItem: T) {
+  return items.map((item) => (item.id === updatedItem.id ? updatedItem : item));
 }
