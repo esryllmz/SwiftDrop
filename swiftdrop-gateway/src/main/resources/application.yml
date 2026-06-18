@@ -26,7 +26,7 @@ spring:
         - id: logistics-service
           uri: ${LOGISTICS_SERVICE_URI:http://localhost:8082}
           predicates:
-            - Path=/api/v1/logistics/**,/api/v1/orders/**,/api/v1/drivers/**,/api/v1/merchants/**,/api/v1/dashboard/**,/api/v1/outbox-events/**,/api/v1/applications/**,/api/v1/admin/applications/**
+            - Path=/api/v1/logistics/**,/api/v1/orders/**,/api/v1/drivers/**,/api/v1/merchants/**,/api/v1/dashboard/**,/api/v1/outbox-events/**,/api/v1/applications/**,/api/v1/admin/applications/**,/api/v1/customer/**,/api/v1/merchant/**,/api/v1/courier/**
 
 management:
   endpoints:

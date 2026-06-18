@@ -26,14 +26,23 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLE_HEADER = "X-User-Role";
     private static final String ADMIN_ROLE = "ADMIN";
+    private static final String CUSTOMER_ROLE = "CUSTOMER";
+    private static final String MERCHANT_ROLE = "MERCHANT";
+    private static final String DRIVER_ROLE = "DRIVER";
 
-    private static final String[] ADMIN_ONLY_PATH_PREFIXES = {
-            "/api/v1/dashboard",
-            "/api/v1/orders",
-            "/api/v1/drivers",
-            "/api/v1/merchants",
-            "/api/v1/admin/applications",
-            "/api/v1/outbox-events"
+    private static final RouteAuthorizationRule[] ADMIN_ROUTE_RULES = {
+            new RouteAuthorizationRule("/api/v1/dashboard", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/orders", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/drivers", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/merchants", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/admin/applications", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/outbox-events", ADMIN_ROLE)
+    };
+
+    private static final RouteAuthorizationRule[] SCOPED_PORTAL_ROUTE_RULES = {
+            new RouteAuthorizationRule("/api/v1/customer", CUSTOMER_ROLE),
+            new RouteAuthorizationRule("/api/v1/merchant", MERCHANT_ROLE),
+            new RouteAuthorizationRule("/api/v1/courier", DRIVER_ROLE)
     };
 
     private final JwtValidator jwtValidator;
@@ -63,8 +72,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         try {
             JwtClaims claims = jwtValidator.validate(token);
-            if (isAdminOnlyPath(path) && !hasAdminRole(claims.role())) {
-                return forbidden(exchange, path);
+            RouteAuthorizationRule authorizationRule = findAuthorizationRule(path);
+            if (authorizationRule != null && !hasRequiredRole(claims.role(), authorizationRule.requiredRole())) {
+                return forbidden(exchange, path, authorizationRule.requiredRole());
             }
 
             ServerHttpRequest.Builder requestBuilder = request.mutate()
@@ -119,23 +129,35 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 && ("/api/v1/applications/merchant".equals(path) || "/api/v1/applications/courier".equals(path));
     }
 
-    private boolean isAdminOnlyPath(String path) {
-        for (String prefix : ADMIN_ONLY_PATH_PREFIXES) {
-            if (path.equals(prefix) || path.startsWith(prefix + "/")) {
-                return true;
+    private RouteAuthorizationRule findAuthorizationRule(String path) {
+        RouteAuthorizationRule adminRule = findMatchingRule(path, ADMIN_ROUTE_RULES);
+        if (adminRule != null) {
+            return adminRule;
+        }
+
+        return findMatchingRule(path, SCOPED_PORTAL_ROUTE_RULES);
+    }
+
+    private RouteAuthorizationRule findMatchingRule(String path, RouteAuthorizationRule[] rules) {
+        for (RouteAuthorizationRule rule : rules) {
+            if (rule.matches(path)) {
+                return rule;
             }
         }
 
-        return false;
+        return null;
     }
 
-    private boolean hasAdminRole(String role) {
+    private boolean hasRequiredRole(String actualRole, String requiredRole) {
+        return requiredRole.equals(normalizeRole(actualRole));
+    }
+
+    private String normalizeRole(String role) {
         if (role == null || role.isBlank()) {
-            return false;
+            return "";
         }
 
-        String normalizedRole = role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role;
-        return ADMIN_ROLE.equals(normalizedRole);
+        return role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role;
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String path) {
@@ -148,13 +170,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         );
     }
 
-    private Mono<Void> forbidden(ServerWebExchange exchange, String path) {
+    private Mono<Void> forbidden(ServerWebExchange exchange, String path, String requiredRole) {
         return writeErrorResponse(
                 exchange,
                 path,
                 HttpStatus.FORBIDDEN,
                 "Forbidden",
-                "Admin role is required"
+                requiredRole + " role is required"
         );
     }
 
@@ -177,5 +199,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         final DataBuffer responseBuffer = response.bufferFactory().wrap(responseBytes);
         final Publisher<? extends DataBuffer> responseBody = Mono.just(responseBuffer);
         return response.writeWith(responseBody);
+    }
+
+    private record RouteAuthorizationRule(String pathPrefix, String requiredRole) {
+
+        private boolean matches(String path) {
+            return path.equals(pathPrefix) || path.startsWith(pathPrefix + "/");
+        }
     }
 }
