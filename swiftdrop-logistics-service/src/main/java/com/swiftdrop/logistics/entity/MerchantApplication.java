@@ -53,6 +53,9 @@ public class MerchantApplication {
     @Column(name = "review_note", length = 1000)
     private String reviewNote;
 
+    @Column(name = "provisioned_user_id")
+    private UUID provisionedUserId;
+
     @PrePersist
     void prePersist() {
         if (status == null) {

@@ -8,13 +8,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.swiftdrop.logistics.dto.ApplicationReviewRequest;
+import com.swiftdrop.logistics.dto.CourierApplicationReviewResponse;
 import com.swiftdrop.logistics.dto.CourierApplicationRequest;
 import com.swiftdrop.logistics.dto.CourierApplicationResponse;
+import com.swiftdrop.logistics.dto.MerchantApplicationReviewResponse;
 import com.swiftdrop.logistics.dto.MerchantApplicationRequest;
 import com.swiftdrop.logistics.dto.MerchantApplicationResponse;
+import com.swiftdrop.logistics.dto.ProvisionUserResponse;
+import com.swiftdrop.logistics.dto.ProvisionedAccountResponse;
 import com.swiftdrop.logistics.entity.ApplicationStatus;
 import com.swiftdrop.logistics.entity.CourierApplication;
 import com.swiftdrop.logistics.entity.MerchantApplication;
+import com.swiftdrop.logistics.client.AuthProvisioningClient;
 import com.swiftdrop.logistics.exception.ApplicationAlreadyReviewedException;
 import com.swiftdrop.logistics.exception.DuplicateApplicationException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
@@ -29,6 +34,7 @@ public class ApplicationService {
 
     private final MerchantApplicationRepository merchantApplicationRepository;
     private final CourierApplicationRepository courierApplicationRepository;
+    private final AuthProvisioningClient authProvisioningClient;
 
     @Transactional
     public MerchantApplicationResponse createMerchantApplication(MerchantApplicationRequest request) {
@@ -92,8 +98,29 @@ public class ApplicationService {
     }
 
     @Transactional
-    public MerchantApplicationResponse approveMerchantApplication(UUID id, ApplicationReviewRequest request) {
-        return reviewMerchantApplication(id, ApplicationStatus.APPROVED, request);
+    public MerchantApplicationReviewResponse approveMerchantApplication(UUID id, ApplicationReviewRequest request) {
+        MerchantApplication application = merchantApplicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant application not found."));
+        ensurePending(application.getStatus());
+
+        ProvisionUserResponse provisionedUser = authProvisioningClient.provisionUser(
+                application.getContactEmail(),
+                "MERCHANT"
+        );
+
+        application.setStatus(ApplicationStatus.APPROVED);
+        application.setReviewedAt(java.time.LocalDateTime.now());
+        application.setReviewNote(trimToNull(request.reviewNote()));
+        application.setProvisionedUserId(provisionedUser.userId());
+
+        MerchantApplication savedApplication = Objects.requireNonNull(
+                merchantApplicationRepository.save(application),
+                "approved merchant application must not be null"
+        );
+        return new MerchantApplicationReviewResponse(
+                toMerchantResponse(savedApplication),
+                toProvisionedAccountResponse(provisionedUser)
+        );
     }
 
     @Transactional
@@ -102,8 +129,29 @@ public class ApplicationService {
     }
 
     @Transactional
-    public CourierApplicationResponse approveCourierApplication(UUID id, ApplicationReviewRequest request) {
-        return reviewCourierApplication(id, ApplicationStatus.APPROVED, request);
+    public CourierApplicationReviewResponse approveCourierApplication(UUID id, ApplicationReviewRequest request) {
+        CourierApplication application = courierApplicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Courier application not found."));
+        ensurePending(application.getStatus());
+
+        ProvisionUserResponse provisionedUser = authProvisioningClient.provisionUser(
+                application.getContactEmail(),
+                "DRIVER"
+        );
+
+        application.setStatus(ApplicationStatus.APPROVED);
+        application.setReviewedAt(java.time.LocalDateTime.now());
+        application.setReviewNote(trimToNull(request.reviewNote()));
+        application.setProvisionedUserId(provisionedUser.userId());
+
+        CourierApplication savedApplication = Objects.requireNonNull(
+                courierApplicationRepository.save(application),
+                "approved courier application must not be null"
+        );
+        return new CourierApplicationReviewResponse(
+                toCourierResponse(savedApplication),
+                toProvisionedAccountResponse(provisionedUser)
+        );
     }
 
     @Transactional
@@ -184,7 +232,8 @@ public class ApplicationService {
                 application.getStatus(),
                 application.getCreatedAt(),
                 application.getReviewedAt(),
-                application.getReviewNote()
+                application.getReviewNote(),
+                application.getProvisionedUserId()
         );
     }
 
@@ -198,7 +247,22 @@ public class ApplicationService {
                 application.getStatus(),
                 application.getCreatedAt(),
                 application.getReviewedAt(),
-                application.getReviewNote()
+                application.getReviewNote(),
+                application.getProvisionedUserId()
+        );
+    }
+
+    private ProvisionedAccountResponse toProvisionedAccountResponse(ProvisionUserResponse response) {
+        ProvisionUserResponse provisionedUser = Objects.requireNonNull(
+                response,
+                "provision user response must not be null"
+        );
+        return new ProvisionedAccountResponse(
+                provisionedUser.userId(),
+                provisionedUser.email(),
+                provisionedUser.role(),
+                provisionedUser.created(),
+                provisionedUser.temporaryPassword()
         );
     }
 

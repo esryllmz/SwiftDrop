@@ -26,7 +26,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             DuplicateApplicationException.class,
-            ApplicationAlreadyReviewedException.class
+            ApplicationAlreadyReviewedException.class,
+            UserProvisioningConflictException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
             RuntimeException ex,
@@ -63,6 +64,22 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserProvisioningException.class)
+    public ResponseEntity<ErrorResponse> handleUserProvisioning(
+            UserProvisioningException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserProvisioningUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleUserProvisioningUnavailable(
+            UserProvisioningUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)

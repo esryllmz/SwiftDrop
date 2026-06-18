@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.ApplicationReviewRequest;
+import com.swiftdrop.logistics.dto.CourierApplicationReviewResponse;
 import com.swiftdrop.logistics.dto.CourierApplicationResponse;
+import com.swiftdrop.logistics.dto.MerchantApplicationReviewResponse;
 import com.swiftdrop.logistics.dto.MerchantApplicationResponse;
 import com.swiftdrop.logistics.entity.ApplicationStatus;
 import com.swiftdrop.logistics.service.ApplicationService;
@@ -43,7 +45,7 @@ public class AdminApplicationController {
     }
 
     @PostMapping("/merchants/{id}/approve")
-    public ResponseEntity<MerchantApplicationResponse> approveMerchantApplication(
+    public ResponseEntity<MerchantApplicationReviewResponse> approveMerchantApplication(
             @PathVariable UUID id,
             @Valid @RequestBody ApplicationReviewRequest request
     ) {
@@ -59,7 +61,7 @@ public class AdminApplicationController {
     }
 
     @PostMapping("/couriers/{id}/approve")
-    public ResponseEntity<CourierApplicationResponse> approveCourierApplication(
+    public ResponseEntity<CourierApplicationReviewResponse> approveCourierApplication(
             @PathVariable UUID id,
             @Valid @RequestBody ApplicationReviewRequest request
     ) {

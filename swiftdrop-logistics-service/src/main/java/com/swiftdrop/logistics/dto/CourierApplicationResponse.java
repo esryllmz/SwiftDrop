@@ -15,6 +15,7 @@ public record CourierApplicationResponse(
         ApplicationStatus status,
         LocalDateTime createdAt,
         LocalDateTime reviewedAt,
-        String reviewNote
+        String reviewNote,
+        UUID provisionedUserId
 ) {
 }

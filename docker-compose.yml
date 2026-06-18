@@ -93,6 +93,7 @@ services:
       SEED_ADMIN_ENABLED: ${SEED_ADMIN_ENABLED:-true}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@swiftdrop.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,6 +112,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AUTH_SERVICE_BASE_URL: http://swiftdrop-auth-service:8081
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
       OUTBOX_PUBLISHER_FIXED_DELAY_MS: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:-5000}
       OUTBOX_MAX_RETRY_ATTEMPTS: ${OUTBOX_MAX_RETRY_ATTEMPTS:-5}
     depends_on:
@@ -120,6 +123,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      swiftdrop-auth-service:
+        condition: service_started
     networks:
       - swiftdrop-network
 

@@ -37,6 +37,9 @@ management:
       show-details: always
 
 application:
+  auth-service:
+    base-url: ${AUTH_SERVICE_BASE_URL:http://localhost:8081}
+    internal-api-key: ${INTERNAL_API_KEY:local-internal-api-key}
   outbox:
     publisher-fixed-delay-ms: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:5000}
     max-retry-attempts: ${OUTBOX_MAX_RETRY_ATTEMPTS:5}
