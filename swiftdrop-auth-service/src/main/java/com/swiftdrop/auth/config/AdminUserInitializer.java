@@ -58,6 +58,7 @@ public class AdminUserInitializer implements CommandLineRunner {
                 .password(passwordEncoder.encode(password))
                 .role(Role.ADMIN)
                 .enabled(true)
+                .passwordChangeRequired(false)
                 .build();
 
         final User savedAdmin = Objects.requireNonNull(

@@ -54,8 +54,13 @@ public class JwtService {
     }
 
     public String generateToken(String email, String role) {
+        return generateToken(email, role, false);
+    }
+
+    public String generateToken(String email, String role, boolean passwordChangeRequired) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
+        claims.put("passwordChangeRequired", passwordChangeRequired);
         return buildToken(claims, email, jwtExpiration);
     }
 

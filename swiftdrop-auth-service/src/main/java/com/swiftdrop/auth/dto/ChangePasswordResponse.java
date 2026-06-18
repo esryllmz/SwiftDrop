@@ -4,12 +4,11 @@ import java.util.UUID;
 
 import com.swiftdrop.auth.entity.Role;
 
-public record AuthResponse(
-        String accessToken,
-        String tokenType,
+public record ChangePasswordResponse(
         UUID userId,
         String email,
         Role role,
-        boolean passwordChangeRequired
+        boolean passwordChangeRequired,
+        String message
 ) {
 }

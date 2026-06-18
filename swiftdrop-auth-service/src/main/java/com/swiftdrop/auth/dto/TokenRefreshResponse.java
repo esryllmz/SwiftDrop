@@ -9,6 +9,7 @@ public record TokenRefreshResponse(
         String tokenType,
         UUID userId,
         String email,
-        Role role
+        Role role,
+        boolean passwordChangeRequired
 ) {
 }

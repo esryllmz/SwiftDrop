@@ -13,6 +13,7 @@ public class UserMapper {
         return User.builder()
                 .email(request.email())
                 .enabled(true)
+                .passwordChangeRequired(false)
                 .build();
     }
 
@@ -22,7 +23,8 @@ public class UserMapper {
                 "Bearer",
                 user.getId(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.isPasswordChangeRequired()
         );
     }
 }

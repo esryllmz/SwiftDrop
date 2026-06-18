@@ -92,7 +92,8 @@ public class InternalUserProvisioningService {
                 existingRole,
                 user.isEnabled(),
                 false,
-                null
+                null,
+                user.isPasswordChangeRequired()
         );
     }
 
@@ -104,6 +105,7 @@ public class InternalUserProvisioningService {
                 .password(encodedTemporaryPassword)
                 .role(role)
                 .enabled(true)
+                .passwordChangeRequired(true)
                 .build();
 
         final User savedUser = Objects.requireNonNull(userRepository.save(userToSave), "provisioned user must not be null");
@@ -113,7 +115,8 @@ public class InternalUserProvisioningService {
                 savedUser.getRole(),
                 savedUser.isEnabled(),
                 true,
-                temporaryPassword
+                temporaryPassword,
+                savedUser.isPasswordChangeRequired()
         );
     }
 

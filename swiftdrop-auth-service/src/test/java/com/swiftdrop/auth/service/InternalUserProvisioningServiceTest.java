@@ -88,6 +88,7 @@ class InternalUserProvisioningServiceTest {
         assertThat(response.enabled()).isTrue();
         assertThat(response.created()).isTrue();
         assertThat(response.temporaryPassword()).isNotBlank().hasSize(12);
+        assertThat(response.passwordChangeRequired()).isTrue();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
@@ -96,6 +97,7 @@ class InternalUserProvisioningServiceTest {
         assertThat(savedUser.getRole()).isEqualTo(Role.MERCHANT);
         assertThat(savedUser.getPassword()).isEqualTo("encoded-temporary-password");
         assertThat(savedUser.isEnabled()).isTrue();
+        assertThat(savedUser.isPasswordChangeRequired()).isTrue();
     }
 
     @Test
@@ -106,6 +108,7 @@ class InternalUserProvisioningServiceTest {
                 .password("existing-password")
                 .role(Role.DRIVER)
                 .enabled(true)
+                .passwordChangeRequired(true)
                 .build();
         final Optional<User> existingUserResult = optionalUser(existingUser);
         when(userRepository.findByEmail("driver.demo@swiftdrop.com")).thenReturn(existingUserResult);
@@ -119,6 +122,9 @@ class InternalUserProvisioningServiceTest {
         assertThat(response.role()).isEqualTo(Role.DRIVER);
         assertThat(response.created()).isFalse();
         assertThat(response.temporaryPassword()).isNull();
+        assertThat(response.passwordChangeRequired()).isTrue();
+        assertThat(existingUser.getPassword()).isEqualTo("existing-password");
+        assertThat(existingUser.isPasswordChangeRequired()).isTrue();
         verify(userRepository, never()).save(any(User.class));
     }
 

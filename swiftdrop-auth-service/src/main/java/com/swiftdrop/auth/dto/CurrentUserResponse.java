@@ -8,6 +8,7 @@ public record CurrentUserResponse(
         UUID userId,
         String email,
         Role role,
-        boolean enabled
+        boolean enabled,
+        boolean passwordChangeRequired
 ) {
 }

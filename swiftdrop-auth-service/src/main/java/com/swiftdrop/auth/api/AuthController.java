@@ -16,6 +16,8 @@ import java.util.Map;
 import com.swiftdrop.auth.config.RefreshTokenCookieService;
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
+import com.swiftdrop.auth.dto.ChangePasswordRequest;
+import com.swiftdrop.auth.dto.ChangePasswordResponse;
 import com.swiftdrop.auth.dto.CurrentUserResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
@@ -62,7 +64,8 @@ public class AuthController {
                         "Bearer",
                         result.userId(),
                         result.email(),
-                        result.role()
+                        result.role(),
+                        result.passwordChangeRequired()
                 ));
     }
 
@@ -72,6 +75,15 @@ public class AuthController {
     ) {
         String accessToken = extractBearerToken(authorizationHeader);
         return ResponseEntity.ok(authService.getCurrentUserFromToken(accessToken));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ChangePasswordResponse> changePassword(
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        String accessToken = extractBearerToken(authorizationHeader);
+        return ResponseEntity.ok(authService.changePassword(accessToken, request));
     }
 
     @PostMapping("/logout")

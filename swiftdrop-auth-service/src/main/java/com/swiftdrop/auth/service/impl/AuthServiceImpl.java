@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
+import com.swiftdrop.auth.dto.ChangePasswordRequest;
+import com.swiftdrop.auth.dto.ChangePasswordResponse;
 import com.swiftdrop.auth.dto.CurrentUserResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final long refreshTokenExpiration;
+    private static final int MIN_PASSWORD_LENGTH = 8;
 
     public AuthServiceImpl(
             UserRepository userRepository,
@@ -111,14 +114,19 @@ public class AuthServiceImpl implements AuthService {
         );
 
         final User user = Objects.requireNonNull(revokedRefreshToken.getUser(), "refresh token user must not be null");
-        final String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        final String newAccessToken = jwtService.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.isPasswordChangeRequired()
+        );
         final RefreshToken newRefreshToken = createRefreshToken(user);
         return new TokenRefreshResult(
                 newAccessToken,
                 newRefreshToken.getToken(),
                 user.getId(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.isPasswordChangeRequired()
         );
     }
 
@@ -137,7 +145,39 @@ public class AuthServiceImpl implements AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getRole(),
-                user.isEnabled()
+                user.isEnabled(),
+                user.isPasswordChangeRequired()
+        );
+    }
+
+    @Override
+    @Transactional
+    public ChangePasswordResponse changePassword(String accessToken, ChangePasswordRequest request) {
+        ChangePasswordRequest changePasswordRequest = Objects.requireNonNull(
+                request,
+                "change password request must not be null"
+        );
+        final User user = findValidUser(accessToken);
+
+        if (!passwordEncoder.matches(changePasswordRequest.currentPassword(), user.getPassword())) {
+            throw new AuthenticationFailedException("Invalid current password");
+        }
+
+        validateNewPassword(changePasswordRequest.currentPassword(), changePasswordRequest.newPassword());
+
+        user.setPassword(passwordEncoder.encode(changePasswordRequest.newPassword()));
+        user.setPasswordChangeRequired(false);
+        final User savedUser = Objects.requireNonNull(
+                userRepository.save(user),
+                "changed password user must not be null"
+        );
+
+        return new ChangePasswordResponse(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getRole(),
+                savedUser.isPasswordChangeRequired(),
+                "Password changed successfully."
         );
     }
 
@@ -162,7 +202,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private AuthResult createAuthResult(User user) {
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.isPasswordChangeRequired()
+        );
         RefreshToken refreshToken = createRefreshToken(user);
         AuthResponse response = userMapper.toAuthResponse(user, accessToken);
         return new AuthResult(response, refreshToken.getToken(), refreshTokenExpiration / 1000);
@@ -185,6 +229,46 @@ public class AuthServiceImpl implements AuthService {
                 "saved refresh token must not be null"
         );
         return savedRefreshToken;
+    }
+
+    private User findValidUser(String accessToken) {
+        String email = extractEmail(accessToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthenticationFailedException("Gecersiz access token."));
+
+        if (!jwtService.isTokenValid(accessToken, user.getEmail()) || !user.isEnabled()) {
+            throw new AuthenticationFailedException("Gecersiz access token.");
+        }
+
+        return user;
+    }
+
+    private void validateNewPassword(String currentPassword, String newPassword) {
+        if (Objects.equals(currentPassword, newPassword)) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        if (!meetsPasswordPolicy(newPassword)) {
+            throw new IllegalArgumentException("New password does not meet requirements");
+        }
+    }
+
+    private boolean meetsPasswordPolicy(String password) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
+            return false;
+        }
+
+        boolean hasUppercase = false;
+        boolean hasLowercase = false;
+        boolean hasDigit = false;
+        for (int i = 0; i < password.length(); i++) {
+            char character = password.charAt(i);
+            hasUppercase = hasUppercase || Character.isUpperCase(character);
+            hasLowercase = hasLowercase || Character.isLowerCase(character);
+            hasDigit = hasDigit || Character.isDigit(character);
+        }
+
+        return hasUppercase && hasLowercase && hasDigit;
     }
 
     private String extractEmail(String accessToken) {

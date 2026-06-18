@@ -10,6 +10,7 @@ public record ProvisionUserResponse(
         Role role,
         boolean enabled,
         boolean created,
-        String temporaryPassword
+        String temporaryPassword,
+        boolean passwordChangeRequired
 ) {
 }
