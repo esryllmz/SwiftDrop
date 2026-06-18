@@ -24,7 +24,7 @@ public class RedisProcessedEventService implements ProcessedEventService {
             @Value("${application.notification.processed-event-ttl-hours:24}") long ttlHours
     ) {
         this.redisTemplate = Objects.requireNonNull(redisTemplate, "redisTemplate must not be null");
-        Duration processedEventTtl = Duration.ofHours(ttlHours);
+        final Duration processedEventTtl = Duration.ofHours(ttlHours);
         this.ttl = Objects.requireNonNull(processedEventTtl, "processed event ttl must not be null");
     }
 
@@ -43,7 +43,8 @@ public class RedisProcessedEventService implements ProcessedEventService {
     public void markProcessed(OrderKafkaEvent event) {
         try {
             final String key = buildKey(event);
-            redisTemplate.opsForValue().set(key, "processed", ttl);
+            final String processedValue = "processed";
+            redisTemplate.opsForValue().set(key, processedValue, ttl);
         } catch (RuntimeException ex) {
             log.error("Processed event mark failed. orderId={}, status={}", event.orderId(), event.status(), ex);
             throw ex;

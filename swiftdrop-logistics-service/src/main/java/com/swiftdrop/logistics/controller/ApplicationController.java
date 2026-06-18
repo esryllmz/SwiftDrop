@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.controller;
 
 import java.net.URI;
+import java.util.Objects;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,8 +29,11 @@ public class ApplicationController {
     public ResponseEntity<MerchantApplicationResponse> createMerchantApplication(
             @Valid @RequestBody MerchantApplicationRequest request
     ) {
-        MerchantApplicationResponse response = applicationService.createMerchantApplication(request);
-        final URI location = URI.create("/api/v1/applications/merchant/" + response.id());
+        final MerchantApplicationResponse response = applicationService.createMerchantApplication(request);
+        final URI location = Objects.requireNonNull(
+                URI.create("/api/v1/applications/merchant/" + response.id()),
+                "merchant application location must not be null"
+        );
         return ResponseEntity.created(location)
                 .body(response);
     }
@@ -38,8 +42,11 @@ public class ApplicationController {
     public ResponseEntity<CourierApplicationResponse> createCourierApplication(
             @Valid @RequestBody CourierApplicationRequest request
     ) {
-        CourierApplicationResponse response = applicationService.createCourierApplication(request);
-        final URI location = URI.create("/api/v1/applications/courier/" + response.id());
+        final CourierApplicationResponse response = applicationService.createCourierApplication(request);
+        final URI location = Objects.requireNonNull(
+                URI.create("/api/v1/applications/courier/" + response.id()),
+                "courier application location must not be null"
+        );
         return ResponseEntity.created(location)
                 .body(response);
     }

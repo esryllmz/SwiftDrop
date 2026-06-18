@@ -3,6 +3,7 @@ package com.swiftdrop.auth.service;
 import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,10 +57,14 @@ public class InternalUserProvisioningService {
         Role requestedRole = Objects.requireNonNull(provisioningRequest.role(), "provision role must not be null");
         validateProvisioningRole(requestedRole);
 
-        String email = normalizeEmail(provisioningRequest.email());
-        return userRepository.findByEmail(email)
-                .map(existingUser -> toExistingUserResponse(existingUser, requestedRole))
-                .orElseGet(() -> createUser(email, requestedRole));
+        final String email = normalizeEmail(provisioningRequest.email());
+        final Optional<User> existingUser = userRepository.findByEmail(email);
+        if (existingUser.isPresent()) {
+            final User user = Objects.requireNonNull(existingUser.get(), "existing user must not be null");
+            return toExistingUserResponse(user, requestedRole);
+        }
+
+        return createUser(email, requestedRole);
     }
 
     private void validateInternalApiKey(String providedApiKey) {
@@ -92,15 +97,16 @@ public class InternalUserProvisioningService {
     }
 
     private ProvisionUserResponse createUser(String email, Role role) {
-        String temporaryPassword = generateTemporaryPassword();
-        User user = User.builder()
+        final String temporaryPassword = generateTemporaryPassword();
+        final String encodedTemporaryPassword = passwordEncoder.encode(temporaryPassword);
+        final User userToSave = User.builder()
                 .email(email)
-                .password(passwordEncoder.encode(temporaryPassword))
+                .password(encodedTemporaryPassword)
                 .role(role)
                 .enabled(true)
                 .build();
 
-        User savedUser = Objects.requireNonNull(userRepository.save(user), "provisioned user must not be null");
+        final User savedUser = Objects.requireNonNull(userRepository.save(userToSave), "provisioned user must not be null");
         return new ProvisionUserResponse(
                 savedUser.getId(),
                 savedUser.getEmail(),

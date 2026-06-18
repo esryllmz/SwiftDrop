@@ -40,7 +40,8 @@ public class OutboxQueryService {
 
     @Transactional(readOnly = true)
     public OutboxEventResponse findEvent(UUID id) {
-        OutboxEvent event = outboxEventRepository.findById(id)
+        final UUID eventId = Objects.requireNonNull(id, "outbox event id must not be null");
+        OutboxEvent event = outboxEventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Outbox event bulunamadi."));
 
         return toResponse(event);

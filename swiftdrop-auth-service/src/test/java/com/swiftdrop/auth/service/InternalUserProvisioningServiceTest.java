@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +72,10 @@ class InternalUserProvisioningServiceTest {
         when(userRepository.findByEmail("merchant.demo@swiftdrop.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temporary-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
+            final User user = Objects.requireNonNull(
+                    invocation.getArgument(0, User.class),
+                    "saved user must not be null"
+            );
             user.setId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
             return user;
         });
@@ -103,7 +107,8 @@ class InternalUserProvisioningServiceTest {
                 .role(Role.DRIVER)
                 .enabled(true)
                 .build();
-        when(userRepository.findByEmail("driver.demo@swiftdrop.com")).thenReturn(Optional.of(existingUser));
+        final Optional<User> existingUserResult = optionalUser(existingUser);
+        when(userRepository.findByEmail("driver.demo@swiftdrop.com")).thenReturn(existingUserResult);
 
         ProvisionUserResponse response = service.provision(
                 INTERNAL_API_KEY,
@@ -126,7 +131,8 @@ class InternalUserProvisioningServiceTest {
                 .role(Role.MERCHANT)
                 .enabled(true)
                 .build();
-        when(userRepository.findByEmail("user.demo@swiftdrop.com")).thenReturn(Optional.of(existingUser));
+        final Optional<User> existingUserResult = optionalUser(existingUser);
+        when(userRepository.findByEmail("user.demo@swiftdrop.com")).thenReturn(existingUserResult);
 
         assertThatThrownBy(() -> service.provision(
                 INTERNAL_API_KEY,
@@ -134,5 +140,9 @@ class InternalUserProvisioningServiceTest {
         )).isInstanceOf(UserRoleConflictException.class);
 
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    private static Optional<User> optionalUser(User user) {
+        return Optional.of(Objects.requireNonNull(user, "user must not be null"));
     }
 }

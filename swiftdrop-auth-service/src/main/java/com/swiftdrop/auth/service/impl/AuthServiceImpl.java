@@ -63,10 +63,10 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("Bu email adresi zaten kayitli.");
         }
 
-        User user = Objects.requireNonNull(userMapper.toEntity(request), "mapped user must not be null");
+        final User user = Objects.requireNonNull(userMapper.toEntity(request), "mapped user must not be null");
         user.setRole(Role.CUSTOMER);
         user.setPassword(passwordEncoder.encode(request.password()));
-        User savedUser = Objects.requireNonNull(userRepository.save(user), "saved user must not be null");
+        final User savedUser = Objects.requireNonNull(userRepository.save(user), "saved user must not be null");
 
         return createAuthResult(savedUser);
     }
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public TokenRefreshResult refreshToken(String token) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+        final RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new InvalidRefreshTokenException("Gecersiz refresh token."));
 
         if (refreshToken.isRevoked()) {
@@ -105,14 +105,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         refreshToken.setRevoked(true);
-        RefreshToken revokedRefreshToken = Objects.requireNonNull(
+        final RefreshToken revokedRefreshToken = Objects.requireNonNull(
                 refreshTokenRepository.save(refreshToken),
                 "revoked refresh token must not be null"
         );
 
-        User user = Objects.requireNonNull(revokedRefreshToken.getUser(), "refresh token user must not be null");
-        String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
-        RefreshToken newRefreshToken = createRefreshToken(user);
+        final User user = Objects.requireNonNull(revokedRefreshToken.getUser(), "refresh token user must not be null");
+        final String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        final RefreshToken newRefreshToken = createRefreshToken(user);
         return new TokenRefreshResult(
                 newAccessToken,
                 newRefreshToken.getToken(),
@@ -149,9 +149,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         refreshTokenRepository.findByToken(token).ifPresent(refreshToken -> {
-            refreshToken.setRevoked(true);
+            final RefreshToken tokenToRevoke = Objects.requireNonNull(
+                    refreshToken,
+                    "logout refresh token must not be null"
+            );
+            tokenToRevoke.setRevoked(true);
             Objects.requireNonNull(
-                    refreshTokenRepository.save(refreshToken),
+                    refreshTokenRepository.save(tokenToRevoke),
                     "logout refresh token must not be null"
             );
         });
@@ -170,14 +174,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private RefreshToken createRefreshToken(User user) {
-        RefreshToken refreshToken = RefreshToken.builder()
+        final RefreshToken refreshTokenToSave = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
                 .expiryDate(LocalDateTime.now().plusNanos(refreshTokenExpiration * 1_000_000))
                 .revoked(false)
                 .build();
-        RefreshToken savedRefreshToken = Objects.requireNonNull(
-                refreshTokenRepository.save(refreshToken),
+        final RefreshToken savedRefreshToken = Objects.requireNonNull(
+                refreshTokenRepository.save(refreshTokenToSave),
                 "saved refresh token must not be null"
         );
         return savedRefreshToken;

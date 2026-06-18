@@ -22,7 +22,7 @@ public class RefreshTokenCookieService {
             @Value("${application.security.cookie.path}") String path
     ) {
         this.secure = secure;
-        Duration configuredRefreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
+        final Duration configuredRefreshTokenLifetime = Duration.ofMillis(refreshExpirationMs);
         this.refreshTokenLifetime = Objects.requireNonNull(
                 configuredRefreshTokenLifetime,
                 "refresh token lifetime must not be null"
@@ -32,7 +32,7 @@ public class RefreshTokenCookieService {
     }
 
     public ResponseCookie buildRefreshTokenCookie(String token) {
-        String cookieValue = Objects.requireNonNull(token, "refresh token must not be null");
+        final String cookieValue = Objects.requireNonNull(token, "refresh token must not be null");
         return baseCookie(cookieValue)
                 .maxAge(refreshTokenLifetime)
                 .build();
@@ -45,7 +45,7 @@ public class RefreshTokenCookieService {
     }
 
     private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {
-        String cookieValue = Objects.requireNonNull(value, "cookie value must not be null");
+        final String cookieValue = Objects.requireNonNull(value, "cookie value must not be null");
         return ResponseCookie.from("refreshToken", cookieValue)
                 .httpOnly(true)
                 .secure(secure)

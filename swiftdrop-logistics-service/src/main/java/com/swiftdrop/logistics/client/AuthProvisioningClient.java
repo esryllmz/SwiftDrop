@@ -42,17 +42,17 @@ public class AuthProvisioningClient {
                     .header(INTERNAL_API_KEY_HEADER, internalApiKey)
                     .body(request)
                     .retrieve()
-                    .onStatus(HttpStatus.BAD_REQUEST::equals, (httpRequest, httpResponse) -> {
+                    .onStatus(status -> status.isSameCodeAs(HttpStatus.BAD_REQUEST), (httpRequest, httpResponse) -> {
                         throw new UserProvisioningException("Auth service rejected provisioning request.");
                     })
-                    .onStatus(HttpStatus.UNAUTHORIZED::equals, (httpRequest, httpResponse) -> {
+                    .onStatus(status -> status.isSameCodeAs(HttpStatus.UNAUTHORIZED), (httpRequest, httpResponse) -> {
                         throw new UserProvisioningException("Auth service internal provisioning is not authorized.");
                     })
-                    .onStatus(HttpStatus.CONFLICT::equals, (httpRequest, httpResponse) -> {
+                    .onStatus(status -> status.isSameCodeAs(HttpStatus.CONFLICT), (httpRequest, httpResponse) -> {
                         throw new UserProvisioningConflictException("A user with this email already exists with a different role.");
                     })
                     .onStatus(status -> status.is5xxServerError(), (httpRequest, httpResponse) -> {
-                        throw new UserProvisioningUnavailableException("Auth service provisioning is unavailable.", null);
+                        throw new UserProvisioningUnavailableException("Auth service provisioning is unavailable.");
                     })
                     .body(ProvisionUserResponse.class);
 

@@ -38,13 +38,17 @@ public class ApplicationService {
 
     @Transactional
     public MerchantApplicationResponse createMerchantApplication(MerchantApplicationRequest request) {
-        String contactEmail = normalizeEmail(request.contactEmail());
+        final MerchantApplicationRequest applicationRequest = Objects.requireNonNull(
+                request,
+                "merchant application request must not be null"
+        );
+        String contactEmail = normalizeEmail(applicationRequest.contactEmail());
         validateNoDuplicateMerchantApplication(contactEmail);
 
         MerchantApplication application = MerchantApplication.builder()
-                .businessName(request.businessName().trim())
+                .businessName(applicationRequest.businessName().trim())
                 .contactEmail(contactEmail)
-                .message(trimToNull(request.message()))
+                .message(trimToNull(applicationRequest.message()))
                 .status(ApplicationStatus.PENDING)
                 .build();
 
@@ -57,14 +61,18 @@ public class ApplicationService {
 
     @Transactional
     public CourierApplicationResponse createCourierApplication(CourierApplicationRequest request) {
-        String contactEmail = normalizeEmail(request.contactEmail());
+        final CourierApplicationRequest applicationRequest = Objects.requireNonNull(
+                request,
+                "courier application request must not be null"
+        );
+        String contactEmail = normalizeEmail(applicationRequest.contactEmail());
         validateNoDuplicateCourierApplication(contactEmail);
 
         CourierApplication application = CourierApplication.builder()
-                .fullName(request.fullName().trim())
+                .fullName(applicationRequest.fullName().trim())
                 .contactEmail(contactEmail)
-                .vehicleType(request.vehicleType())
-                .message(trimToNull(request.message()))
+                .vehicleType(applicationRequest.vehicleType())
+                .message(trimToNull(applicationRequest.message()))
                 .status(ApplicationStatus.PENDING)
                 .build();
 
@@ -103,15 +111,26 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant application not found."));
         ensurePending(application.getStatus());
 
-        ProvisionUserResponse provisionedUser = authProvisioningClient.provisionUser(
-                application.getContactEmail(),
-                "MERCHANT"
+        final ProvisionUserResponse provisionedUser = Objects.requireNonNull(
+                authProvisioningClient.provisionUser(
+                        application.getContactEmail(),
+                        "MERCHANT"
+                ),
+                "provisioned merchant user must not be null"
+        );
+        final UUID provisionedUserId = Objects.requireNonNull(
+                provisionedUser.userId(),
+                "provisioned merchant user id must not be null"
+        );
+        final ApplicationReviewRequest reviewRequest = Objects.requireNonNull(
+                request,
+                "merchant review request must not be null"
         );
 
         application.setStatus(ApplicationStatus.APPROVED);
         application.setReviewedAt(java.time.LocalDateTime.now());
-        application.setReviewNote(trimToNull(request.reviewNote()));
-        application.setProvisionedUserId(provisionedUser.userId());
+        application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
+        application.setProvisionedUserId(provisionedUserId);
 
         MerchantApplication savedApplication = Objects.requireNonNull(
                 merchantApplicationRepository.save(application),
@@ -134,15 +153,26 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Courier application not found."));
         ensurePending(application.getStatus());
 
-        ProvisionUserResponse provisionedUser = authProvisioningClient.provisionUser(
-                application.getContactEmail(),
-                "DRIVER"
+        final ProvisionUserResponse provisionedUser = Objects.requireNonNull(
+                authProvisioningClient.provisionUser(
+                        application.getContactEmail(),
+                        "DRIVER"
+                ),
+                "provisioned courier user must not be null"
+        );
+        final UUID provisionedUserId = Objects.requireNonNull(
+                provisionedUser.userId(),
+                "provisioned courier user id must not be null"
+        );
+        final ApplicationReviewRequest reviewRequest = Objects.requireNonNull(
+                request,
+                "courier review request must not be null"
         );
 
         application.setStatus(ApplicationStatus.APPROVED);
         application.setReviewedAt(java.time.LocalDateTime.now());
-        application.setReviewNote(trimToNull(request.reviewNote()));
-        application.setProvisionedUserId(provisionedUser.userId());
+        application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
+        application.setProvisionedUserId(provisionedUserId);
 
         CourierApplication savedApplication = Objects.requireNonNull(
                 courierApplicationRepository.save(application),
@@ -170,7 +200,11 @@ public class ApplicationService {
 
         application.setStatus(status);
         application.setReviewedAt(java.time.LocalDateTime.now());
-        application.setReviewNote(trimToNull(request.reviewNote()));
+        final ApplicationReviewRequest reviewRequest = Objects.requireNonNull(
+                request,
+                "merchant review request must not be null"
+        );
+        application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
 
         MerchantApplication savedApplication = Objects.requireNonNull(
                 merchantApplicationRepository.save(application),
@@ -190,7 +224,11 @@ public class ApplicationService {
 
         application.setStatus(status);
         application.setReviewedAt(java.time.LocalDateTime.now());
-        application.setReviewNote(trimToNull(request.reviewNote()));
+        final ApplicationReviewRequest reviewRequest = Objects.requireNonNull(
+                request,
+                "courier review request must not be null"
+        );
+        application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
 
         CourierApplication savedApplication = Objects.requireNonNull(
                 courierApplicationRepository.save(application),
