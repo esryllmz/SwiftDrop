@@ -5,7 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { isPublicRoute, isRouteMatch } from "@/lib/routes";
+import {
+  ADMIN_ROUTES,
+  isPublicRoute,
+  isRouteMatch,
+  resolveAuthPortal,
+  resolvePortalRouteRole,
+  resolveRoleRedirect,
+} from "@/lib/routes";
 
 type NavItem = {
   href: string;
@@ -83,19 +90,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const ADMIN_ROUTES = [
-  "/dashboard",
-  "/orders",
-  "/drivers",
-  "/merchants",
-  "/event-stream",
-  "/outbox",
-  "/system-monitoring",
-  "/health",
-  "/users-approvals",
-  "/settings",
-  "/profile",
-];
 const ROUTE_ALIASES: Record<string, string> = {
   "/outbox": "/event-stream",
   "/health": "/system-monitoring",
@@ -114,6 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isCurrentPublicRoute = isPublicRoute(pathname);
   const isAdminRoute = isRouteMatch(pathname, ADMIN_ROUTES);
+  const portalRouteRole = resolvePortalRouteRole(pathname);
   const isChangePasswordRoute = pathname === "/change-password";
 
   useEffect(() => {
@@ -121,6 +116,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/auth?portal=staff");
     }
   }, [isAdminRoute, isLoading, router, user]);
+
+  useEffect(() => {
+    if (!isLoading && portalRouteRole && !user) {
+      router.replace(`/auth?portal=${resolveAuthPortal(portalRouteRole)}`);
+    }
+  }, [isLoading, portalRouteRole, router, user]);
 
   useEffect(() => {
     if (!isLoading && user?.passwordChangeRequired && !isChangePasswordRoute) {
@@ -139,6 +140,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         message="Redirecting you to set a new password."
       />
     );
+  }
+
+  if (portalRouteRole) {
+    if (isLoading) {
+      return (
+        <FullPageState
+          title="Restoring session"
+          message="Checking your session before opening this portal."
+        />
+      );
+    }
+
+    if (!user) {
+      return (
+        <FullPageState
+          title="Authentication required"
+          message="Redirecting to the correct portal login."
+        />
+      );
+    }
+
+    if (user.role !== portalRouteRole) {
+      return (
+        <AccessDenied
+          email={user.email}
+          role={user.role}
+          message={`This portal requires ${portalRouteRole} access.`}
+          actionHref={resolveRoleRedirect(user.role)}
+          actionLabel="Go to your portal"
+          onLogout={() => {
+            void logout().finally(() => router.replace("/"));
+          }}
+        />
+      );
+    }
+
+    return <>{children}</>;
   }
 
   if (isCurrentPublicRoute || !isAdminRoute) {
@@ -168,6 +206,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AccessDenied
         email={user.email}
         role={user.role}
+        message="The operations console requires ADMIN."
+        actionHref={resolveRoleRedirect(user.role)}
+        actionLabel="Go to your portal"
         onLogout={() => {
           void logout().finally(() => router.replace("/"));
         }}
@@ -299,10 +340,16 @@ function FullPageState({ title, message }: { title: string; message: string }) {
 function AccessDenied({
   email,
   role,
+  message,
+  actionHref,
+  actionLabel,
   onLogout,
 }: {
   email: string;
   role: string;
+  message: string;
+  actionHref?: string;
+  actionLabel?: string;
   onLogout: () => void;
 }) {
   return (
@@ -310,9 +357,17 @@ function AccessDenied({
       <div className="w-full max-w-lg rounded-xl border border-rose-200 bg-rose-50 p-5">
         <h1 className="text-xl font-semibold text-slate-950">Access denied</h1>
         <p className="mt-2 text-sm leading-6 text-rose-700">
-          {email} is signed in with role {role}. The operations console requires ADMIN.
+          {email} is signed in with role {role}. {message}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
+          {actionHref && actionLabel ? (
+            <Link
+              href={actionHref}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              {actionLabel}
+            </Link>
+          ) : null}
           <Link
             href="/"
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"

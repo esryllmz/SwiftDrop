@@ -16,6 +16,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
 import { normalizeApiError } from "@/lib/api";
+import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showInfoToast, showSuccessToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
@@ -126,8 +127,9 @@ const accentClass = {
 };
 
 function resolvePortal(value: string | null): PortalKey {
-  if (value === "merchant" || value === "courier" || value === "staff") {
-    return value;
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "merchant" || normalized === "courier" || normalized === "staff") {
+    return normalized;
   }
   return "customer";
 }
@@ -196,12 +198,6 @@ function AuthPageContent() {
         return;
       }
 
-      if (response.role === "ADMIN") {
-        showSuccessToast("Signed in.");
-        router.replace("/dashboard");
-        return;
-      }
-
       if (response.role === "CUSTOMER") {
         setSuccess("Customer account authenticated.");
       } else if (response.role === "MERCHANT") {
@@ -210,6 +206,7 @@ function AuthPageContent() {
         setSuccess("Courier account authenticated.");
       }
       showSuccessToast(mode === "register" ? "Account created." : "Signed in.");
+      router.replace(resolveRoleRedirect(response.role));
     } catch (err) {
       const message = toAuthErrorMessage(err);
       setError(message);

@@ -6,8 +6,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { Button, Card, ErrorState, Field } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { normalizeApiError } from "@/lib/api";
+import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
-import type { UserRole } from "@/types/api";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -111,10 +111,6 @@ function validatePasswordForm(newPassword: string, confirmPassword: string) {
     return "New password must include at least 8 characters, uppercase, lowercase, and number.";
   }
   return null;
-}
-
-function resolveRoleRedirect(role: UserRole) {
-  return role === "ADMIN" ? "/dashboard" : "/";
 }
 
 function PublicHeader() {

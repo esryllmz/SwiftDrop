@@ -57,6 +57,44 @@ export type OrderResponse = {
   createdAt: string;
 };
 
+export type CustomerProfileResponse = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  totalOrders: number;
+  activeOrders: number;
+  deliveredOrders: number;
+};
+
+export type MerchantProfileResponse = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  merchantId: string;
+  businessName?: string | null;
+  name?: string | null;
+  latitude: number;
+  longitude: number;
+  totalOrders: number;
+  activeOrders: number;
+};
+
+export type CourierProfileResponse = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  driverId: string;
+  fullName: string;
+  status: string;
+  assignedOrders: number;
+  deliveredOrders: number;
+};
+
+export type CreateCustomerOrderRequest = {
+  merchantId: string;
+  totalAmount: number;
+};
+
 export type DriverResponse = {
   id: string;
   userId: string;
