@@ -149,6 +149,7 @@ public class AuthServiceImpl implements AuthService {
 
         final User user = Objects.requireNonNull(revokedRefreshToken.getUser(), "refresh token user must not be null");
         final String newAccessToken = jwtService.generateToken(
+                user.getId(),
                 user.getEmail(),
                 user.getRole().name(),
                 user.isPasswordChangeRequired()
@@ -207,6 +208,7 @@ public class AuthServiceImpl implements AuthService {
         );
         revokeActiveTokens(savedUser);
         final String newAccessToken = jwtService.generateToken(
+                savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getRole().name(),
                 savedUser.isPasswordChangeRequired()
@@ -307,6 +309,7 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResult createAuthResult(User user) {
         String accessToken = jwtService.generateToken(
+                user.getId(),
                 user.getEmail(),
                 user.getRole().name(),
                 user.isPasswordChangeRequired()

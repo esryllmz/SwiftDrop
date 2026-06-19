@@ -83,7 +83,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         headers.remove(USER_EMAIL_HEADER);
                         headers.remove(USER_ROLE_HEADER);
                     })
-                    .header(AUTHENTICATED_USER_HEADER, claims.email())
+                    .header(AUTHENTICATED_USER_HEADER, claims.userId())
                     .header(USER_EMAIL_HEADER, claims.email());
 
             if (claims.role() != null && !claims.role().isBlank()) {

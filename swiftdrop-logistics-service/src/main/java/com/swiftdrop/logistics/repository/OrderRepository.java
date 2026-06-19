@@ -37,4 +37,43 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             where o.id = :id
             """)
     Optional<Order> findByIdForDashboard(@Param("id") UUID id);
+
+    @Query("""
+            select o from Order o
+            left join fetch o.merchant
+            left join fetch o.driver
+            where o.customerId = :customerId
+            order by o.createdAt desc
+            """)
+    List<Order> findByCustomerIdOrderByCreatedAtDesc(@Param("customerId") UUID customerId);
+
+    @Query("""
+            select o from Order o
+            left join fetch o.merchant
+            left join fetch o.driver
+            where o.merchant.id = :merchantId
+            order by o.createdAt desc
+            """)
+    List<Order> findByMerchantIdOrderByCreatedAtDesc(@Param("merchantId") UUID merchantId);
+
+    @Query("""
+            select o from Order o
+            left join fetch o.merchant
+            left join fetch o.driver
+            where o.driver.id = :driverId
+            order by o.createdAt desc
+            """)
+    List<Order> findByDriverIdOrderByCreatedAtDesc(@Param("driverId") UUID driverId);
+
+    long countByCustomerId(UUID customerId);
+
+    long countByCustomerIdAndStatus(UUID customerId, OrderStatus status);
+
+    long countByMerchant_Id(UUID merchantId);
+
+    long countByMerchant_IdAndStatus(UUID merchantId, OrderStatus status);
+
+    long countByDriver_Id(UUID driverId);
+
+    long countByDriver_IdAndStatus(UUID driverId, OrderStatus status);
 }

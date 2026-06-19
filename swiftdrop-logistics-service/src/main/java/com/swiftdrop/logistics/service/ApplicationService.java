@@ -18,12 +18,17 @@ import com.swiftdrop.logistics.dto.ProvisionUserResponse;
 import com.swiftdrop.logistics.dto.ProvisionedAccountResponse;
 import com.swiftdrop.logistics.entity.ApplicationStatus;
 import com.swiftdrop.logistics.entity.CourierApplication;
+import com.swiftdrop.logistics.entity.Driver;
+import com.swiftdrop.logistics.entity.DriverStatus;
+import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.MerchantApplication;
 import com.swiftdrop.logistics.client.AuthProvisioningClient;
 import com.swiftdrop.logistics.exception.ApplicationAlreadyReviewedException;
 import com.swiftdrop.logistics.exception.DuplicateApplicationException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.repository.CourierApplicationRepository;
+import com.swiftdrop.logistics.repository.DriverRepository;
+import com.swiftdrop.logistics.repository.MerchantRepository;
 import com.swiftdrop.logistics.repository.MerchantApplicationRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +40,8 @@ public class ApplicationService {
     private final MerchantApplicationRepository merchantApplicationRepository;
     private final CourierApplicationRepository courierApplicationRepository;
     private final AuthProvisioningClient authProvisioningClient;
+    private final MerchantRepository merchantRepository;
+    private final DriverRepository driverRepository;
 
     @Transactional
     public MerchantApplicationResponse createMerchantApplication(MerchantApplicationRequest request) {
@@ -132,6 +139,8 @@ public class ApplicationService {
         application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
         application.setProvisionedUserId(provisionedUserId);
 
+        ensureMerchantProfile(application, provisionedUserId);
+
         MerchantApplication savedApplication = Objects.requireNonNull(
                 merchantApplicationRepository.save(application),
                 "approved merchant application must not be null"
@@ -173,6 +182,8 @@ public class ApplicationService {
         application.setReviewedAt(java.time.LocalDateTime.now());
         application.setReviewNote(trimToNull(reviewRequest.reviewNote()));
         application.setProvisionedUserId(provisionedUserId);
+
+        ensureDriverProfile(application, provisionedUserId);
 
         CourierApplication savedApplication = Objects.requireNonNull(
                 courierApplicationRepository.save(application),
@@ -259,6 +270,33 @@ public class ApplicationService {
         if (status != ApplicationStatus.PENDING) {
             throw new ApplicationAlreadyReviewedException("Application has already been reviewed.");
         }
+    }
+
+    private void ensureMerchantProfile(MerchantApplication application, UUID provisionedUserId) {
+        if (merchantRepository.findByUserId(provisionedUserId).isPresent()) {
+            return;
+        }
+
+        Merchant merchant = Merchant.builder()
+                .userId(provisionedUserId)
+                .name(application.getBusinessName())
+                .latitude(0.0)
+                .longitude(0.0)
+                .build();
+        Objects.requireNonNull(merchantRepository.save(merchant), "approved merchant profile must not be null");
+    }
+
+    private void ensureDriverProfile(CourierApplication application, UUID provisionedUserId) {
+        if (driverRepository.findByUserId(provisionedUserId).isPresent()) {
+            return;
+        }
+
+        Driver driver = Driver.builder()
+                .userId(provisionedUserId)
+                .fullName(application.getFullName())
+                .status(DriverStatus.OFFLINE)
+                .build();
+        Objects.requireNonNull(driverRepository.save(driver), "approved courier profile must not be null");
     }
 
     private MerchantApplicationResponse toMerchantResponse(MerchantApplication application) {

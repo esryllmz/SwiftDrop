@@ -36,6 +36,22 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(MissingAuthenticationContextException.class)
+    public ResponseEntity<ErrorResponse> handleMissingAuthenticationContext(
+            MissingAuthenticationContextException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ForbiddenPortalAccessException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenPortalAccess(
+            ForbiddenPortalAccessException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException ex,

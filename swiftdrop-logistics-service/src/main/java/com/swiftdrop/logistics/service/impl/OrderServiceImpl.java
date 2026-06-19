@@ -1,5 +1,6 @@
 package com.swiftdrop.logistics.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,8 +19,9 @@ import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.swiftdrop.logistics.dto.OrderCreateRequest;
+import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
 import com.swiftdrop.logistics.dto.OrderKafkaEvent;
+import com.swiftdrop.logistics.dto.OrderCreateRequest;
 import com.swiftdrop.logistics.dto.OrderResponse;
 import com.swiftdrop.logistics.entity.Driver;
 import com.swiftdrop.logistics.entity.DriverStatus;
@@ -53,14 +55,24 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request) {
-        Merchant merchant = merchantRepository.findById(request.merchantId())
+        return createOrder(request.customerId(), request.merchantId(), request.totalAmount());
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse createCustomerOrder(UUID customerId, CreateCustomerOrderRequest request) {
+        return createOrder(customerId, request.merchantId(), request.totalAmount());
+    }
+
+    private OrderResponse createOrder(UUID customerId, UUID merchantId, BigDecimal totalAmount) {
+        Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new IllegalArgumentException("Restoran bulunamadi."));
 
         Order order = Order.builder()
-                .customerId(request.customerId())
+                .customerId(customerId)
                 .merchant(merchant)
                 .status(OrderStatus.PLACED)
-                .totalAmount(request.totalAmount())
+                .totalAmount(totalAmount)
                 .build();
 
         Order savedOrder = Objects.requireNonNull(orderRepository.save(order), "saved order must not be null");
@@ -181,6 +193,31 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId) {
         return orderRepository.findAllForDashboard(status, merchantId, driverId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findCustomerOrders(UUID customerId) {
+        return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findMerchantOrders(UUID merchantId) {
+        return orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findDriverAssignments(UUID driverId) {
+        return orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId).stream()
+                .filter(order -> order.getStatus() != OrderStatus.DELIVERED)
                 .map(this::toResponse)
                 .toList();
     }

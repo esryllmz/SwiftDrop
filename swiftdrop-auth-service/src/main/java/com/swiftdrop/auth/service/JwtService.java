@@ -3,6 +3,7 @@ package com.swiftdrop.auth.service;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -58,7 +59,14 @@ public class JwtService {
     }
 
     public String generateToken(String email, String role, boolean passwordChangeRequired) {
+        return generateToken(null, email, role, passwordChangeRequired);
+    }
+
+    public String generateToken(UUID userId, String email, String role, boolean passwordChangeRequired) {
         Map<String, Object> claims = new HashMap<>();
+        if (userId != null) {
+            claims.put("userId", userId.toString());
+        }
         claims.put("role", role);
         claims.put("passwordChangeRequired", passwordChangeRequired);
         return buildToken(claims, email, jwtExpiration);

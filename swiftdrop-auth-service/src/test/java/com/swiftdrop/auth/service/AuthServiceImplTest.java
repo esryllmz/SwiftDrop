@@ -85,7 +85,8 @@ class AuthServiceImplTest {
             user.setId(USER_ID);
             return user;
         });
-        when(jwtService.generateToken("customer@swiftdrop.com", "CUSTOMER", false)).thenReturn("access-token");
+        when(jwtService.generateToken(USER_ID, "customer@swiftdrop.com", "CUSTOMER", false))
+                .thenReturn("access-token");
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthResult result = service.register(new RegisterRequest("customer@swiftdrop.com", "Customer123"));
@@ -101,7 +102,8 @@ class AuthServiceImplTest {
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
         when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
         when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
-        when(jwtService.generateToken("merchant@swiftdrop.com", "MERCHANT", true)).thenReturn("access-token");
+        when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", true))
+                .thenReturn("access-token");
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthResult result = service.login(new LoginRequest("merchant@swiftdrop.com", "TempPass123"));
@@ -155,7 +157,8 @@ class AuthServiceImplTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
         when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
-        when(jwtService.generateToken("merchant@swiftdrop.com", "MERCHANT", false)).thenReturn("new-access-token");
+        when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", false))
+                .thenReturn("new-access-token");
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ChangePasswordResult result = service.changePassword(

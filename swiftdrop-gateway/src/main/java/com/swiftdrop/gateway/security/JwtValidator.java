@@ -55,7 +55,12 @@ public class JwtValidator {
                 throw new JwtException("JWT subject is missing.");
             }
 
-            return new JwtClaims(email, claims.get("role", String.class));
+            String userId = claims.get("userId", String.class);
+            if (userId == null || userId.isBlank()) {
+                throw new JwtException("JWT user id is missing.");
+            }
+
+            return new JwtClaims(userId, email, claims.get("role", String.class));
         } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidAccessTokenException("Missing or invalid access token", ex);
         }
