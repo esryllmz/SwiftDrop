@@ -1,6 +1,14 @@
 package com.swiftdrop.auth.service.impl;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -13,10 +21,16 @@ import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
 import com.swiftdrop.auth.dto.ChangePasswordRequest;
 import com.swiftdrop.auth.dto.ChangePasswordResponse;
+import com.swiftdrop.auth.dto.ChangePasswordResult;
 import com.swiftdrop.auth.dto.CurrentUserResponse;
+import com.swiftdrop.auth.dto.ForgotPasswordRequest;
+import com.swiftdrop.auth.dto.ForgotPasswordResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
+import com.swiftdrop.auth.dto.ResetPasswordRequest;
+import com.swiftdrop.auth.dto.ResetPasswordResponse;
 import com.swiftdrop.auth.dto.TokenRefreshResult;
+import com.swiftdrop.auth.entity.PasswordResetToken;
 import com.swiftdrop.auth.entity.RefreshToken;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
@@ -25,6 +39,7 @@ import com.swiftdrop.auth.exception.DuplicateResourceException;
 import com.swiftdrop.auth.exception.InvalidRefreshTokenException;
 import com.swiftdrop.auth.exception.TokenExpiredException;
 import com.swiftdrop.auth.mapper.UserMapper;
+import com.swiftdrop.auth.repository.PasswordResetTokenRepository;
 import com.swiftdrop.auth.repository.RefreshTokenRepository;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.auth.service.AuthService;
@@ -37,26 +52,45 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final long refreshTokenExpiration;
+    private final long passwordResetTokenTtlMinutes;
+    private final boolean exposePasswordResetTokenInResponse;
+    private final SecureRandom secureRandom;
     private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int RESET_TOKEN_BYTES = 32;
+    private static final String FORGOT_PASSWORD_MESSAGE =
+            "If an account exists for this portal, password reset instructions will be sent.";
+    private static final String RESET_PASSWORD_SUCCESS_MESSAGE =
+            "Password reset successfully. Please sign in with your new password.";
 
     public AuthServiceImpl(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
+            PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             UserMapper userMapper,
-            @Value("${application.security.jwt.refresh-token.expiration}") long refreshTokenExpiration
+            @Value("${application.security.jwt.refresh-token.expiration}") long refreshTokenExpiration,
+            @Value("${application.password-reset.token-ttl-minutes}") long passwordResetTokenTtlMinutes,
+            @Value("${application.password-reset.expose-token-in-response}") boolean exposePasswordResetTokenInResponse
     ) {
         this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
         this.refreshTokenRepository = Objects.requireNonNull(refreshTokenRepository, "refreshTokenRepository must not be null");
+        this.passwordResetTokenRepository = Objects.requireNonNull(
+                passwordResetTokenRepository,
+                "passwordResetTokenRepository must not be null"
+        );
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder must not be null");
         this.jwtService = Objects.requireNonNull(jwtService, "jwtService must not be null");
         this.userMapper = Objects.requireNonNull(userMapper, "userMapper must not be null");
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.passwordResetTokenTtlMinutes = passwordResetTokenTtlMinutes;
+        this.exposePasswordResetTokenInResponse = exposePasswordResetTokenInResponse;
+        this.secureRandom = new SecureRandom();
     }
 
     @Override
@@ -152,7 +186,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public ChangePasswordResponse changePassword(String accessToken, ChangePasswordRequest request) {
+    public ChangePasswordResult changePassword(String accessToken, ChangePasswordRequest request) {
         ChangePasswordRequest changePasswordRequest = Objects.requireNonNull(
                 request,
                 "change password request must not be null"
@@ -171,14 +205,84 @@ public class AuthServiceImpl implements AuthService {
                 userRepository.save(user),
                 "changed password user must not be null"
         );
-
-        return new ChangePasswordResponse(
-                savedUser.getId(),
+        revokeActiveTokens(savedUser);
+        final String newAccessToken = jwtService.generateToken(
                 savedUser.getEmail(),
-                savedUser.getRole(),
-                savedUser.isPasswordChangeRequired(),
-                "Password changed successfully."
+                savedUser.getRole().name(),
+                savedUser.isPasswordChangeRequired()
         );
+        final RefreshToken newRefreshToken = createRefreshToken(savedUser);
+
+        return new ChangePasswordResult(
+                new ChangePasswordResponse(
+                        newAccessToken,
+                        "Bearer",
+                        savedUser.getId(),
+                        savedUser.getEmail(),
+                        savedUser.getRole(),
+                        savedUser.isPasswordChangeRequired(),
+                        "Password changed successfully."
+                ),
+                newRefreshToken.getToken(),
+                refreshTokenExpiration / 1000
+        );
+    }
+
+    @Override
+    @Transactional
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        ForgotPasswordRequest forgotPasswordRequest = Objects.requireNonNull(
+                request,
+                "forgot password request must not be null"
+        );
+        final Role requestedRole = resolvePortalRole(forgotPasswordRequest.portal());
+        final String email = normalizeEmail(forgotPasswordRequest.email());
+        final Instant expiresAt = Instant.now().plusSeconds(passwordResetTokenTtlMinutes * 60);
+
+        return userRepository.findByEmail(email)
+                .filter(User::isEnabled)
+                .filter(user -> user.getRole() == requestedRole)
+                .map(user -> createPasswordResetResponse(user, expiresAt))
+                .orElseGet(() -> new ForgotPasswordResponse(FORGOT_PASSWORD_MESSAGE, null, null));
+    }
+
+    @Override
+    @Transactional
+    public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
+        ResetPasswordRequest resetPasswordRequest = Objects.requireNonNull(
+                request,
+                "reset password request must not be null"
+        );
+        validateResetPasswordRequest(resetPasswordRequest);
+
+        final String tokenHash = hashToken(resetPasswordRequest.token());
+        final PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHashAndUsedAtIsNull(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset token"));
+
+        final Instant now = Instant.now();
+        if (resetToken.getExpiresAt().isBefore(now)) {
+            resetToken.setUsedAt(now);
+            passwordResetTokenRepository.save(resetToken);
+            throw new IllegalArgumentException("Invalid or expired password reset token");
+        }
+
+        final User user = Objects.requireNonNull(resetToken.getUser(), "password reset user must not be null");
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Invalid or expired password reset token");
+        }
+
+        if (passwordEncoder.matches(resetPasswordRequest.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(resetPasswordRequest.newPassword()));
+        user.setPasswordChangeRequired(false);
+        resetToken.setUsedAt(now);
+        userRepository.save(user);
+        passwordResetTokenRepository.save(resetToken);
+        revokeActiveTokens(user);
+
+        return new ResetPasswordResponse(RESET_PASSWORD_SUCCESS_MESSAGE);
     }
 
     @Override
@@ -213,8 +317,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void revokeActiveTokens(User user) {
-        refreshTokenRepository.findAllByUser_IdAndRevokedFalse(user.getId())
-                .forEach(refreshToken -> refreshToken.setRevoked(true));
+        final List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedFalse(user.getId());
+        activeTokens.forEach(refreshToken -> refreshToken.setRevoked(true));
+        refreshTokenRepository.saveAll(activeTokens);
     }
 
     private RefreshToken createRefreshToken(User user) {
@@ -269,6 +374,81 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return hasUppercase && hasLowercase && hasDigit;
+    }
+
+    private ForgotPasswordResponse createPasswordResetResponse(User user, Instant expiresAt) {
+        revokeUnusedPasswordResetTokens(user);
+        final String rawToken = generateRawResetToken();
+        final PasswordResetToken resetToken = PasswordResetToken.builder()
+                .user(user)
+                .tokenHash(hashToken(rawToken))
+                .expiresAt(expiresAt)
+                .build();
+        passwordResetTokenRepository.save(resetToken);
+
+        return new ForgotPasswordResponse(
+                FORGOT_PASSWORD_MESSAGE,
+                exposePasswordResetTokenInResponse ? rawToken : null,
+                expiresAt
+        );
+    }
+
+    private void revokeUnusedPasswordResetTokens(User user) {
+        final Instant now = Instant.now();
+        final List<PasswordResetToken> activeTokens =
+                passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(user.getId());
+        activeTokens.forEach(resetToken -> resetToken.setUsedAt(now));
+        passwordResetTokenRepository.saveAll(activeTokens);
+    }
+
+    private void validateResetPasswordRequest(ResetPasswordRequest request) {
+        if (!Objects.equals(request.newPassword(), request.confirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation do not match");
+        }
+
+        if (!meetsPasswordPolicy(request.newPassword())) {
+            throw new IllegalArgumentException("New password does not meet requirements");
+        }
+    }
+
+    private Role resolvePortalRole(String portal) {
+        final String normalizedPortal = Objects.requireNonNull(portal, "portal must not be null")
+                .trim()
+                .toUpperCase(Locale.ROOT);
+        return switch (normalizedPortal) {
+            case "CUSTOMER" -> Role.CUSTOMER;
+            case "MERCHANT" -> Role.MERCHANT;
+            case "COURIER" -> Role.DRIVER;
+            case "STAFF" -> Role.ADMIN;
+            default -> throw new IllegalArgumentException("Invalid password reset portal");
+        };
+    }
+
+    private String generateRawResetToken() {
+        byte[] tokenBytes = new byte[RESET_TOKEN_BYTES];
+        secureRandom.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashedBytes = digest.digest(
+                    Objects.requireNonNull(rawToken, "password reset token must not be null")
+                            .getBytes(StandardCharsets.UTF_8)
+            );
+            StringBuilder builder = new StringBuilder(hashedBytes.length * 2);
+            for (byte hashedByte : hashedBytes) {
+                builder.append(String.format("%02x", hashedByte & 0xff));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is not available.", ex);
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        return Objects.requireNonNull(email, "email must not be null").trim().toLowerCase(Locale.ROOT);
     }
 
     private String extractEmail(String accessToken) {

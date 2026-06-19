@@ -6,6 +6,7 @@ export type AuthResponse = {
   userId: string;
   email: string;
   role: UserRole;
+  passwordChangeRequired: boolean;
 };
 
 export type CurrentUserResponse = {
@@ -13,6 +14,21 @@ export type CurrentUserResponse = {
   email: string;
   role: UserRole;
   enabled: boolean;
+  passwordChangeRequired: boolean;
+};
+
+export type ChangePasswordResponse = AuthResponse & {
+  message: string;
+};
+
+export type ForgotPasswordResponse = {
+  message: string;
+  devResetToken?: string | null;
+  expiresAt?: string | null;
+};
+
+export type ResetPasswordResponse = {
+  message: string;
 };
 
 export type DashboardSummaryResponse = {
@@ -113,6 +129,7 @@ export type ProvisionedAccountResponse = {
   enabled?: boolean;
   created: boolean;
   temporaryPassword?: string | null;
+  passwordChangeRequired?: boolean;
 };
 
 export type MerchantApplicationReviewResponse = {

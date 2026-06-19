@@ -15,6 +15,8 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
+import { normalizeApiError } from "@/lib/api";
+import { showErrorToast, showInfoToast, showSuccessToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
 type ApplicationModalKind = "merchant" | "courier";
@@ -182,11 +184,20 @@ function AuthPageContent() {
 
       if (response.role !== config.expectedRole) {
         await auth.logout();
-        setError("This account is not authorized for this portal.");
+        const message = "This account is not authorized for this portal.";
+        setError(message);
+        showErrorToast(message);
+        return;
+      }
+
+      if (response.passwordChangeRequired) {
+        showInfoToast("Please set a new password to continue.");
+        router.replace("/change-password");
         return;
       }
 
       if (response.role === "ADMIN") {
+        showSuccessToast("Signed in.");
         router.replace("/dashboard");
         return;
       }
@@ -198,8 +209,11 @@ function AuthPageContent() {
       } else {
         setSuccess("Courier account authenticated.");
       }
+      showSuccessToast(mode === "register" ? "Account created." : "Signed in.");
     } catch (err) {
-      setError(toAuthErrorMessage(err));
+      const message = toAuthErrorMessage(err);
+      setError(message);
+      showErrorToast(message);
     } finally {
       setLoading(false);
     }
@@ -211,8 +225,11 @@ function AuthPageContent() {
     try {
       await auth.logout();
       setSuccess("Signed out.");
+      showSuccessToast("Signed out.");
     } catch (err) {
-      setError(toAuthErrorMessage(err));
+      const message = toAuthErrorMessage(err);
+      setError(message);
+      showErrorToast(message);
     } finally {
       setLoading(false);
     }
@@ -255,6 +272,16 @@ function AuthPageContent() {
             >
               <Field label="Email" value={email} onChange={setEmail} />
               <Field label="Password" type="password" value={password} onChange={setPassword} />
+              {mode === "login" ? (
+                <div className="flex justify-end">
+                  <Link
+                    href={`/forgot-password?portal=${portal}`}
+                    className="text-sm font-semibold text-blue-600 transition hover:text-blue-700"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              ) : null}
               <Button type="submit" disabled={loading} className={`h-11 w-full ${accent.button}`}>
                 {loading ? "Please wait..." : mode === "register" ? "Create Account" : "Login"}
               </Button>
@@ -459,14 +486,5 @@ function ShieldIcon() {
 }
 
 function toAuthErrorMessage(err: unknown) {
-  if (err instanceof Error) {
-    if (err.message.toLowerCase().includes("failed to fetch")) {
-      return "Service is unavailable. Please try again later.";
-    }
-    if (err.message.toLowerCase().includes("bad credentials")) {
-      return "Invalid email or password.";
-    }
-    return err.message;
-  }
-  return "Authentication request failed.";
+  return normalizeApiError(err, "Authentication request failed.");
 }

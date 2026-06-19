@@ -82,7 +82,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const PUBLIC_ROUTES = ["/", "/auth", "/staff-login"];
+const PUBLIC_ROUTES = ["/", "/auth", "/staff-login", "/forgot-password", "/reset-password"];
 const ADMIN_ROUTES = [
   "/dashboard",
   "/orders",
@@ -114,12 +114,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isPublicRoute = isRouteMatch(pathname, PUBLIC_ROUTES);
   const isAdminRoute = isRouteMatch(pathname, ADMIN_ROUTES);
+  const isChangePasswordRoute = pathname === "/change-password";
 
   useEffect(() => {
     if (!isLoading && isAdminRoute && !user) {
       router.replace("/auth?portal=staff");
     }
   }, [isAdminRoute, isLoading, router, user]);
+
+  useEffect(() => {
+    if (!isLoading && user?.passwordChangeRequired && !isChangePasswordRoute) {
+      router.replace("/change-password");
+    }
+  }, [isChangePasswordRoute, isLoading, router, user]);
+
+  if (isChangePasswordRoute) {
+    return <>{children}</>;
+  }
+
+  if (user?.passwordChangeRequired) {
+    return (
+      <FullPageState
+        title="Password change required"
+        message="Redirecting you to set a new password."
+      />
+    );
+  }
 
   if (isPublicRoute || !isAdminRoute) {
     return <>{children}</>;

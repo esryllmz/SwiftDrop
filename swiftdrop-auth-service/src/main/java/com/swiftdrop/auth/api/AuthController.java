@@ -17,10 +17,15 @@ import com.swiftdrop.auth.config.RefreshTokenCookieService;
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
 import com.swiftdrop.auth.dto.ChangePasswordRequest;
+import com.swiftdrop.auth.dto.ChangePasswordResult;
 import com.swiftdrop.auth.dto.ChangePasswordResponse;
 import com.swiftdrop.auth.dto.CurrentUserResponse;
+import com.swiftdrop.auth.dto.ForgotPasswordRequest;
+import com.swiftdrop.auth.dto.ForgotPasswordResponse;
 import com.swiftdrop.auth.dto.LoginRequest;
 import com.swiftdrop.auth.dto.RegisterRequest;
+import com.swiftdrop.auth.dto.ResetPasswordRequest;
+import com.swiftdrop.auth.dto.ResetPasswordResponse;
 import com.swiftdrop.auth.dto.TokenRefreshResponse;
 import com.swiftdrop.auth.dto.TokenRefreshResult;
 import com.swiftdrop.auth.exception.AuthenticationFailedException;
@@ -83,7 +88,26 @@ public class AuthController {
             @Valid @RequestBody ChangePasswordRequest request
     ) {
         String accessToken = extractBearerToken(authorizationHeader);
-        return ResponseEntity.ok(authService.changePassword(accessToken, request));
+        ChangePasswordResult result = authService.changePassword(accessToken, request);
+        ResponseCookie refreshCookie = refreshTokenCookieService.buildRefreshTokenCookie(result.refreshToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(result.response());
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
     @PostMapping("/logout")

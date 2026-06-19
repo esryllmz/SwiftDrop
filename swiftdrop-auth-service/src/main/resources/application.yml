@@ -35,6 +35,9 @@ management:
         enabled: true
 
 application:
+  password-reset:
+    token-ttl-minutes: ${PASSWORD_RESET_TOKEN_TTL_MINUTES:15}
+    expose-token-in-response: ${PASSWORD_RESET_EXPOSE_TOKEN_IN_RESPONSE:true}
   internal:
     api-key: ${INTERNAL_API_KEY:local-internal-api-key}
   provisioning:

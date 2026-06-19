@@ -10,13 +10,14 @@ import {
   useState,
 } from "react";
 import {
+  changePassword as changePasswordRequest,
   getCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
   refreshSession,
   register as registerRequest,
 } from "@/lib/auth";
-import type { AuthResponse, CurrentUserResponse } from "@/types/api";
+import type { AuthResponse, ChangePasswordResponse, CurrentUserResponse } from "@/types/api";
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -26,6 +27,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (email: string, password: string) => Promise<AuthResponse>;
   refresh: () => Promise<AuthResponse | null>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<ChangePasswordResponse>;
   logout: () => Promise<void>;
   clearSession: () => void;
 };
@@ -37,13 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CurrentUserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const applyAuthResponse = useCallback(async (response: AuthResponse) => {
+  const applyAuthResponse = useCallback(async <T extends AuthResponse>(response: T) => {
     setAccessToken(response.accessToken);
     const currentUser = await getCurrentUser(response.accessToken).catch(() => ({
       userId: response.userId,
       email: response.email,
       role: response.role,
       enabled: true,
+      passwordChangeRequired: response.passwordChangeRequired,
     }));
     setUser(currentUser);
     return response;
@@ -93,6 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register: async (email, password) =>
         applyAuthResponse(await registerRequest(email, password)),
       refresh,
+      changePassword: async (currentPassword, newPassword) => {
+        if (!accessToken) {
+          throw new Error("Please sign in again.");
+        }
+        return applyAuthResponse(
+          await changePasswordRequest(accessToken, currentPassword, newPassword),
+        );
+      },
       logout: async () => {
         try {
           await logoutRequest();

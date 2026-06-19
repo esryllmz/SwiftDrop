@@ -22,6 +22,7 @@ import {
 } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ApiError } from "@/lib/api";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import {
   approveCourierApplication,
   approveMerchantApplication,
@@ -154,9 +155,12 @@ export default function UsersApprovalsPage() {
     try {
       await navigator.clipboard.writeText(password);
       setPasswordCopied(true);
+      showSuccessToast("Temporary password copied.");
       window.setTimeout(() => setPasswordCopied(false), 1800);
     } catch {
-      setCopyError("Unable to copy password.");
+      const message = "Unable to copy password.";
+      setCopyError(message);
+      showErrorToast(message);
     }
   }
 
@@ -212,9 +216,12 @@ export default function UsersApprovalsPage() {
 
       setReviewSelection(null);
       setReviewNote("");
+      showSuccessToast("Application review saved.");
       await load();
     } catch (err) {
-      setReviewError(resolveReviewError(err));
+      const message = resolveReviewError(err);
+      setReviewError(message);
+      showErrorToast(message);
     } finally {
       setReviewing(false);
     }
@@ -679,7 +686,7 @@ function ApprovalSuccessModal({
           {hasTemporaryPassword && temporaryPassword ? (
             <ModalSection
               title="Temporary password"
-              description="Temporary password is shown only once. Copy it now and share it through a secure channel."
+              description="Temporary password is shown only once. The user must change this password on first sign-in."
             >
               <div className="grid gap-2">
                 <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">

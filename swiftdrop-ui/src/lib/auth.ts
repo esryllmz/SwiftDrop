@@ -1,5 +1,11 @@
 import { getJson, postJson } from "@/lib/api";
-import type { AuthResponse, CurrentUserResponse } from "@/types/api";
+import type {
+  AuthResponse,
+  ChangePasswordResponse,
+  CurrentUserResponse,
+  ForgotPasswordResponse,
+  ResetPasswordResponse,
+} from "@/types/api";
 
 export function login(email: string, password: string) {
   return postJson<AuthResponse>("/api/v1/auth/login", { email, password });
@@ -23,4 +29,32 @@ export function getCurrentUser(accessToken: string) {
     undefined,
     accessToken,
   );
+}
+
+export function changePassword(
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string,
+) {
+  return postJson<ChangePasswordResponse>(
+    "/api/v1/auth/change-password",
+    { currentPassword, newPassword },
+    undefined,
+    accessToken,
+  );
+}
+
+export function forgotPassword(email: string, portal: string) {
+  return postJson<ForgotPasswordResponse>("/api/v1/auth/forgot-password", {
+    email,
+    portal,
+  });
+}
+
+export function resetPassword(token: string, newPassword: string, confirmPassword: string) {
+  return postJson<ResetPasswordResponse>("/api/v1/auth/reset-password", {
+    token,
+    newPassword,
+    confirmPassword,
+  });
 }

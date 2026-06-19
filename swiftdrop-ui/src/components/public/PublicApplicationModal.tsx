@@ -10,6 +10,7 @@ import {
   submitCourierApplication,
   submitMerchantApplication,
 } from "@/lib/applications";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type ModalKind = "merchant" | "courier";
 
@@ -43,7 +44,6 @@ type CourierForm = {
 type SubmitResult =
   | {
       status: ApplicationStatus;
-      id: string;
       message: string;
     }
   | null;
@@ -108,6 +108,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
           message: optionalText(merchantForm.message),
         });
         setResult(toMerchantResult(response));
+        showSuccessToast("Merchant access request submitted.");
       } else {
         const response = await submitCourierApplication({
           fullName: courierForm.fullName.trim(),
@@ -116,9 +117,12 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
           message: optionalText(courierForm.message),
         });
         setResult(toCourierResult(response));
+        showSuccessToast("Courier application submitted.");
       }
     } catch (error) {
-      setSubmitError(resolveSubmitError(error));
+      const message = resolveSubmitError(error);
+      setSubmitError(message);
+      showErrorToast(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -167,8 +171,8 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                   {result.status}
                 </span>
               </div>
-              <p className="mt-3 break-all text-xs text-slate-500">
-                Application id: {result.id}
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                We will review your request.
               </p>
             </div>
             <button
@@ -368,7 +372,6 @@ function optionalText(value: string) {
 
 function toMerchantResult(response: MerchantApplicationResponse): SubmitResult {
   return {
-    id: response.id,
     status: response.status,
     message: "Your merchant access request was submitted. Our operations team will review it.",
   };
@@ -376,7 +379,6 @@ function toMerchantResult(response: MerchantApplicationResponse): SubmitResult {
 
 function toCourierResult(response: CourierApplicationResponse): SubmitResult {
   return {
-    id: response.id,
     status: response.status,
     message: "Your courier application was submitted. Operations will review it.",
   };

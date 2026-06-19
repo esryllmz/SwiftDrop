@@ -17,6 +17,36 @@ export class ApiError extends Error {
   }
 }
 
+export function normalizeApiError(error: unknown, fallback = "Something went wrong.") {
+  if (error instanceof ApiError) {
+    if (isSafeBackendMessage(error.message)) {
+      return error.message;
+    }
+
+    if (error.status === 400) {
+      return "Validation failed.";
+    }
+    if (error.status === 401) {
+      return "Please sign in again.";
+    }
+    if (error.status === 403) {
+      return "You are not authorized.";
+    }
+    if (error.status === 409) {
+      return "This action conflicts with the current state.";
+    }
+    if (error.status >= 500) {
+      return "Something went wrong.";
+    }
+  }
+
+  if (error instanceof Error && error.message.toLowerCase().includes("failed to fetch")) {
+    return "Service is unavailable. Please try again later.";
+  }
+
+  return fallback;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {},
@@ -75,4 +105,14 @@ function safeJsonParse(text: string): unknown {
   } catch {
     return text;
   }
+}
+
+function isSafeBackendMessage(message: string) {
+  const lower = message.toLowerCase();
+  return Boolean(message)
+    && !lower.includes("exception")
+    && !lower.includes("stack")
+    && !lower.includes("trace")
+    && !lower.includes("org.")
+    && !lower.includes("java.");
 }
