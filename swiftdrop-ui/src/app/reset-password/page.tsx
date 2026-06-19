@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
 import { resetPassword } from "@/lib/auth";
-import { normalizeApiError } from "@/lib/api";
+import { ApiError, normalizeApiError } from "@/lib/api";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
@@ -44,7 +44,7 @@ function ResetPasswordContent() {
       showSuccessToast(response.message);
       router.replace(resolveLoginHref(portal));
     } catch (err) {
-      const message = normalizeApiError(err, "Password reset failed.");
+      const message = normalizeResetPasswordError(err);
       setError(message);
       showErrorToast(message);
     } finally {
@@ -94,12 +94,20 @@ function validatePasswordForm(newPassword: string, confirmPassword: string) {
 }
 
 function resolvePortal(value: string | null): PortalKey {
-  if (value === "merchant" || value === "courier" || value === "staff") {
-    return value;
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "merchant" || normalized === "courier" || normalized === "staff") {
+    return normalized;
   }
   return "customer";
 }
 
 function resolveLoginHref(portal: PortalKey) {
   return `/auth?portal=${portal}`;
+}
+
+function normalizeResetPasswordError(error: unknown) {
+  if (error instanceof ApiError && error.status === 401) {
+    return "Reset link is invalid or expired.";
+  }
+  return normalizeApiError(error, "Password reset failed.");
 }

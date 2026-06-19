@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { isPublicRoute, isRouteMatch } from "@/lib/routes";
 
 type NavItem = {
   href: string;
@@ -82,7 +83,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const PUBLIC_ROUTES = ["/", "/auth", "/staff-login", "/forgot-password", "/reset-password"];
 const ADMIN_ROUTES = [
   "/dashboard",
   "/orders",
@@ -112,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isLoading, user, logout } = useAuth();
 
-  const isPublicRoute = isRouteMatch(pathname, PUBLIC_ROUTES);
+  const isCurrentPublicRoute = isPublicRoute(pathname);
   const isAdminRoute = isRouteMatch(pathname, ADMIN_ROUTES);
   const isChangePasswordRoute = pathname === "/change-password";
 
@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isPublicRoute || !isAdminRoute) {
+  if (isCurrentPublicRoute || !isAdminRoute) {
     return <>{children}</>;
   }
 
@@ -254,10 +254,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
-}
-
-function isRouteMatch(pathname: string, routes: string[]) {
-  return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 function AdminNavLink({ item, active }: { item: NavItem; active: boolean }) {

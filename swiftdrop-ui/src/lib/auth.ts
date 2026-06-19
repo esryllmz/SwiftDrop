@@ -48,7 +48,7 @@ export function forgotPassword(email: string, portal: string) {
   return postJson<ForgotPasswordResponse>("/api/v1/auth/forgot-password", {
     email,
     portal,
-  });
+  }, undefined, null);
 }
 
 export function resetPassword(token: string, newPassword: string, confirmPassword: string) {
@@ -56,5 +56,5 @@ export function resetPassword(token: string, newPassword: string, confirmPasswor
     token,
     newPassword,
     confirmPassword,
-  });
+  }, undefined, null);
 }

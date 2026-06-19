@@ -6,10 +6,13 @@ import type React from "react";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
 import { forgotPassword } from "@/lib/auth";
-import { normalizeApiError } from "@/lib/api";
+import { ApiError, normalizeApiError } from "@/lib/api";
 import { showErrorToast, showInfoToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
+
+const GENERIC_RESET_MESSAGE =
+  "If an account exists for this portal, password reset instructions will be sent.";
 
 const portalLabels: Record<PortalKey, { title: string; apiValue: string; loginHref: string }> = {
   customer: { title: "Customer password reset", apiValue: "CUSTOMER", loginHref: "/auth?portal=customer" },
@@ -48,11 +51,12 @@ function ForgotPasswordContent() {
     setLoading(true);
     try {
       const response = await forgotPassword(email, config.apiValue);
-      setMessage(response.message);
+      const nextMessage = response.message || GENERIC_RESET_MESSAGE;
+      setMessage(nextMessage);
       setDevToken(response.devResetToken ?? null);
-      showInfoToast(response.message);
+      showInfoToast(nextMessage);
     } catch (err) {
-      const nextError = normalizeApiError(err, "Password reset request failed.");
+      const nextError = normalizePasswordRecoveryError(err);
       setError(nextError);
       showErrorToast(nextError);
     } finally {
@@ -102,10 +106,18 @@ function ForgotPasswordContent() {
 }
 
 function resolvePortal(value: string | null): PortalKey {
-  if (value === "merchant" || value === "courier" || value === "staff") {
-    return value;
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "merchant" || normalized === "courier" || normalized === "staff") {
+    return normalized;
   }
   return "customer";
+}
+
+function normalizePasswordRecoveryError(error: unknown) {
+  if (error instanceof ApiError && error.status === 401) {
+    return "Password reset request failed.";
+  }
+  return normalizeApiError(error, "Password reset request failed.");
 }
 
 function AuthFrame({ children }: { children: React.ReactNode }) {

@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   changePassword as changePasswordRequest,
   getCurrentUser,
@@ -17,6 +18,7 @@ import {
   refreshSession,
   register as registerRequest,
 } from "@/lib/auth";
+import { isPublicRoute } from "@/lib/routes";
 import type { AuthResponse, ChangePasswordResponse, CurrentUserResponse } from "@/types/api";
 
 type AuthContextValue = {
@@ -35,6 +37,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<CurrentUserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     async function restore() {
+      if (isPublicRoute(pathname) && !accessToken) {
+        if (mounted) {
+          clearSession();
+          setIsLoading(false);
+        }
+        return;
+      }
+
       const response = await refresh();
       if (mounted && !response) {
         clearSession();
@@ -83,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [clearSession, refresh]);
+  }, [accessToken, clearSession, pathname, refresh]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
