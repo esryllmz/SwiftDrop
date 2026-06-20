@@ -19,25 +19,27 @@ export function AdminDataTable<T>({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
-          <tr>
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+          <tr className="border-b border-slate-100 bg-slate-50/60">
             {columns.map((heading) => (
-              <th key={heading} className="whitespace-nowrap px-4 py-3 font-semibold">
+              <th key={heading} className="whitespace-nowrap px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                 {heading}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-50 bg-white">
           {rows.map((row) => (
-            <tr key={getRowKey(row)} className="align-top transition hover:bg-slate-50/80">
+            <tr key={getRowKey(row)} className="align-top transition-colors hover:bg-slate-50/60">
               {renderRow(row)}
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -54,9 +56,36 @@ export function AdminTableCell({
   return (
     <td
       title={title}
-      className={`px-4 py-3 ${strong ? "font-medium text-slate-950" : "text-slate-700"}`}
+      className={`px-5 py-3.5 ${strong ? "font-medium text-slate-950" : "text-slate-700"}`}
     >
       {children}
     </td>
+  );
+}
+
+export function AdminIdChip({ value }: { value?: string }) {
+  return (
+    <span className="inline-flex rounded border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500">
+      {value || "-"}
+    </span>
+  );
+}
+
+export function AdminViewAction({
+  disabled,
+  onClick,
+}: {
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <span aria-hidden="true">View</span>
+    </button>
   );
 }

@@ -22,10 +22,12 @@ import {
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminIdChip,
   AdminPageHeader,
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableCell,
+  AdminViewAction,
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
@@ -140,7 +142,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div>
+    <div className="p-6 space-y-5">
       <AdminPageHeader
         icon="OR"
         title="Orders"
@@ -157,7 +159,7 @@ export default function OrdersPage() {
         }
       />
 
-      <div className="grid gap-4">
+      <div className="grid gap-5">
           <AdminSectionCard
             title="Create Demo Order"
             description="Creates a real order and refreshes this list."
@@ -223,20 +225,18 @@ export default function OrdersPage() {
                 getRowKey={(order) => order.id}
                 renderRow={(order) => (
                   <>
-                    <AdminTableCell title={order.id}>{shortId(order.id)}</AdminTableCell>
-                    <AdminTableCell title={order.customerId}>{shortId(order.customerId)}</AdminTableCell>
+                    <AdminTableCell title={order.id}><AdminIdChip value={shortId(order.id)} /></AdminTableCell>
+                    <AdminTableCell title={order.customerId}><span className="font-mono text-xs text-slate-400">{shortId(order.customerId)}</span></AdminTableCell>
                     <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
                     <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
                     <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
                     <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
                     <AdminTableCell>{formatDateTime(order.createdAt)}</AdminTableCell>
                     <AdminTableCell>
-                      <SecondaryButton
+                      <AdminViewAction
                         disabled={detailLoading}
                         onClick={() => void viewOrder(order.id)}
-                      >
-                        View
-                      </SecondaryButton>
+                      />
                     </AdminTableCell>
                   </>
                 )}

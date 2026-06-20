@@ -1,4 +1,4 @@
-export { AdminDataTable, AdminTableCell } from "./AdminDataTable";
+export { AdminDataTable, AdminIdChip, AdminTableCell, AdminViewAction } from "./AdminDataTable";
 export { AdminMetricCard } from "./AdminMetricCard";
 export { AdminPageHeader } from "./AdminPageHeader";
 export { AdminSectionCard } from "./AdminSectionCard";

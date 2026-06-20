@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
 
   return (
-    <div>
+    <div className="max-w-2xl p-6 space-y-5">
       <AdminPageHeader
         icon="PR"
         title="Profile"
@@ -30,8 +30,19 @@ export default function ProfilePage() {
       {!user ? <EmptyState message="No authenticated user context is available." /> : null}
 
       {user ? (
-        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+        <div className="grid gap-5">
           <AdminSectionCard title="Account Details">
+            <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-blue-100 bg-blue-50 text-lg font-semibold text-blue-600">
+                {user.email.slice(0, 1).toUpperCase()}
+              </div>
+              <div>
+                <div className="font-semibold text-slate-900">{user.email}</div>
+                <div className="mt-1 inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                  {user.role}
+                </div>
+              </div>
+            </div>
             <dl className="mt-4 grid gap-3 text-sm">
               <DetailRow label="Email" value={user.email} />
               <DetailRow label="Role" value={user.role} />

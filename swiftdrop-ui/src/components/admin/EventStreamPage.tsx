@@ -20,11 +20,13 @@ import {
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminIdChip,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableCell,
+  AdminViewAction,
 } from "@/components/admin/ui";
 import { getJson } from "@/lib/api";
 import { formatDateTime, statusBadgeClass } from "@/lib/format";
@@ -91,7 +93,7 @@ export function EventStreamPage() {
   const summary = useMemo(() => buildSummary(events), [events]);
 
   return (
-    <div>
+    <div className="p-6 space-y-5">
       <AdminPageHeader
         icon="EV"
         title="Event Stream"
@@ -99,7 +101,7 @@ export function EventStreamPage() {
         action={<Button onClick={load}>Refresh</Button>}
       />
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_340px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <AdminMetricCard label="Total Events" value={summary.totalEvents} tone="blue" icon="T" />
           <AdminMetricCard label="Pending" value={summary.pendingEvents} tone="amber" icon="P" />
@@ -114,7 +116,7 @@ export function EventStreamPage() {
         </AdminSectionCard>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {filters.map((item) => (
           <SecondaryButton
             key={item}
@@ -150,7 +152,7 @@ export function EventStreamPage() {
               getRowKey={(event) => event.id}
               renderRow={(event) => (
                 <>
-                  <AdminTableCell title={event.id}>{shortId(event.id)}</AdminTableCell>
+                  <AdminTableCell title={event.id}><AdminIdChip value={shortId(event.id)} /></AdminTableCell>
                   <AdminTableCell><EventTypeBadge eventType={event.eventType} /></AdminTableCell>
                   <AdminTableCell>
                     <div className="font-medium text-slate-900">{event.aggregateType}</div>
@@ -163,12 +165,10 @@ export function EventStreamPage() {
                   <AdminTableCell>{event.retryCount}</AdminTableCell>
                   <AdminTableCell>{formatDateTime(event.createdAt)}</AdminTableCell>
                   <AdminTableCell>
-                    <SecondaryButton
+                    <AdminViewAction
                       disabled={detailLoading}
                       onClick={() => void viewEvent(event.id)}
-                    >
-                      View
-                    </SecondaryButton>
+                    />
                   </AdminTableCell>
                 </>
               )}

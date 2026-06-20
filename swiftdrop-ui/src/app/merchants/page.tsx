@@ -15,14 +15,15 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  SecondaryButton,
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminIdChip,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
   AdminTableCell,
+  AdminViewAction,
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
@@ -63,7 +64,7 @@ export default function MerchantsPage() {
   );
 
   return (
-    <div>
+    <div className="p-6 space-y-5">
       <AdminPageHeader
         icon="ME"
         title="Merchants"
@@ -71,7 +72,7 @@ export default function MerchantsPage() {
         action={<Button onClick={load}>Refresh</Button>}
       />
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <div className="grid gap-4 sm:grid-cols-3">
           <AdminMetricCard label="Total Merchants" value={merchants.length} icon="T" />
           <AdminMetricCard
@@ -127,7 +128,7 @@ export default function MerchantsPage() {
                 <>
                   <AdminTableCell title={merchant.id}>
                     <div className="flex flex-col gap-1">
-                      <span>{shortId(merchant.id)}</span>
+                      <AdminIdChip value={shortId(merchant.id)} />
                       {merchant.id === demoMerchantId ? (
                         <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
                           Demo Order
@@ -135,7 +136,7 @@ export default function MerchantsPage() {
                       ) : null}
                     </div>
                   </AdminTableCell>
-                  <AdminTableCell title={merchant.userId}>{shortId(merchant.userId)}</AdminTableCell>
+                  <AdminTableCell title={merchant.userId}><span className="font-mono text-xs text-slate-400">{shortId(merchant.userId)}</span></AdminTableCell>
                   <AdminTableCell strong>
                     <span className="flex items-center gap-2">
                       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-xs font-semibold text-violet-700">
@@ -147,14 +148,12 @@ export default function MerchantsPage() {
                   <AdminTableCell>{merchant.latitude}</AdminTableCell>
                   <AdminTableCell>{merchant.longitude}</AdminTableCell>
                   <AdminTableCell>
-                    <SecondaryButton
+                    <AdminViewAction
                       onClick={() => {
                         setSelectedMerchant(merchant);
                         setDetailModalOpen(true);
                       }}
-                    >
-                      View
-                    </SecondaryButton>
+                    />
                   </AdminTableCell>
                 </>
               )}

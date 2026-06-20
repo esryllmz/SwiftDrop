@@ -194,19 +194,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const normalizedPathname = ROUTE_ALIASES[pathname] ?? pathname;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[240px_1fr] lg:overflow-hidden">
-      <aside className="border-b border-slate-200 bg-white px-3 py-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
-        <Link href="/dashboard" className="flex h-[72px] items-center gap-3 rounded-2xl px-2 transition hover:bg-slate-50">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold text-white shadow-sm shadow-blue-200">
+    <div className="flex min-h-screen bg-slate-50 text-slate-950 lg:h-screen lg:overflow-hidden">
+      <aside className="w-full shrink-0 border-b border-slate-100 bg-white lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r">
+        <Link href="/dashboard" className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-5 transition hover:bg-slate-50">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-semibold text-white">
             SD
           </span>
           <span className="min-w-0">
-            <span className="block text-base font-semibold text-slate-950">SwiftDrop</span>
-            <span className="block text-sm text-slate-500">Admin Panel</span>
+            <span className="mb-0.5 block text-sm font-semibold leading-none text-slate-900">SwiftDrop</span>
+            <span className="block text-xs text-slate-400">Operations Console</span>
           </span>
         </Link>
 
-        <nav className="mt-2 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+        <nav className="flex gap-1 overflow-x-auto px-3 py-4 lg:flex-1 lg:flex-col lg:overflow-y-auto">
           {ADMIN_NAV_ITEMS.map((item) => (
             <AdminNavLink
               key={item.href}
@@ -216,13 +216,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 lg:mt-auto">
+        <div className="grid gap-0.5 border-t border-slate-100 px-3 py-3">
           <Link
             href="/profile"
-            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
               normalizedPathname === "/profile"
-                ? "border-blue-200 bg-blue-50 text-blue-700"
-                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                ? "bg-blue-50 font-medium text-blue-700"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             Profile
@@ -230,21 +230,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void logout().finally(() => router.replace("/"))}
-            className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            className="rounded-lg px-3 py-2 text-left text-sm text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             Log out
           </button>
         </div>
       </aside>
 
-      <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col">
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
+      <div className="min-w-0 flex-1 lg:flex lg:min-h-0 lg:flex-col">
+        <header className="sticky top-0 z-30 border-b border-slate-100 bg-white px-6 py-3">
           <div className="flex min-h-14 items-center justify-end">
             <UserBadge email={user.email} />
           </div>
         </header>
 
-        <main className="min-w-0 px-4 py-5 sm:px-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-6">
+        <main className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {children}
         </main>
       </div>
@@ -256,27 +256,14 @@ function AdminNavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
-      className={`min-w-[180px] rounded-xl border px-3 py-2.5 transition lg:min-w-0 ${
+      className={`flex min-w-[180px] items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors lg:min-w-0 ${
         active
-          ? "border-blue-100 bg-blue-50 text-blue-700"
+          ? "bg-blue-50 font-medium text-blue-700"
           : "border-transparent bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950"
       }`}
     >
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-            active
-              ? "border-blue-200 bg-white text-blue-700"
-              : "border-slate-200 bg-slate-50 text-slate-500"
-          }`}
-        >
-          {item.marker}
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold">{item.label}</span>
-          <span className="block truncate text-xs text-slate-500">{item.description}</span>
-        </span>
-      </div>
+      <span className={`shrink-0 ${active ? "text-blue-600" : "text-slate-400"}`}>{item.marker}</span>
+      <span className="truncate">{item.label}</span>
     </Link>
   );
 }
@@ -344,13 +331,13 @@ function AccessDenied({
 
 function UserBadge({ email }: { email: string }) {
   return (
-    <span className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm shadow-slate-200/60">
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
-        {email.slice(0, 1).toUpperCase()}
+    <span className="inline-flex items-center gap-3 text-xs text-slate-600">
+      <span className="grid text-right">
+        <span className="text-sm font-medium text-slate-900">Admin</span>
+        <span className="text-xs text-slate-400">{email}</span>
       </span>
-      <span className="grid text-left">
-        <span className="text-[11px] font-semibold uppercase text-slate-400">Admin</span>
-        <span className="font-medium text-slate-950">{email}</span>
+      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-[10px] font-semibold text-blue-600">
+        {email.slice(0, 1).toUpperCase()}
       </span>
     </span>
   );

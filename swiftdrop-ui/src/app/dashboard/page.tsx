@@ -14,6 +14,9 @@ import {
   AdminPageHeader,
   AdminSectionCard,
   AdminStatusBadge,
+  AdminDataTable,
+  AdminIdChip,
+  AdminTableCell,
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
@@ -277,7 +280,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div>
+    <div className="p-6 space-y-6">
       <AdminPageHeader
         icon="DB"
         title="Dashboard"
@@ -329,7 +332,7 @@ export default function DashboardPage() {
         ) : null}
       </DashboardSection>
 
-      <div className="mt-4">
+      <div>
         <DashboardSection
           title="Event Health Summary"
           action={<SectionLink href="/event-stream" label="Open Event Stream" />}
@@ -354,7 +357,7 @@ export default function DashboardPage() {
         </DashboardSection>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-3">
         <DashboardSection
           title="Live Demo Flow"
           action={<AdminStatusBadge status={lastDemoOrder ? "COMPLETED" : "PENDING"} />}
@@ -380,6 +383,7 @@ export default function DashboardPage() {
         <DashboardSection
           title="Recent Orders"
           action={<SectionLink href="/orders" label="View all" />}
+          className="xl:col-span-2"
         >
           {ordersError ? <InlineError message={ordersError} /> : null}
           {ordersLoading && orders.length === 0 ? <LoadingState /> : null}
@@ -390,7 +394,7 @@ export default function DashboardPage() {
         </DashboardSection>
       </div>
 
-      <div className="mt-4">
+      <div>
         <DashboardSection
           title="System Status"
           action={<SectionLink href="/system-monitoring" label="View system monitoring" />}
@@ -418,14 +422,16 @@ function DashboardSection({
   description,
   action,
   children,
+  className,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <AdminSectionCard title={title} description={description} action={action}>
+    <AdminSectionCard title={title} description={description} action={action} className={className}>
       {children}
     </AdminSectionCard>
   );
@@ -494,36 +500,21 @@ function FlowStep({
 
 function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
-          <tr>
-            {["Order", "Merchant", "Driver", "Status", "Amount"].map((heading) => (
-              <th key={heading} className="px-3 py-2 font-medium">
-                {heading}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
-          {orders.map((order) => (
-            <tr key={order.id} className="transition hover:bg-slate-50">
-              <td className="px-3 py-2 font-medium text-slate-950" title={order.id}>
-                {shortId(order.id)}
-              </td>
-              <td className="px-3 py-2 text-slate-700">{order.merchantName ?? "-"}</td>
-              <td className="px-3 py-2 text-slate-700">{order.driverName ?? "-"}</td>
-              <td className="px-3 py-2">
-                <AdminStatusBadge status={order.status} />
-              </td>
-              <td className="px-3 py-2 text-slate-700">
-                {formatMoney(Number(order.totalAmount))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <AdminDataTable
+      columns={["Order", "Merchant", "Driver", "Status", "Amount"]}
+      rows={orders}
+      emptyMessage="No recent orders found."
+      getRowKey={(order) => order.id}
+      renderRow={(order) => (
+        <>
+          <AdminTableCell title={order.id}><AdminIdChip value={shortId(order.id)} /></AdminTableCell>
+          <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
+          <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
+          <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
+          <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
+        </>
+      )}
+    />
   );
 }
 

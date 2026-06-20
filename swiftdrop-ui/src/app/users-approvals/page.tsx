@@ -241,7 +241,7 @@ export default function UsersApprovalsPage() {
   }
 
   return (
-    <div>
+    <div className="p-6 space-y-6">
       <AdminPageHeader
         icon="UA"
         title="Users & Approvals"
@@ -263,7 +263,6 @@ export default function UsersApprovalsPage() {
       </div>
 
       <AdminSectionCard
-        className="mt-4"
         title="Application Review Queue"
         description="Review pending applications and inspect prior decisions."
         action={

@@ -19,11 +19,13 @@ import {
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminIdChip,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
   AdminStatusBadge,
   AdminTableCell,
+  AdminViewAction,
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
@@ -68,7 +70,7 @@ export default function DriversPage() {
   const summary = useMemo(() => buildDriverSummary(allDrivers), [allDrivers]);
 
   return (
-    <div>
+    <div className="p-6 space-y-5">
       <AdminPageHeader
         icon="DR"
         title="Drivers"
@@ -76,7 +78,7 @@ export default function DriversPage() {
         action={<Button onClick={load}>Refresh</Button>}
       />
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_420px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminMetricCard label="Total Drivers" value={summary.total} tone="blue" icon="." iconVariant="dot" />
           <AdminMetricCard label="Available" value={summary.available} tone="emerald" icon="." iconVariant="dot" />
@@ -129,8 +131,8 @@ export default function DriversPage() {
             getRowKey={(driver) => driver.id}
             renderRow={(driver) => (
               <>
-                <AdminTableCell title={driver.id}>{shortId(driver.id)}</AdminTableCell>
-                <AdminTableCell title={driver.userId}>{shortId(driver.userId)}</AdminTableCell>
+                <AdminTableCell title={driver.id}><AdminIdChip value={shortId(driver.id)} /></AdminTableCell>
+                <AdminTableCell title={driver.userId}><span className="font-mono text-xs text-slate-400">{shortId(driver.userId)}</span></AdminTableCell>
                 <AdminTableCell strong>
                   <span className="flex items-center gap-2">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
@@ -141,14 +143,12 @@ export default function DriversPage() {
                 </AdminTableCell>
                 <AdminTableCell><AdminStatusBadge status={driver.status} /></AdminTableCell>
                 <AdminTableCell>
-                  <SecondaryButton
+                  <AdminViewAction
                     onClick={() => {
                       setSelectedDriver(driver);
                       setDetailModalOpen(true);
                     }}
-                  >
-                    View
-                  </SecondaryButton>
+                  />
                 </AdminTableCell>
               </>
             )}

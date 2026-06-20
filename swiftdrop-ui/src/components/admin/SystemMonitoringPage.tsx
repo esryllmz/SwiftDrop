@@ -48,7 +48,7 @@ export function SystemMonitoringPage() {
   }, [load]);
 
   return (
-    <div>
+    <div className="p-6 space-y-5">
       <AdminPageHeader
         icon="UP"
         title="System Monitoring"
@@ -68,7 +68,7 @@ export function SystemMonitoringPage() {
       />
       {loading ? <LoadingState /> : null}
       {error ? <ErrorState message={error} /> : null}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {data?.services.map((service) => (
           <AdminMetricCard
             key={service.name}
@@ -82,7 +82,7 @@ export function SystemMonitoringPage() {
         ))}
       </div>
       {detailsOpen ? (
-        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           {data?.services.map((service) => (
             <AdminSectionCard key={service.name} title={service.name} description={service.url}>
               {service.error ? <ErrorState message={service.error} /> : null}
