@@ -4,7 +4,6 @@ import Link from "next/link";
 export type ShellNavItemConfig = {
   href: string;
   label: string;
-  description: string;
   marker: React.ReactNode;
 };
 

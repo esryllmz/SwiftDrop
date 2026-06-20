@@ -20,49 +20,41 @@ const ADMIN_NAV_ITEMS: ShellNavItemConfig[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    description: "Operational overview",
     marker: <DashboardIcon />,
   },
   {
     href: "/orders",
     label: "Orders",
-    description: "Order operations",
     marker: <OrdersIcon />,
   },
   {
     href: "/drivers",
     label: "Drivers",
-    description: "Courier availability",
     marker: <DriversIcon />,
   },
   {
     href: "/merchants",
     label: "Merchants",
-    description: "Store locations",
     marker: <StoreIcon />,
   },
   {
     href: "/event-stream",
     label: "Event Stream",
-    description: "Outbox events",
     marker: <EventIcon />,
   },
   {
     href: "/system-monitoring",
     label: "System Monitoring",
-    description: "Service health",
     marker: <HealthIcon />,
   },
   {
     href: "/users-approvals",
     label: "Users & Approvals",
-    description: "Access review",
     marker: <UsersIcon />,
   },
   {
     href: "/settings",
     label: "Settings",
-    description: "Runtime config",
     marker: <SettingsIcon />,
   },
 ];
@@ -189,7 +181,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const normalizedPathname = ROUTE_ALIASES[pathname] ?? pathname;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-950 lg:h-screen lg:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden">
       <aside className="w-full shrink-0 border-b border-slate-100 bg-white lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r">
         <Link href="/dashboard" className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-5 transition hover:bg-slate-50">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-semibold text-white">

@@ -58,7 +58,7 @@ export function PortalShell({
   const config = portalConfig[portalType];
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-950 lg:h-screen lg:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden">
       <aside className="w-full shrink-0 border-b border-slate-100 bg-white lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r">
         <Link href={config.homeHref} className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-5 transition hover:bg-slate-50">
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold text-white ${config.accent}`}>
