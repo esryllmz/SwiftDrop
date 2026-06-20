@@ -27,7 +27,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             DuplicateApplicationException.class,
             ApplicationAlreadyReviewedException.class,
-            UserProvisioningConflictException.class
+            UserProvisioningConflictException.class,
+            InvalidOrderTransitionException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
             RuntimeException ex,

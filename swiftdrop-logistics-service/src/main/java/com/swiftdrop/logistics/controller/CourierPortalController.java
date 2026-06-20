@@ -1,18 +1,24 @@
 package com.swiftdrop.logistics.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.CourierProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
+import com.swiftdrop.logistics.dto.UpdateCourierAvailabilityRequest;
 import com.swiftdrop.logistics.security.AuthenticatedUser;
 import com.swiftdrop.logistics.security.AuthenticatedUserResolver;
 import com.swiftdrop.logistics.service.PortalService;
 
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -36,5 +42,32 @@ public class CourierPortalController {
     public ResponseEntity<List<OrderResponse>> findAssignments(HttpServletRequest request) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
         return ResponseEntity.ok(portalService.findCourierAssignments(user));
+    }
+
+    @PostMapping("/availability")
+    public ResponseEntity<CourierProfileResponse> updateAvailability(
+            HttpServletRequest request,
+            @Valid @RequestBody UpdateCourierAvailabilityRequest availabilityRequest
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
+        return ResponseEntity.ok(portalService.updateCourierAvailability(user, availabilityRequest));
+    }
+
+    @PostMapping("/orders/{orderId}/picked-up")
+    public ResponseEntity<OrderResponse> markOrderPickedUp(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
+        return ResponseEntity.ok(portalService.markCourierOrderPickedUp(user, orderId));
+    }
+
+    @PostMapping("/orders/{orderId}/delivered")
+    public ResponseEntity<OrderResponse> markOrderDelivered(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
+        return ResponseEntity.ok(portalService.markCourierOrderDelivered(user, orderId));
     }
 }

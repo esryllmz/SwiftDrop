@@ -28,6 +28,8 @@ import com.swiftdrop.logistics.entity.DriverStatus;
 import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.Order;
 import com.swiftdrop.logistics.entity.OrderStatus;
+import com.swiftdrop.logistics.exception.ForbiddenPortalAccessException;
+import com.swiftdrop.logistics.exception.InvalidOrderTransitionException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
@@ -190,6 +192,82 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
+    public OrderResponse markMerchantOrderPreparing(UUID merchantId, UUID orderId) {
+        Order order = findOrderForAction(orderId);
+        ensureMerchantOwnsOrder(order, merchantId);
+        ensureTransition(order, OrderStatus.PREPARING, OrderStatus.PLACED, OrderStatus.DRIVER_ASSIGNED);
+
+        return updateOrderLifecycleStatus(
+                order,
+                OrderStatus.PREPARING,
+                "ORDER_PREPARING",
+                "Siparisiniz hazirlaniyor."
+        );
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markMerchantOrderReadyForPickup(UUID merchantId, UUID orderId) {
+        Order order = findOrderForAction(orderId);
+        ensureMerchantOwnsOrder(order, merchantId);
+        ensureTransition(order, OrderStatus.READY_FOR_PICKUP, OrderStatus.PREPARING);
+
+        return updateOrderLifecycleStatus(
+                order,
+                OrderStatus.READY_FOR_PICKUP,
+                "ORDER_READY_FOR_PICKUP",
+                "Siparisiniz teslim alinmaya hazir."
+        );
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markCourierOrderPickedUp(UUID driverId, UUID orderId) {
+        Order order = findOrderForAction(orderId);
+        Driver driver = ensureDriverOwnsOrder(order, driverId);
+        ensureTransition(
+                order,
+                OrderStatus.PICKED_UP,
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.DRIVER_ASSIGNED
+        );
+
+        driver.setStatus(DriverStatus.BUSY);
+        Driver busyDriver = Objects.requireNonNull(driverRepository.save(driver), "busy driver must not be null");
+        order.setDriver(busyDriver);
+
+        return updateOrderLifecycleStatus(
+                order,
+                OrderStatus.PICKED_UP,
+                "ORDER_PICKED_UP",
+                "Siparisiniz kurye tarafindan teslim alindi."
+        );
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markCourierOrderDelivered(UUID driverId, UUID orderId) {
+        Order order = findOrderForAction(orderId);
+        Driver driver = ensureDriverOwnsOrder(order, driverId);
+        ensureTransition(order, OrderStatus.DELIVERED, OrderStatus.PICKED_UP, OrderStatus.ON_THE_WAY);
+
+        driver.setStatus(DriverStatus.AVAILABLE);
+        Driver availableDriver = Objects.requireNonNull(
+                driverRepository.save(driver),
+                "available driver must not be null"
+        );
+        order.setDriver(availableDriver);
+
+        return updateOrderLifecycleStatus(
+                order,
+                OrderStatus.DELIVERED,
+                "ORDER_DELIVERED",
+                "Siparisiniz teslim edildi."
+        );
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId) {
         return orderRepository.findAllForDashboard(status, merchantId, driverId).stream()
@@ -244,6 +322,58 @@ public class OrderServiceImpl implements OrderService {
                 order.getTotalAmount(),
                 order.getCreatedAt()
         );
+    }
+
+    private Order findOrderForAction(UUID orderId) {
+        return orderRepository.findByIdForDashboard(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
+    }
+
+    private void ensureMerchantOwnsOrder(Order order, UUID merchantId) {
+        Merchant merchant = order.getMerchant();
+        if (merchant == null || !Objects.equals(merchant.getId(), merchantId)) {
+            throw new ForbiddenPortalAccessException("Order does not belong to this merchant.");
+        }
+    }
+
+    private Driver ensureDriverOwnsOrder(Order order, UUID driverId) {
+        Driver driver = order.getDriver();
+        if (driver == null || !Objects.equals(driver.getId(), driverId)) {
+            throw new ForbiddenPortalAccessException("Order is not assigned to this courier.");
+        }
+
+        return driver;
+    }
+
+    private void ensureTransition(Order order, OrderStatus targetStatus, OrderStatus... allowedStatuses) {
+        OrderStatus currentStatus = order.getStatus();
+        for (OrderStatus allowedStatus : allowedStatuses) {
+            if (currentStatus == allowedStatus) {
+                return;
+            }
+        }
+
+        throw new InvalidOrderTransitionException(
+                "Order cannot transition from " + currentStatus + " to " + targetStatus + "."
+        );
+    }
+
+    private OrderResponse updateOrderLifecycleStatus(
+            Order order,
+            OrderStatus status,
+            String eventType,
+            String message
+    ) {
+        order.setStatus(status);
+        Order updatedOrder = Objects.requireNonNull(orderRepository.save(order), "updated order must not be null");
+        saveOrderEvent(eventType, updatedOrder, new OrderKafkaEvent(
+                updatedOrder.getId(),
+                status.name(),
+                message,
+                updatedOrder.getCustomerId()
+        ));
+
+        return toResponse(updatedOrder);
     }
 
     private void saveOrderEvent(String eventType, Order order, OrderKafkaEvent payload) {

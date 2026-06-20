@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -11,9 +12,12 @@ import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
 import com.swiftdrop.logistics.dto.CustomerProfileResponse;
 import com.swiftdrop.logistics.dto.MerchantProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
+import com.swiftdrop.logistics.dto.UpdateCourierAvailabilityRequest;
 import com.swiftdrop.logistics.entity.Driver;
+import com.swiftdrop.logistics.entity.DriverStatus;
 import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.OrderStatus;
+import com.swiftdrop.logistics.exception.InvalidOrderTransitionException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
@@ -83,9 +87,76 @@ public class PortalService {
         return orderService.findMerchantOrders(merchant.getId());
     }
 
+    @Transactional
+    public OrderResponse markMerchantOrderPreparing(AuthenticatedUser user, UUID orderId) {
+        Merchant merchant = findMerchant(user.userId());
+        return orderService.markMerchantOrderPreparing(merchant.getId(), orderId);
+    }
+
+    @Transactional
+    public OrderResponse markMerchantOrderReadyForPickup(AuthenticatedUser user, UUID orderId) {
+        Merchant merchant = findMerchant(user.userId());
+        return orderService.markMerchantOrderReadyForPickup(merchant.getId(), orderId);
+    }
+
     @Transactional(readOnly = true)
     public CourierProfileResponse getCourierProfile(AuthenticatedUser user) {
         Driver driver = findDriver(user.userId());
+        return toCourierProfile(user, driver);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findCourierAssignments(AuthenticatedUser user) {
+        Driver driver = findDriver(user.userId());
+        return orderService.findDriverAssignments(driver.getId());
+    }
+
+    @Transactional
+    public CourierProfileResponse updateCourierAvailability(
+            AuthenticatedUser user,
+            UpdateCourierAvailabilityRequest request
+    ) {
+        Driver driver = findDriver(user.userId());
+        DriverStatus requestedStatus = request.status();
+
+        if (requestedStatus == DriverStatus.BUSY) {
+            throw new IllegalArgumentException("Courier cannot set BUSY availability directly.");
+        }
+
+        if (requestedStatus == DriverStatus.OFFLINE
+                && orderRepository.countByDriver_IdAndStatusNot(driver.getId(), OrderStatus.DELIVERED) > 0) {
+            throw new InvalidOrderTransitionException("Courier has active assignments and cannot go offline.");
+        }
+
+        driver.setStatus(requestedStatus);
+        Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "updated driver must not be null");
+
+        return toCourierProfile(user, savedDriver);
+    }
+
+    @Transactional
+    public OrderResponse markCourierOrderPickedUp(AuthenticatedUser user, UUID orderId) {
+        Driver driver = findDriver(user.userId());
+        return orderService.markCourierOrderPickedUp(driver.getId(), orderId);
+    }
+
+    @Transactional
+    public OrderResponse markCourierOrderDelivered(AuthenticatedUser user, UUID orderId) {
+        Driver driver = findDriver(user.userId());
+        return orderService.markCourierOrderDelivered(driver.getId(), orderId);
+    }
+
+    private Merchant findMerchant(UUID userId) {
+        return merchantRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant profile not found."));
+    }
+
+    private Driver findDriver(UUID userId) {
+        return driverRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Courier profile not found."));
+    }
+
+    private CourierProfileResponse toCourierProfile(AuthenticatedUser user, Driver driver) {
         UUID driverId = driver.getId();
         long totalAssignments = orderRepository.countByDriver_Id(driverId);
         long deliveredOrders = orderRepository.countByDriver_IdAndStatus(driverId, OrderStatus.DELIVERED);
@@ -100,21 +171,5 @@ public class PortalService {
                 totalAssignments - deliveredOrders,
                 deliveredOrders
         );
-    }
-
-    @Transactional(readOnly = true)
-    public List<OrderResponse> findCourierAssignments(AuthenticatedUser user) {
-        Driver driver = findDriver(user.userId());
-        return orderService.findDriverAssignments(driver.getId());
-    }
-
-    private Merchant findMerchant(UUID userId) {
-        return merchantRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Merchant profile not found."));
-    }
-
-    private Driver findDriver(UUID userId) {
-        return driverRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Courier profile not found."));
     }
 }

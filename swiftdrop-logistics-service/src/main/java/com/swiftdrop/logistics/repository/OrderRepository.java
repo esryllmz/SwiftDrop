@@ -76,4 +76,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     long countByDriver_Id(UUID driverId);
 
     long countByDriver_IdAndStatus(UUID driverId, OrderStatus status);
+
+    long countByDriver_IdAndStatusNot(UUID driverId, OrderStatus status);
 }

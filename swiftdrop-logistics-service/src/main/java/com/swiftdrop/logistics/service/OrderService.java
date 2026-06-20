@@ -15,6 +15,14 @@ public interface OrderService {
 
     OrderResponse updateOrderStatus(UUID orderId, String newStatus);
 
+    OrderResponse markMerchantOrderPreparing(UUID merchantId, UUID orderId);
+
+    OrderResponse markMerchantOrderReadyForPickup(UUID merchantId, UUID orderId);
+
+    OrderResponse markCourierOrderPickedUp(UUID driverId, UUID orderId);
+
+    OrderResponse markCourierOrderDelivered(UUID driverId, UUID orderId);
+
     List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId);
 
     List<OrderResponse> findCustomerOrders(UUID customerId);
