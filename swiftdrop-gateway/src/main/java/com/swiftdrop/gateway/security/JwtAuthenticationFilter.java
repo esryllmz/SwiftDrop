@@ -113,6 +113,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 || isPublicApplicationEndpoint(method, path)
                 || isEndpoint(method, path, "/actuator/health", HttpMethod.GET)
                 || isEndpoint(method, path, "/actuator/info", HttpMethod.GET)
+                || isEndpoint(method, path, "/api/health", HttpMethod.GET)
                 || isEndpoint(method, path, "/api/v1/health", HttpMethod.GET);
     }
 

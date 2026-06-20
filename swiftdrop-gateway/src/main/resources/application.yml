@@ -23,6 +23,12 @@ spring:
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
             - Path=/api/v1/auth/**,/api/v1/health
+        - id: auth-health-alias
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/health
+          filters:
+            - SetPath=/api/v1/health
         - id: logistics-service
           uri: ${LOGISTICS_SERVICE_URI:http://localhost:8082}
           predicates:
