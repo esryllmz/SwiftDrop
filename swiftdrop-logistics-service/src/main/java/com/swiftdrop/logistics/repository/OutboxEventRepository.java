@@ -5,13 +5,26 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.swiftdrop.logistics.entity.OutboxEvent;
 import com.swiftdrop.logistics.entity.OutboxStatus;
 
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> {
 
-    List<OutboxEvent> findTop50ByStatusOrderByCreatedAtAsc(OutboxStatus status);
+    @Query(
+            value = """
+                    SELECT *
+                    FROM outbox_events
+                    WHERE status = 'PENDING'
+                    ORDER BY created_at ASC
+                    LIMIT :limit
+                    FOR UPDATE SKIP LOCKED
+                    """,
+            nativeQuery = true
+    )
+    List<OutboxEvent> findPendingForPublishForUpdateSkipLocked(@Param("limit") int limit);
 
     long countByStatus(OutboxStatus status);
 

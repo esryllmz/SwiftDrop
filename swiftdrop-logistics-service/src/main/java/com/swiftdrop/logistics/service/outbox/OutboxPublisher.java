@@ -3,6 +3,7 @@ package com.swiftdrop.logistics.service.outbox;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -31,17 +32,30 @@ public class OutboxPublisher {
     private final OutboxEventRepository outboxEventRepository;
     private final LogisticsKafkaProducer kafkaProducer;
     private final ObjectMapper objectMapper;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Value("${application.outbox.max-retry-attempts:5}")
     private int maxRetryAttempts;
 
+    @Value("${application.outbox.publish-batch-size:25}")
+    private int publishBatchSize;
+
     @Scheduled(fixedDelayString = "${application.outbox.publisher-fixed-delay-ms:5000}")
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> events = outboxEventRepository.findTop50ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
+        if (!running.compareAndSet(false, true)) {
+            log.debug("Outbox publisher is already running; skipping this tick.");
+            return;
+        }
 
-        for (OutboxEvent event : events) {
-            publish(event);
+        try {
+            List<OutboxEvent> events = outboxEventRepository.findPendingForPublishForUpdateSkipLocked(publishBatchSize);
+
+            for (OutboxEvent event : events) {
+                publish(event);
+            }
+        } finally {
+            running.set(false);
         }
     }
 
