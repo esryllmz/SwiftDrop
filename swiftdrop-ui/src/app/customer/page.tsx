@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   OrdersTable,
@@ -8,10 +8,10 @@ import {
   PortalSection,
 } from "@/components/portal/PortalDashboard";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { Button, ErrorState, Field, LoadingState, SecondaryButton } from "@/components/ui";
+import { Button, ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
-import { createCustomerOrder, getCustomerOrders, getCustomerProfile } from "@/lib/portal";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { getCustomerOrders, getCustomerProfile } from "@/lib/portal";
+import { showErrorToast } from "@/lib/toast";
 import type { CustomerProfileResponse, OrderResponse } from "@/types/api";
 
 export default function CustomerPage() {
@@ -21,10 +21,6 @@ export default function CustomerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [merchantId, setMerchantId] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -53,39 +49,6 @@ export default function CustomerPage() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
-
-  async function handleCreateOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setCreateError(null);
-
-    const trimmedMerchantId = merchantId.trim();
-    const amount = Number(totalAmount);
-    if (!trimmedMerchantId || !Number.isFinite(amount) || amount <= 0) {
-      const message = "Enter a merchant ID and a positive total amount.";
-      setCreateError(message);
-      showErrorToast(message);
-      return;
-    }
-
-    setCreating(true);
-    try {
-      await createCustomerOrder(accessToken, {
-        merchantId: trimmedMerchantId,
-        totalAmount: amount,
-      });
-      setModalOpen(false);
-      setMerchantId("");
-      setTotalAmount("");
-      showSuccessToast("Order created.");
-      await load();
-    } catch (err) {
-      const message = normalizeApiError(err, "Order creation failed.");
-      setCreateError(message);
-      showErrorToast(message);
-    } finally {
-      setCreating(false);
-    }
-  }
 
   return (
     <PortalShell
@@ -129,9 +92,9 @@ export default function CustomerPage() {
           <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-950">Create demo order</h2>
+                <h2 className="text-lg font-semibold text-slate-950">Create order</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Enter a merchant ID for this demo order.
+                  Merchant selection is not available yet.
                 </p>
               </div>
               <button
@@ -144,23 +107,16 @@ export default function CustomerPage() {
               </button>
             </div>
 
-            <form className="mt-5 grid gap-4" onSubmit={handleCreateOrder}>
-              <Field label="Merchant ID" value={merchantId} onChange={setMerchantId} />
-              <Field label="Total Amount" value={totalAmount} onChange={setTotalAmount} />
-              {createError ? <ErrorState message={createError} /> : null}
-              <div className="flex flex-wrap justify-end gap-2">
-                <SecondaryButton
-                  type="button"
-                  disabled={creating}
-                  onClick={() => setModalOpen(false)}
-                >
-                  Cancel
-                </SecondaryButton>
-                <Button type="submit" disabled={creating}>
-                  {creating ? "Creating..." : "Create Order"}
-                </Button>
+            <div className="mt-5 grid gap-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                A customer-safe merchant picker endpoint is required before orders can be created from this portal.
               </div>
-            </form>
+              <div className="flex justify-end">
+                <SecondaryButton type="button" onClick={() => setModalOpen(false)}>
+                  Close
+                </SecondaryButton>
+              </div>
+            </div>
           </section>
         </div>
       ) : null}

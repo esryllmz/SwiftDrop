@@ -28,6 +28,7 @@ import {
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
+import { formatDisplayId, maskTechnicalId } from "@/lib/format";
 import type { MerchantResponse } from "@/types/api";
 
 const demoMerchantId = "11111111-1111-1111-1111-111111111111";
@@ -79,7 +80,7 @@ export default function MerchantsPage() {
           <AdminMetricCard
             label="Featured Merchant"
             value={merchants[0]?.name ?? "-"}
-            hint={merchants[0]?.id ? shortId(merchants[0].id) : undefined}
+            hint={merchants[0]?.id ? formatDisplayId(merchants[0].id, "Merchant") : undefined}
             tone="violet"
             icon="F"
             compact
@@ -105,7 +106,7 @@ export default function MerchantsPage() {
           description="Active merchant records."
           action={
             <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
-              Demo merchant: {shortId(demoMerchantId)}
+              Demo merchant: {formatDisplayId(demoMerchantId, "Merchant")}
             </span>
           }
         >
@@ -121,15 +122,15 @@ export default function MerchantsPage() {
           ) : null}
           {merchants.length > 0 ? (
             <AdminDataTable
-              columns={["Merchant ID", "User ID", "Name", "Latitude", "Longitude", "Actions"]}
+              columns={["Merchant", "Name", "Latitude", "Longitude", "Actions"]}
               rows={merchants}
               emptyMessage="No merchants found."
               getRowKey={(merchant) => merchant.id}
               renderRow={(merchant) => (
                 <>
-                  <AdminTableCell title={merchant.id}>
+                  <AdminTableCell title={formatDisplayId(merchant.id, "Merchant")}>
                     <div className="flex flex-col gap-1">
-                      <AdminIdChip value={shortId(merchant.id)} />
+                      <AdminIdChip value={merchant.id} prefix="Merchant" />
                       {merchant.id === demoMerchantId ? (
                         <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
                           Demo Order
@@ -137,7 +138,6 @@ export default function MerchantsPage() {
                       ) : null}
                     </div>
                   </AdminTableCell>
-                  <AdminTableCell title={merchant.userId}><span className="font-mono text-xs text-slate-400">{shortId(merchant.userId)}</span></AdminTableCell>
                   <AdminTableCell strong>
                     <span className="flex items-center gap-2">
                       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-xs font-semibold text-violet-700">
@@ -193,13 +193,15 @@ export default function MerchantsPage() {
               Merchant location is used for driver proximity matching.
             </div>
             <DetailGrid>
-              <DetailField label="Merchant ID" value={selectedMerchant.id} mono />
-              <DetailField label="User ID" value={selectedMerchant.userId} mono />
               <DetailField label="Name" value={selectedMerchant.name} />
               <DetailField label="Latitude" value={String(selectedMerchant.latitude)} />
               <DetailField label="Longitude" value={String(selectedMerchant.longitude)} />
             </DetailGrid>
-            <AdvancedDetails>
+            <AdvancedDetails title="Advanced details">
+              <DetailGrid>
+                <DetailField label="Merchant ID" value={maskTechnicalId(selectedMerchant.id)} mono />
+                <DetailField label="User ID" value={maskTechnicalId(selectedMerchant.userId)} mono />
+              </DetailGrid>
               <JsonPreview value={selectedMerchant} />
             </AdvancedDetails>
           </div>
@@ -209,12 +211,4 @@ export default function MerchantsPage() {
       </AdminModal>
     </div>
   );
-}
-
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }

@@ -30,6 +30,36 @@ export function prettyJson(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+export function isUuidLike(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function maskTechnicalId(id?: string | null) {
+  if (!id) {
+    return "-";
+  }
+
+  if (id.length <= 12) {
+    return id;
+  }
+
+  return `${id.slice(0, 6)}...${id.slice(-4)}`;
+}
+
+export function formatDisplayId(id?: string | null, prefix = "Record") {
+  if (!id) {
+    return `${prefix} #----`;
+  }
+
+  const compact = id.replace(/-/g, "");
+  const suffix = compact.slice(-4).toUpperCase();
+  return `${prefix} #${suffix || "----"}`;
+}
+
 export function statusBadgeClass(status?: string) {
   const normalized = status?.toUpperCase() ?? "";
 

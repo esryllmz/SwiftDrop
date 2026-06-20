@@ -1,6 +1,6 @@
 import type React from "react";
 import { EmptyState, StatusBadge } from "@/components/ui";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatDisplayId, formatMoney } from "@/lib/format";
 import type { OrderResponse } from "@/types/api";
 
 export function PortalMetricCard({
@@ -97,16 +97,16 @@ export function OrdersTable({
 
 function renderOrderCell(order: OrderResponse, column: string) {
   if (column === "order") {
-    return <IdChip value={order.id} />;
+    return <span className="font-medium text-slate-900">{formatDisplayId(order.id, "Order")}</span>;
   }
   if (column === "customer") {
-    return <IdChip value={order.customerId} />;
+    return <span>Customer account</span>;
   }
   if (column === "merchant") {
-    return order.merchantName ?? (order.merchantId ? <IdChip value={order.merchantId} /> : "-");
+    return order.merchantName ?? "Merchant";
   }
   if (column === "driver") {
-    return order.driverName ?? (order.driverId ? <IdChip value={order.driverId} /> : <span className="text-slate-400">Unassigned</span>);
+    return order.driverName ?? <span className="text-slate-400">Unassigned</span>;
   }
   if (column === "status") {
     return <StatusBadge status={order.status} />;
@@ -132,23 +132,4 @@ function columnLabel(column: string) {
     actions: "Actions",
   };
   return labels[column] ?? column;
-}
-
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
-
-function IdChip({ value }: { value?: string }) {
-  return (
-    <span
-      title={value}
-      className="inline-flex max-w-36 items-center rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600"
-    >
-      {shortId(value)}
-    </span>
-  );
 }

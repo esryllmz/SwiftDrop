@@ -30,7 +30,7 @@ import {
   AdminViewAction,
 } from "@/components/admin/ui";
 import { getJson } from "@/lib/api";
-import { formatDateTime, statusBadgeClass } from "@/lib/format";
+import { formatDateTime, formatDisplayId, maskTechnicalId, statusBadgeClass } from "@/lib/format";
 import type { OutboxEventResponse } from "@/types/api";
 
 const filters = ["All", "PENDING", "SENT", "FAILED"] as const;
@@ -138,18 +138,18 @@ export function EventStreamPage() {
         <AdminSectionCard title="Events">
           {events.length > 0 ? (
             <AdminDataTable
-              columns={["Event ID", "Type", "Aggregate", "Topic", "Status", "Retry", "Created", "Actions"]}
+              columns={["Event", "Type", "Aggregate", "Topic", "Status", "Retry", "Created", "Actions"]}
               rows={events}
               emptyMessage="No outbox events found."
               getRowKey={(event) => event.id}
               renderRow={(event) => (
                 <>
-                  <AdminTableCell title={event.id}><AdminIdChip value={shortId(event.id)} /></AdminTableCell>
+                  <AdminTableCell title={formatDisplayId(event.id, "Event")}><AdminIdChip value={event.id} prefix="Event" /></AdminTableCell>
                   <AdminTableCell><EventTypeBadge eventType={event.eventType} /></AdminTableCell>
                   <AdminTableCell>
                     <div className="font-medium text-slate-900">{event.aggregateType}</div>
-                    <div className="mt-1 text-xs text-slate-500" title={event.aggregateId}>
-                      {shortId(event.aggregateId)}
+                    <div className="mt-1 text-xs text-slate-500" title={formatDisplayId(event.aggregateId, event.aggregateType)}>
+                      {formatDisplayId(event.aggregateId, event.aggregateType)}
                     </div>
                   </AdminTableCell>
                   <AdminTableCell>{event.topic}</AdminTableCell>
@@ -172,7 +172,7 @@ export function EventStreamPage() {
       <AdminModal
         open={detailModalOpen}
         title="Event Detail"
-        subtitle={selectedEvent ? shortId(selectedEvent.id) : "Loading event details"}
+        subtitle={selectedEvent ? formatDisplayId(selectedEvent.id, "Event") : "Loading event details"}
         maxWidth="lg"
         onClose={() => {
           setDetailModalOpen(false);
@@ -208,16 +208,22 @@ export function EventStreamPage() {
                 <DetailField label="Event Type" value={<EventTypeBadge eventType={selectedEvent.eventType} />} />
                 <DetailField label="Status" value={<AdminStatusBadge status={selectedEvent.status} />} />
                 <DetailField label="Aggregate Type" value={selectedEvent.aggregateType} />
-                <DetailField label="Aggregate ID" value={selectedEvent.aggregateId} mono />
+                <DetailField label="Aggregate" value={formatDisplayId(selectedEvent.aggregateId, selectedEvent.aggregateType)} />
                 <DetailField label="Topic" value={selectedEvent.topic} />
-                <DetailField label="Event Key" value={selectedEvent.eventKey} mono />
                 <DetailField label="Retry Count" value={String(selectedEvent.retryCount)} />
                 <DetailField label="Created At" value={formatDateTime(selectedEvent.createdAt)} />
                 <DetailField label="Sent At" value={formatDateTime(selectedEvent.sentAt)} />
-                <DetailField label="Correlation ID" value={selectedEvent.correlationId} mono />
                 <DetailField label="Version" value={String(selectedEvent.version)} />
                 <DetailField label="Last Error" value={selectedEvent.lastError} />
               </DetailGrid>
+              <AdvancedDetails title="Advanced details">
+                <DetailGrid>
+                  <DetailField label="Event ID" value={maskTechnicalId(selectedEvent.id)} mono />
+                  <DetailField label="Aggregate ID" value={maskTechnicalId(selectedEvent.aggregateId)} mono />
+                  <DetailField label="Event Key" value={maskTechnicalId(selectedEvent.eventKey)} mono />
+                  <DetailField label="Correlation ID" value={maskTechnicalId(selectedEvent.correlationId)} mono />
+                </DetailGrid>
+              </AdvancedDetails>
               <AdvancedDetails title="Payload">
                 <JsonPreview value={selectedEvent.payload} />
               </AdvancedDetails>
@@ -263,12 +269,4 @@ function eventTypeBadgeClass(eventType: string) {
   }
 
   return statusBadgeClass(eventType);
-}
-
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }

@@ -34,7 +34,7 @@ import {
   rejectCourierApplication,
   rejectMerchantApplication,
 } from "@/lib/adminApplications";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDisplayId, maskTechnicalId } from "@/lib/format";
 import type {
   CourierApplicationResponse,
   MerchantApplicationResponse,
@@ -551,7 +551,7 @@ function ApplicationDetailModal({
     <AdminModal
       open={Boolean(selection)}
       title={title}
-      subtitle={application ? shortId(application.id) : undefined}
+      subtitle={application ? formatDisplayId(application.id, "Application") : undefined}
       onClose={onClose}
       maxWidth="lg"
       footer={
@@ -588,13 +588,16 @@ function ApplicationDetailModal({
             />
             <DetailField label="Review Note" value={selection.application.reviewNote} />
             <DetailField label="Message" value={selection.application.message} />
-            <DetailField
-              label="Provisioned User ID"
-              value={selection.application.provisionedUserId}
-              mono
-            />
           </DetailGrid>
-          <AdvancedDetails>
+          <AdvancedDetails title="Advanced details">
+            <DetailGrid>
+              <DetailField label="Application ID" value={maskTechnicalId(selection.application.id)} mono />
+              <DetailField
+                label="Provisioned User ID"
+                value={maskTechnicalId(selection.application.provisionedUserId)}
+                mono
+              />
+            </DetailGrid>
             <JsonPreview value={selection.application} />
           </AdvancedDetails>
         </div>
@@ -625,7 +628,7 @@ function ApprovalSuccessModal({
     <AdminModal
       open={Boolean(selection)}
       title={title}
-      subtitle={selection ? shortId(selection.application.id) : undefined}
+      subtitle={selection ? formatDisplayId(selection.application.id, "Application") : undefined}
       onClose={onClose}
       maxWidth="lg"
       footer={
@@ -659,9 +662,13 @@ function ApprovalSuccessModal({
               <DetailGrid>
                 <DetailField label="Email" value={account.email} />
                 <DetailField label="Role" value={account.role} />
-                <DetailField label="User ID" value={account.userId} mono />
                 <DetailField label="Created" value={account.created ? "Yes" : "No"} />
               </DetailGrid>
+              <AdvancedDetails title="Advanced details">
+                <DetailGrid>
+                  <DetailField label="User ID" value={maskTechnicalId(account.userId)} mono />
+                </DetailGrid>
+              </AdvancedDetails>
             </ModalSection>
           ) : (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
@@ -727,7 +734,7 @@ function ReviewModal({
     <AdminModal
       open={Boolean(selection)}
       title={`${actionLabel} Application`}
-      subtitle={selection ? shortId(selection.application.id) : undefined}
+      subtitle={selection ? formatDisplayId(selection.application.id, "Application") : undefined}
       onClose={onClose}
       closeOnOverlayClick={!reviewing}
       footer={
@@ -815,13 +822,6 @@ function applicationName(application: ApplicationRecord) {
   return "businessName" in application ? application.businessName : application.fullName;
 }
 
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
 
 function replaceById<T extends { id: string }>(items: T[], updatedItem: T) {
   return items.map((item) => (item.id === updatedItem.id ? updatedItem : item));

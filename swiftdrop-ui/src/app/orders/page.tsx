@@ -32,7 +32,7 @@ import {
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatDisplayId, formatMoney, maskTechnicalId } from "@/lib/format";
 import type { MerchantResponse, OrderResponse } from "@/types/api";
 
 const fallbackCustomerId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -213,14 +213,14 @@ export default function OrdersPage() {
             ) : null}
             {orders.length > 0 ? (
               <AdminDataTable
-                columns={["Order ID", "Customer", "Merchant", "Driver", "Status", "Amount", "Created", "Actions"]}
+                columns={["Order", "Customer", "Merchant", "Driver", "Status", "Amount", "Created", "Actions"]}
                 rows={orders}
                 emptyMessage="No orders found."
                 getRowKey={(order) => order.id}
                 renderRow={(order) => (
                   <>
-                    <AdminTableCell title={order.id}><AdminIdChip value={shortId(order.id)} /></AdminTableCell>
-                    <AdminTableCell title={order.customerId}><span className="font-mono text-xs text-slate-400">{shortId(order.customerId)}</span></AdminTableCell>
+                    <AdminTableCell title={formatDisplayId(order.id, "Order")}><AdminIdChip value={order.id} prefix="Order" /></AdminTableCell>
+                    <AdminTableCell>Customer account</AdminTableCell>
                     <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
                     <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
                     <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
@@ -277,8 +277,8 @@ export default function OrdersPage() {
           </div>
           {createError ? <ErrorState message={createError} /> : null}
           <ModalSection>
-            <Field label="Customer ID" value={customerId} onChange={setCustomerId} />
-            <Field label="Merchant ID" value={merchantId} onChange={setMerchantId} />
+            <Field label="Customer Reference" value={customerId} onChange={setCustomerId} />
+            <Field label="Merchant Reference" value={merchantId} onChange={setMerchantId} />
             <Field label="Total Amount" value={totalAmount} onChange={setTotalAmount} />
           </ModalSection>
         </form>
@@ -287,7 +287,7 @@ export default function OrdersPage() {
       <AdminModal
         open={detailModalOpen}
         title="Order Detail"
-        subtitle={selectedOrder ? shortId(selectedOrder.id) : "Loading order details"}
+        subtitle={selectedOrder ? formatDisplayId(selectedOrder.id, "Order") : "Loading order details"}
         onClose={() => {
           setDetailModalOpen(false);
           setSelectedOrder(null);
@@ -323,10 +323,13 @@ export default function OrdersPage() {
                 <DetailField label="Amount" value={formatMoney(Number(selectedOrder.totalAmount))} />
                 <DetailField label="Merchant" value={selectedOrder.merchantName} />
                 <DetailField label="Driver" value={selectedOrder.driverName ?? "Unassigned"} />
-                <DetailField label="Customer ID" value={selectedOrder.customerId} mono />
                 <DetailField label="Created At" value={formatDateTime(selectedOrder.createdAt)} />
               </DetailGrid>
-              <AdvancedDetails>
+              <AdvancedDetails title="Advanced details">
+                <DetailGrid>
+                  <DetailField label="Order ID" value={maskTechnicalId(selectedOrder.id)} mono />
+                  <DetailField label="Customer ID" value={maskTechnicalId(selectedOrder.customerId)} mono />
+                </DetailGrid>
                 <JsonPreview value={selectedOrder} />
               </AdvancedDetails>
             </>
@@ -335,12 +338,4 @@ export default function OrdersPage() {
       </AdminModal>
     </div>
   );
-}
-
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }

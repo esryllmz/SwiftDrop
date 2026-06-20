@@ -4,10 +4,16 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EmptyState } from "@/components/ui";
 import {
+  AdvancedDetails,
+  DetailField,
+  DetailGrid,
+} from "@/components/admin/modal";
+import {
   AdminPageHeader,
   AdminSectionCard,
   AdminStatusBadge,
 } from "@/components/admin/ui";
+import { maskTechnicalId } from "@/lib/format";
 
 const adminAccess = [
   { href: "/event-stream", label: "Event Stream" },
@@ -46,7 +52,6 @@ export default function ProfilePage() {
             <dl className="mt-4 grid gap-3 text-sm">
               <DetailRow label="Email" value={user.email} />
               <DetailRow label="Role" value={user.role} />
-              <DetailRow label="User ID" value={user.userId} />
               <DetailRow label="Enabled" value={user.enabled ? "Yes" : "No"} />
               <DetailRow
                 label="Account Status"
@@ -57,6 +62,15 @@ export default function ProfilePage() {
                 value={user.passwordChangeRequired ? "Yes" : "No"}
               />
             </dl>
+            {user.role === "ADMIN" ? (
+              <div className="mt-4">
+                <AdvancedDetails title="Advanced details">
+                  <DetailGrid>
+                    <DetailField label="User ID" value={maskTechnicalId(user.userId)} mono />
+                  </DetailGrid>
+                </AdvancedDetails>
+              </div>
+            ) : null}
           </AdminSectionCard>
 
           <AdminSectionCard title="System Access">

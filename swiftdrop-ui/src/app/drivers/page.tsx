@@ -30,6 +30,7 @@ import {
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
+import { formatDisplayId, maskTechnicalId } from "@/lib/format";
 import type { DriverResponse } from "@/types/api";
 
 const filters = ["All", "AVAILABLE", "BUSY", "OFFLINE"] as const;
@@ -120,14 +121,13 @@ export default function DriversPage() {
         ) : null}
         {drivers.length > 0 ? (
           <AdminDataTable
-            columns={["Driver ID", "User ID", "Full Name", "Status", "Actions"]}
+            columns={["Driver", "Full Name", "Status", "Actions"]}
             rows={drivers}
             emptyMessage="No drivers found."
             getRowKey={(driver) => driver.id}
             renderRow={(driver) => (
               <>
-                <AdminTableCell title={driver.id}><AdminIdChip value={shortId(driver.id)} /></AdminTableCell>
-                <AdminTableCell title={driver.userId}><span className="font-mono text-xs text-slate-400">{shortId(driver.userId)}</span></AdminTableCell>
+                <AdminTableCell title={formatDisplayId(driver.id, "Driver")}><AdminIdChip value={driver.id} prefix="Driver" /></AdminTableCell>
                 <AdminTableCell strong>
                   <span className="flex items-center gap-2">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
@@ -180,14 +180,16 @@ export default function DriversPage() {
             <DetailGrid>
               <DetailField label="Status" value={<AdminStatusBadge status={selectedDriver.status} />} />
               <DetailField label="Full Name" value={selectedDriver.fullName} />
-              <DetailField label="Driver ID" value={selectedDriver.id} mono />
-              <DetailField label="User ID" value={selectedDriver.userId} mono />
               <DetailField
                 label="Assignment Availability"
                 value={assignmentAvailability(selectedDriver.status)}
               />
             </DetailGrid>
-            <AdvancedDetails>
+            <AdvancedDetails title="Advanced details">
+              <DetailGrid>
+                <DetailField label="Driver ID" value={maskTechnicalId(selectedDriver.id)} mono />
+                <DetailField label="User ID" value={maskTechnicalId(selectedDriver.userId)} mono />
+              </DetailGrid>
               <JsonPreview value={selectedDriver} />
             </AdvancedDetails>
           </div>
@@ -208,13 +210,6 @@ function buildDriverSummary(drivers: DriverResponse[]) {
   };
 }
 
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
 
 function assignmentAvailability(status: string) {
   if (status === "AVAILABLE") {

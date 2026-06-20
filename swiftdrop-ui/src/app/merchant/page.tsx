@@ -119,7 +119,7 @@ export default function MerchantPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-3">
-          <PortalMetricCard label="Business Name" value={businessName} hint={profile?.merchantId} />
+          <PortalMetricCard label="Business Name" value={businessName} />
           <PortalMetricCard label="Total Orders" value={profile?.totalOrders ?? "-"} />
           <PortalMetricCard label="Active Orders" value={profile?.activeOrders ?? "-"} />
         </div>

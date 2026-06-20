@@ -20,7 +20,7 @@ import {
 } from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
-import { formatMoney } from "@/lib/format";
+import { formatDisplayId, formatMoney } from "@/lib/format";
 import type {
   DashboardSummaryResponse,
   MerchantResponse,
@@ -370,7 +370,7 @@ export default function DashboardPage() {
             </div>
             {lastDemoOrder ? (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-                Demo order {shortId(lastDemoOrder.id)} was created and dashboard data was refreshed.
+                {formatDisplayId(lastDemoOrder.id, "Order")} was created and dashboard data was refreshed.
               </div>
             ) : (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
@@ -507,7 +507,7 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
       getRowKey={(order) => order.id}
       renderRow={(order) => (
         <>
-          <AdminTableCell title={order.id}><AdminIdChip value={shortId(order.id)} /></AdminTableCell>
+          <AdminTableCell title={formatDisplayId(order.id, "Order")}><AdminIdChip value={order.id} prefix="Order" /></AdminTableCell>
           <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
           <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
           <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
@@ -521,11 +521,21 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
 function MiniHealthStrip({
   services,
 }: {
-  services: HealthProxyResponse["services"];
+  services?: HealthProxyResponse["services"] | null;
 }) {
+  const safeServices = Array.isArray(services) ? services : [];
+
+  if (safeServices.length === 0) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+        Health data unavailable.
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {services.map((service) => (
+      {safeServices.map((service) => (
         <div
           key={service.name}
           className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
@@ -573,7 +583,7 @@ function buildFlowSteps(
   return [
     {
       label: "Order Created",
-      detail: order ? `Order ${shortId(order.id)} was created.` : "Waiting for demo order.",
+      detail: order ? `${formatDisplayId(order.id, "Order")} was created.` : "Waiting for demo order.",
       completed: hasOrder,
     },
     {
@@ -605,12 +615,4 @@ function buildFlowSteps(
       passive: true,
     },
   ];
-}
-
-function shortId(value?: string) {
-  if (!value) {
-    return "-";
-  }
-
-  return value.length > 13 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }

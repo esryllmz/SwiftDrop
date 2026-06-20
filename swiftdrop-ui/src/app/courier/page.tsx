@@ -142,7 +142,7 @@ export default function CourierPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-4">
-          <PortalMetricCard label="Full Name" value={profile?.fullName ?? "Courier"} hint={profile?.driverId} />
+          <PortalMetricCard label="Full Name" value={profile?.fullName ?? "Courier"} />
           <PortalMetricCard
             label="Status"
             value={profile?.status ? <StatusBadge status={profile.status} /> : "-"}
