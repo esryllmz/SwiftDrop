@@ -62,30 +62,3 @@ export function AdminTableCell({
     </td>
   );
 }
-
-export function AdminIdChip({ value }: { value?: string }) {
-  return (
-    <span className="inline-flex rounded border border-slate-100 bg-slate-50 px-2 py-1 font-mono text-xs text-slate-500">
-      {value || "-"}
-    </span>
-  );
-}
-
-export function AdminViewAction({
-  disabled,
-  onClick,
-}: {
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      <span aria-hidden="true">View</span>
-    </button>
-  );
-}

@@ -13,8 +13,8 @@ export function PortalMetricCard({
   hint?: string;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60">
-      <div className="text-sm font-medium text-slate-500">{label}</div>
+    <section className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-200/60">
+      <div className="text-xs font-medium uppercase text-slate-500">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
       {hint ? <div className="mt-1 text-xs text-slate-500">{hint}</div> : null}
     </section>
@@ -33,7 +33,7 @@ export function PortalSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60">
+    <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
@@ -60,22 +60,23 @@ export function OrdersTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
-          <tr>
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+          <tr className="border-b border-slate-100 bg-slate-50/60">
             {columns.map((column) => (
-              <th key={column} className="px-3 py-2 font-medium">
+              <th key={column} className="whitespace-nowrap px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                 {columnLabel(column)}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-50 bg-white">
           {orders.map((order) => (
-            <tr key={order.id} className="align-top transition hover:bg-slate-50">
+            <tr key={order.id} className="align-top transition-colors hover:bg-slate-50/60">
               {columns.map((column) => (
-                <td key={column} className="px-3 py-2 text-slate-700">
+                <td key={column} className="px-5 py-3.5 text-slate-700">
                   {renderOrderCell(order, column)}
                 </td>
               ))}
@@ -83,6 +84,7 @@ export function OrdersTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

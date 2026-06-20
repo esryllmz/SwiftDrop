@@ -16,11 +16,12 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  SecondaryButton,
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminFilterPills,
   AdminIdChip,
+  AdminInfoBanner,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
@@ -109,28 +110,19 @@ export function EventStreamPage() {
           <AdminMetricCard label="Failed" value={summary.failedEvents} tone="red" icon="F" />
           <AdminMetricCard label="Total Retries" value={summary.totalRetries} tone="slate" icon="R" />
         </div>
-        <AdminSectionCard title="Transactional Outbox">
-          <p className="text-sm leading-6 text-slate-600">
+        <AdminInfoBanner title="Transactional Outbox" tone="slate">
+          <p>
             Event details and payload are available in the detail modal.
           </p>
-        </AdminSectionCard>
+        </AdminInfoBanner>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {filters.map((item) => (
-          <SecondaryButton
-            key={item}
-            onClick={() => setFilter(item)}
-            className={
-              filter === item
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : ""
-            }
-          >
-            {item === "All" ? "All events" : item}
-          </SecondaryButton>
-        ))}
-      </div>
+      <AdminFilterPills
+        items={filters}
+        selected={filter}
+        getLabel={(item) => item === "All" ? "All events" : item}
+        onSelect={setFilter}
+      />
 
       {loading ? <LoadingState /> : null}
       {error ? (

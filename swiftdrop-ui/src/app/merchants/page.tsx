@@ -19,6 +19,7 @@ import {
 import {
   AdminDataTable,
   AdminIdChip,
+  AdminInfoBanner,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
@@ -91,11 +92,11 @@ export default function MerchantsPage() {
             icon="L"
           />
         </div>
-        <AdminSectionCard title="Delivery Location">
-          <p className="text-sm leading-6 text-slate-600">
+        <AdminInfoBanner title="Delivery Location" tone="violet">
+          <p>
             Merchant location is used for nearby driver assignment.
           </p>
-        </AdminSectionCard>
+        </AdminInfoBanner>
       </div>
 
       <div className="grid gap-4">

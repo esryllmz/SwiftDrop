@@ -15,11 +15,12 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  SecondaryButton,
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminFilterPills,
   AdminIdChip,
+  AdminInfoBanner,
   AdminMetricCard,
   AdminPageHeader,
   AdminSectionCard,
@@ -85,11 +86,11 @@ export default function DriversPage() {
           <AdminMetricCard label="Busy" value={summary.busy} tone="violet" icon="." iconVariant="dot" />
           <AdminMetricCard label="Offline" value={summary.offline} tone="slate" icon="." iconVariant="dot" />
         </div>
-        <AdminSectionCard title="Assignment Readiness">
-          <p className="text-sm leading-6 text-slate-600">
+        <AdminInfoBanner title="Assignment Readiness" tone="emerald">
+          <p>
             Driver assignment uses availability and proximity rules.
           </p>
-        </AdminSectionCard>
+        </AdminInfoBanner>
       </div>
 
       <AdminSectionCard
@@ -97,19 +98,13 @@ export default function DriversPage() {
         description="Filter by current driver status."
         action={
           <div className="flex flex-wrap gap-2">
-            {filters.map((item) => (
-              <SecondaryButton
-                key={item}
-                onClick={() => setFilter(item)}
-                className={
-                  filter === item
-                    ? "border-violet-500 bg-violet-50 text-violet-700"
-                    : ""
-                }
-              >
-                {item === "All" ? "All drivers" : item}
-              </SecondaryButton>
-            ))}
+            <AdminFilterPills
+              items={filters}
+              selected={filter}
+              getLabel={(item) => item === "All" ? "All drivers" : item}
+              onSelect={setFilter}
+              tone="violet"
+            />
           </div>
         }
       >

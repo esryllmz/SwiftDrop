@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ShellNavItem, type ShellNavItemConfig } from "@/components/layout/ShellNavItem";
+import { UserIdentity } from "@/components/layout/UserIdentity";
 import {
   ADMIN_ROUTES,
   isPublicRoute,
@@ -14,14 +16,7 @@ import {
   resolveRoleRedirect,
 } from "@/lib/routes";
 
-type NavItem = {
-  href: string;
-  label: string;
-  description: string;
-  marker: React.ReactNode;
-};
-
-const ADMIN_NAV_ITEMS: NavItem[] = [
+const ADMIN_NAV_ITEMS: ShellNavItemConfig[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
@@ -208,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <nav className="flex gap-1 overflow-x-auto px-3 py-4 lg:flex-1 lg:flex-col lg:overflow-y-auto">
           {ADMIN_NAV_ITEMS.map((item) => (
-            <AdminNavLink
+            <ShellNavItem
               key={item.href}
               item={item}
               active={normalizedPathname.startsWith(item.href)}
@@ -240,7 +235,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0 flex-1 lg:flex lg:min-h-0 lg:flex-col">
         <header className="sticky top-0 z-30 border-b border-slate-100 bg-white px-6 py-3">
           <div className="flex min-h-14 items-center justify-end">
-            <UserBadge email={user.email} />
+            <UserIdentity email={user.email} />
           </div>
         </header>
 
@@ -249,22 +244,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </div>
-  );
-}
-
-function AdminNavLink({ item, active }: { item: NavItem; active: boolean }) {
-  return (
-    <Link
-      href={item.href}
-      className={`flex min-w-[180px] items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors lg:min-w-0 ${
-        active
-          ? "bg-blue-50 font-medium text-blue-700"
-          : "border-transparent bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950"
-      }`}
-    >
-      <span className={`shrink-0 ${active ? "text-blue-600" : "text-slate-400"}`}>{item.marker}</span>
-      <span className="truncate">{item.label}</span>
-    </Link>
   );
 }
 
@@ -326,20 +305,6 @@ function AccessDenied({
         </div>
       </div>
     </div>
-  );
-}
-
-function UserBadge({ email }: { email: string }) {
-  return (
-    <span className="inline-flex items-center gap-3 text-xs text-slate-600">
-      <span className="grid text-right">
-        <span className="text-sm font-medium text-slate-900">Admin</span>
-        <span className="text-xs text-slate-400">{email}</span>
-      </span>
-      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-[10px] font-semibold text-blue-600">
-        {email.slice(0, 1).toUpperCase()}
-      </span>
-    </span>
   );
 }
 

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui";
 import {
   AdminDataTable,
+  AdminFilterPills,
   AdminIdChip,
   AdminPageHeader,
   AdminSectionCard,
@@ -191,19 +192,12 @@ export default function OrdersPage() {
             description="Filter by status and open order details."
             action={
               <div className="flex flex-wrap gap-2">
-                {statuses.map((status) => (
-                  <SecondaryButton
-                    key={status}
-                    onClick={() => setSelectedStatus(status)}
-                    className={
-                      selectedStatus === status
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : ""
-                    }
-                  >
-                    {status === "All" ? "All orders" : status}
-                  </SecondaryButton>
-                ))}
+                <AdminFilterPills
+                  items={statuses}
+                  selected={selectedStatus}
+                  getLabel={(status) => status === "All" ? "All orders" : status}
+                  onSelect={setSelectedStatus}
+                />
               </div>
             }
           >
