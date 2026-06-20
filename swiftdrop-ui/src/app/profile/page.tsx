@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
+import {
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+} from "@/components/admin/ui";
 
 const adminAccess = [
   { href: "/event-stream", label: "Event Stream" },
@@ -15,20 +20,18 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="PR"
         title="Profile"
         description="Account and access details."
-        action={user ? <StatusBadge status={user.role} /> : undefined}
+        action={user ? <AdminStatusBadge status={user.role} /> : undefined}
       />
 
       {!user ? <EmptyState message="No authenticated user context is available." /> : null}
 
       {user ? (
         <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-          <Card>
-            <h3 className="text-lg font-semibold text-slate-950">
-              Account Details
-            </h3>
+          <AdminSectionCard title="Account Details">
             <dl className="mt-4 grid gap-3 text-sm">
               <DetailRow label="Email" value={user.email} />
               <DetailRow label="Role" value={user.role} />
@@ -38,13 +41,14 @@ export default function ProfilePage() {
                 label="Account Status"
                 value={user.enabled ? "Active" : "Disabled"}
               />
+              <DetailRow
+                label="Password Change Required"
+                value={user.passwordChangeRequired ? "Yes" : "No"}
+              />
             </dl>
-          </Card>
+          </AdminSectionCard>
 
-          <Card>
-            <h3 className="text-lg font-semibold text-slate-950">
-              System Access
-            </h3>
+          <AdminSectionCard title="System Access">
             {user.role === "ADMIN" ? (
               <div className="mt-4 grid gap-2">
                 {adminAccess.map((item) => (
@@ -60,7 +64,7 @@ export default function ProfilePage() {
             ) : (
               <EmptyState message="No admin console access is assigned." />
             )}
-          </Card>
+          </AdminSectionCard>
         </div>
       ) : null}
     </div>

@@ -12,14 +12,19 @@ import {
 } from "@/components/admin/modal";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
-  PageHeader,
   SecondaryButton,
-  StatusBadge,
 } from "@/components/ui";
+import {
+  AdminDataTable,
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+  AdminTableCell,
+} from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
 import type { DriverResponse } from "@/types/api";
@@ -64,36 +69,31 @@ export default function DriversPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="DR"
         title="Drivers"
-        description="Courier availability and assignment readiness."
+        description="Courier availability and operations."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
       <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_420px]">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Total Drivers" value={summary.total} />
-          <SummaryCard label="Available" value={summary.available} />
-          <SummaryCard label="Busy" value={summary.busy} />
-          <SummaryCard label="Offline" value={summary.offline} />
+          <AdminMetricCard label="Total Drivers" value={summary.total} icon="T" />
+          <AdminMetricCard label="Available" value={summary.available} tone="emerald" icon="A" />
+          <AdminMetricCard label="Busy" value={summary.busy} tone="violet" icon="B" />
+          <AdminMetricCard label="Offline" value={summary.offline} tone="slate" icon="O" />
         </div>
-        <Card>
-          <h3 className="text-lg font-semibold text-slate-950">Assignment Readiness</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Available drivers can receive new orders. Busy and offline drivers
-            are excluded from assignment.
+        <AdminSectionCard title="Assignment Readiness">
+          <p className="text-sm leading-6 text-slate-600">
+            Driver assignment uses availability and proximity rules.
           </p>
-        </Card>
+        </AdminSectionCard>
       </div>
 
-      <Card>
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-950">Driver List</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Filter by current driver status.
-            </p>
-          </div>
+      <AdminSectionCard
+        title="Driver List"
+        description="Filter by current driver status."
+        action={
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (
               <SecondaryButton
@@ -105,11 +105,12 @@ export default function DriversPage() {
                     : ""
                 }
               >
-                {item}
+                {item === "All" ? "All drivers" : item}
               </SecondaryButton>
             ))}
           </div>
-        </div>
+        }
+      >
 
         {loading ? <LoadingState /> : null}
         {error ? (
@@ -121,46 +122,32 @@ export default function DriversPage() {
           <EmptyState message="No drivers found. Check Logistics seed data or service health." />
         ) : null}
         {drivers.length > 0 ? (
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left text-slate-600">
-                <tr>
-                  {["Driver ID", "Full Name", "Status", "Actions"].map(
-                    (heading) => (
-                      <th key={heading} className="px-3 py-2 font-medium">
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {drivers.map((driver) => (
-                  <tr key={driver.id} className="transition hover:bg-slate-50">
-                    <td className="px-3 py-2 text-slate-700" title={driver.id}>
-                      {shortId(driver.id)}
-                    </td>
-                    <td className="px-3 py-2 text-slate-950">{driver.fullName}</td>
-                    <td className="px-3 py-2">
-                      <StatusBadge status={driver.status} />
-                    </td>
-                    <td className="px-3 py-2">
-                      <SecondaryButton
-                        onClick={() => {
-                          setSelectedDriver(driver);
-                          setDetailModalOpen(true);
-                        }}
-                      >
-                        View
-                      </SecondaryButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AdminDataTable
+            columns={["Driver ID", "User ID", "Full Name", "Status", "Actions"]}
+            rows={drivers}
+            emptyMessage="No drivers found."
+            getRowKey={(driver) => driver.id}
+            renderRow={(driver) => (
+              <>
+                <AdminTableCell title={driver.id}>{shortId(driver.id)}</AdminTableCell>
+                <AdminTableCell title={driver.userId}>{shortId(driver.userId)}</AdminTableCell>
+                <AdminTableCell strong>{driver.fullName}</AdminTableCell>
+                <AdminTableCell><AdminStatusBadge status={driver.status} /></AdminTableCell>
+                <AdminTableCell>
+                  <SecondaryButton
+                    onClick={() => {
+                      setSelectedDriver(driver);
+                      setDetailModalOpen(true);
+                    }}
+                  >
+                    View
+                  </SecondaryButton>
+                </AdminTableCell>
+              </>
+            )}
+          />
         ) : null}
-      </Card>
+      </AdminSectionCard>
 
       <AdminModal
         open={detailModalOpen}
@@ -189,7 +176,7 @@ export default function DriversPage() {
         {selectedDriver ? (
           <div className="grid gap-4">
             <DetailGrid>
-              <DetailField label="Status" value={<StatusBadge status={selectedDriver.status} />} />
+              <DetailField label="Status" value={<AdminStatusBadge status={selectedDriver.status} />} />
               <DetailField label="Full Name" value={selectedDriver.fullName} />
               <DetailField label="Driver ID" value={selectedDriver.id} mono />
               <DetailField label="User ID" value={selectedDriver.userId} mono />
@@ -217,15 +204,6 @@ function buildDriverSummary(drivers: DriverResponse[]) {
     busy: drivers.filter((driver) => driver.status === "BUSY").length,
     offline: drivers.filter((driver) => driver.status === "OFFLINE").length,
   };
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <div className="text-sm text-slate-600">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
-    </Card>
-  );
 }
 
 function shortId(value?: string) {

@@ -18,7 +18,7 @@ type NavItem = {
   href: string;
   label: string;
   description: string;
-  marker: string;
+  marker: React.ReactNode;
   title: string;
   subtitle: string;
 };
@@ -28,7 +28,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/dashboard",
     label: "Dashboard",
     description: "Operational overview",
-    marker: "DB",
+    marker: <DashboardIcon />,
     title: "Dashboard",
     subtitle: "Operational overview",
   },
@@ -36,7 +36,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/orders",
     label: "Orders",
     description: "Order operations",
-    marker: "OR",
+    marker: <OrdersIcon />,
     title: "Orders",
     subtitle: "Order operations",
   },
@@ -44,7 +44,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/drivers",
     label: "Drivers",
     description: "Courier availability",
-    marker: "DR",
+    marker: <DriversIcon />,
     title: "Drivers",
     subtitle: "Courier availability",
   },
@@ -52,7 +52,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/merchants",
     label: "Merchants",
     description: "Store locations",
-    marker: "ME",
+    marker: <StoreIcon />,
     title: "Merchants",
     subtitle: "Store records and locations",
   },
@@ -60,7 +60,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/event-stream",
     label: "Event Stream",
     description: "Outbox events",
-    marker: "EV",
+    marker: <EventIcon />,
     title: "Event Stream",
     subtitle: "Transactional outbox events",
   },
@@ -68,7 +68,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/system-monitoring",
     label: "System Monitoring",
     description: "Service health",
-    marker: "UP",
+    marker: <HealthIcon />,
     title: "System Monitoring",
     subtitle: "Service health",
   },
@@ -76,7 +76,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/users-approvals",
     label: "Users & Approvals",
     description: "Access review",
-    marker: "UA",
+    marker: <UsersIcon />,
     title: "Users & Approvals",
     subtitle: "Merchant and courier application review",
   },
@@ -84,7 +84,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     href: "/settings",
     label: "Settings",
     description: "Runtime config",
-    marker: "ST",
+    marker: <SettingsIcon />,
     title: "Settings",
     subtitle: "Environment-managed configuration",
   },
@@ -223,19 +223,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const subtitle = current?.subtitle ?? metadata?.subtitle ?? "Operations Console";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[244px_1fr] lg:overflow-hidden">
-      <aside className="border-b border-slate-200 bg-white px-3 py-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
-        <Link href="/dashboard" className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-semibold text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[240px_1fr] lg:overflow-hidden">
+      <aside className="border-b border-slate-200 bg-white px-3 py-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
+        <Link href="/dashboard" className="flex h-[72px] items-center gap-3 rounded-2xl px-2 transition hover:bg-slate-50">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold text-white shadow-sm shadow-blue-200">
             SD
           </span>
           <span className="min-w-0">
             <span className="block text-base font-semibold text-slate-950">SwiftDrop</span>
-            <span className="block text-sm text-slate-500">Operations Console</span>
+            <span className="block text-sm text-slate-500">Admin Panel</span>
           </span>
         </Link>
 
-        <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+        <nav className="mt-2 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
           {ADMIN_NAV_ITEMS.map((item) => (
             <AdminNavLink
               key={item.href}
@@ -245,10 +245,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:mt-auto">
+        <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 lg:mt-auto">
           <Link
             href="/profile"
-            className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
               normalizedPathname === "/profile"
                 ? "border-blue-200 bg-blue-50 text-blue-700"
                 : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
@@ -259,7 +259,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => void logout().finally(() => router.replace("/"))}
-            className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50"
           >
             Log out
           </button>
@@ -267,7 +267,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col">
-        <header className="border-b border-slate-200 bg-white px-5 py-3">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
           <div className="flex min-h-14 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
@@ -280,7 +280,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href="http://localhost:8090"
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+                className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
               >
                 Kafka UI :8090
               </a>
@@ -289,7 +289,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="min-w-0 px-5 py-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        <main className="min-w-0 px-4 py-5 sm:px-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-6">
           {children}
         </main>
       </div>
@@ -303,13 +303,13 @@ function AdminNavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={`min-w-[180px] rounded-xl border px-3 py-2.5 transition lg:min-w-0 ${
         active
-          ? "border-blue-200 bg-blue-50 text-blue-700 shadow-[inset_3px_0_0_rgba(37,99,235,0.9)]"
-          : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
+          ? "border-blue-100 bg-blue-50 text-blue-700"
+          : "border-transparent bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950"
       }`}
     >
       <div className="flex items-center gap-3">
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-semibold ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
             active
               ? "border-blue-200 bg-white text-blue-700"
               : "border-slate-200 bg-slate-50 text-slate-500"
@@ -389,7 +389,7 @@ function AccessDenied({
 
 function HeaderBadge({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
       <span className="text-slate-500">{label} </span>
       <span className="font-medium text-slate-950">{value}</span>
     </span>
@@ -398,11 +398,43 @@ function HeaderBadge({ label, value }: { label: string; value: string }) {
 
 function UserBadge({ email }: { email: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
         {email.slice(0, 1).toUpperCase()}
       </span>
       <span className="font-medium text-slate-950">{email}</span>
     </span>
   );
+}
+
+function DashboardIcon() {
+  return <span className="text-sm">D</span>;
+}
+
+function OrdersIcon() {
+  return <span className="text-sm">O</span>;
+}
+
+function DriversIcon() {
+  return <span className="text-sm">C</span>;
+}
+
+function StoreIcon() {
+  return <span className="text-sm">M</span>;
+}
+
+function EventIcon() {
+  return <span className="text-sm">E</span>;
+}
+
+function HealthIcon() {
+  return <span className="text-sm">H</span>;
+}
+
+function UsersIcon() {
+  return <span className="text-sm">U</span>;
+}
+
+function SettingsIcon() {
+  return <span className="text-sm">S</span>;
 }

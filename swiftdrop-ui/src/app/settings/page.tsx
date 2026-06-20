@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
+import {
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+} from "@/components/admin/ui";
 
 const settings = [
   { label: "API Gateway URL", value: "http://localhost:8080" },
@@ -14,17 +19,15 @@ const settings = [
 export default function SettingsPage() {
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="ST"
         title="Settings"
-        description="Local demo configuration."
-        action={<StatusBadge status="ENV_MANAGED" />}
+        description="Environment-managed configuration."
+        action={<AdminStatusBadge status="ENV_MANAGED" />}
       />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <Card>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Runtime Configuration
-          </h3>
+        <AdminSectionCard title="Runtime Configuration">
           <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <tbody className="divide-y divide-slate-100 bg-white">
@@ -41,20 +44,17 @@ export default function SettingsPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </AdminSectionCard>
 
-        <Card>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Configuration
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+        <AdminSectionCard title="Configuration">
+          <p className="text-sm leading-6 text-slate-600">
             Settings are managed by environment variables and Docker Compose for
             the local demo stack.
           </p>
           <div className="mt-4">
             <EmptyState message="Configuration is environment-managed." />
           </div>
-        </Card>
+        </AdminSectionCard>
       </div>
     </div>
   );

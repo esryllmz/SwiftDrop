@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
-  PageHeader,
   SecondaryButton,
-  StatusBadge,
 } from "@/components/ui";
+import {
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+} from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
@@ -124,37 +127,6 @@ const eventMetrics: MetricDefinition[] = [
     icon: "!",
   },
 ];
-
-const toneClasses: Record<Tone, { icon: string; ring: string }> = {
-  blue: {
-    icon: "border-blue-200 bg-blue-50 text-blue-700",
-    ring: "shadow-blue-100/50",
-  },
-  amber: {
-    icon: "border-amber-200 bg-amber-50 text-amber-700",
-    ring: "shadow-amber-100/50",
-  },
-  violet: {
-    icon: "border-violet-200 bg-violet-50 text-violet-700",
-    ring: "shadow-violet-100/50",
-  },
-  green: {
-    icon: "border-green-200 bg-green-50 text-green-700",
-    ring: "shadow-green-100/50",
-  },
-  emerald: {
-    icon: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    ring: "shadow-emerald-100/50",
-  },
-  slate: {
-    icon: "border-slate-200 bg-slate-50 text-slate-600",
-    ring: "shadow-slate-100/50",
-  },
-  red: {
-    icon: "border-red-200 bg-red-50 text-red-700",
-    ring: "shadow-red-100/50",
-  },
-};
 
 export default function DashboardPage() {
   const { accessToken } = useAuth();
@@ -306,9 +278,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="DB"
         title="Dashboard"
-        description="Operational overview"
+        description={`Operational overview - ${new Date().toLocaleDateString()}`}
         action={
           <div className="flex flex-wrap gap-2">
             <SecondaryButton onClick={refreshDashboard} disabled={runningDemo}>
@@ -359,7 +332,7 @@ export default function DashboardPage() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <DashboardSection
           title="Live Demo Flow"
-          action={<StatusBadge status={lastDemoOrder ? "COMPLETED" : "PENDING"} />}
+          action={<AdminStatusBadge status={lastDemoOrder ? "COMPLETED" : "PENDING"} />}
         >
           <div className="flex flex-col gap-4">
             <div className="grid gap-3">
@@ -440,21 +413,19 @@ async function fetchFirstMerchantId(accessToken: string | null) {
 
 function DashboardSection({
   title,
+  description,
   action,
   children,
 }: {
   title: string;
+  description?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
-        {action}
-      </div>
+    <AdminSectionCard title={title} description={description} action={action}>
       {children}
-    </Card>
+    </AdminSectionCard>
   );
 }
 
@@ -473,28 +444,15 @@ function MetricCard({
   icon: string;
   compact?: boolean;
 }) {
-  const classes = toneClasses[tone];
-
   return (
-    <div
-      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${classes.ring}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-slate-600">{label}</div>
-          <div className={`${compact ? "mt-1 text-2xl" : "mt-2 text-3xl"} font-semibold text-slate-950`}>
-            {value}
-          </div>
-        </div>
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold ${classes.icon}`}
-          aria-hidden="true"
-        >
-          {icon}
-        </span>
-      </div>
-      <div className="mt-3 text-xs text-slate-500">{hint}</div>
-    </div>
+    <AdminMetricCard
+      label={label}
+      value={value}
+      hint={hint}
+      tone={tone === "green" ? "emerald" : tone}
+      icon={icon}
+      compact={compact}
+    />
   );
 }
 
@@ -554,7 +512,7 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
               <td className="px-3 py-2 text-slate-700">{order.merchantName ?? "-"}</td>
               <td className="px-3 py-2 text-slate-700">{order.driverName ?? "-"}</td>
               <td className="px-3 py-2">
-                <StatusBadge status={order.status} />
+                <AdminStatusBadge status={order.status} />
               </td>
               <td className="px-3 py-2 text-slate-700">
                 {formatMoney(Number(order.totalAmount))}
@@ -580,7 +538,7 @@ function MiniHealthStrip({
           className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
         >
           <span className="text-sm font-medium text-slate-700">{service.name}</span>
-          <StatusBadge status={service.status || "UNKNOWN"} />
+          <AdminStatusBadge status={service.status || "UNKNOWN"} />
         </div>
       ))}
     </div>

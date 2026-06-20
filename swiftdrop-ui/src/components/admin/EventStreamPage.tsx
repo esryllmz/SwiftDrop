@@ -13,14 +13,19 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
-  PageHeader,
   SecondaryButton,
-  StatusBadge,
 } from "@/components/ui";
+import {
+  AdminDataTable,
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+  AdminTableCell,
+} from "@/components/admin/ui";
 import { getJson } from "@/lib/api";
 import { formatDateTime, statusBadgeClass } from "@/lib/format";
 import type { OutboxEventResponse } from "@/types/api";
@@ -87,26 +92,24 @@ export function EventStreamPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="EV"
         title="Event Stream"
-        description="Outbox events and publish status."
+        description="Outbox events and delivery pipeline."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_420px]">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <SummaryCard label="Total Events" value={summary.totalEvents} />
-          <SummaryCard label="Sent Events" value={summary.sentEvents} />
-          <SummaryCard label="Pending Events" value={summary.pendingEvents} />
-          <SummaryCard label="Failed Events" value={summary.failedEvents} />
-          <SummaryCard label="Total Retries" value={summary.totalRetries} />
+      <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_340px]">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <AdminMetricCard label="Pending" value={summary.pendingEvents} tone="amber" icon="P" />
+          <AdminMetricCard label="Sent" value={summary.sentEvents} tone="emerald" icon="S" />
+          <AdminMetricCard label="Failed" value={summary.failedEvents} tone="red" icon="F" />
         </div>
-        <Card>
-          <h3 className="text-lg font-semibold text-slate-950">Transactional Outbox</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+        <AdminSectionCard title="Transactional Outbox">
+          <p className="text-sm leading-6 text-slate-600">
             Event details and payload are available in the detail modal.
           </p>
-        </Card>
+        </AdminSectionCard>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -136,71 +139,40 @@ export function EventStreamPage() {
       ) : null}
 
       <div className="grid gap-4">
-        <Card>
-          <h3 className="mb-3 text-lg font-semibold text-slate-950">
-            Event Stream
-          </h3>
+        <AdminSectionCard title="Events">
           {events.length > 0 ? (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-slate-500">
-                  <tr>
-                    {[
-                      "Event ID",
-                      "Event Type",
-                      "Aggregate",
-                      "Topic",
-                      "Status",
-                      "Retry",
-                      "Created",
-                      "Actions",
-                    ].map((heading) => (
-                      <th key={heading} className="px-3 py-2 font-medium">
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {events.map((event) => (
-                    <tr key={event.id} className="align-top transition hover:bg-slate-50">
-                      <td className="px-3 py-2 text-slate-700" title={event.id}>
-                        {shortId(event.id)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <EventTypeBadge eventType={event.eventType} />
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        <div className="font-medium text-slate-900">{event.aggregateType}</div>
-                        <div className="mt-1 text-xs text-slate-500" title={event.aggregateId}>
-                          {shortId(event.aggregateId)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">{event.topic}</td>
-                      <td className="px-3 py-2">
-                        <StatusBadge status={event.status} />
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {event.retryCount}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {formatDateTime(event.createdAt)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <SecondaryButton
-                          disabled={detailLoading}
-                          onClick={() => void viewEvent(event.id)}
-                        >
-                          View
-                        </SecondaryButton>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AdminDataTable
+              columns={["Event ID", "Type", "Aggregate", "Topic", "Status", "Retry", "Created", "Actions"]}
+              rows={events}
+              emptyMessage="No outbox events found."
+              getRowKey={(event) => event.id}
+              renderRow={(event) => (
+                <>
+                  <AdminTableCell title={event.id}>{shortId(event.id)}</AdminTableCell>
+                  <AdminTableCell><EventTypeBadge eventType={event.eventType} /></AdminTableCell>
+                  <AdminTableCell>
+                    <div className="font-medium text-slate-900">{event.aggregateType}</div>
+                    <div className="mt-1 text-xs text-slate-500" title={event.aggregateId}>
+                      {shortId(event.aggregateId)}
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>{event.topic}</AdminTableCell>
+                  <AdminTableCell><AdminStatusBadge status={event.status} /></AdminTableCell>
+                  <AdminTableCell>{event.retryCount}</AdminTableCell>
+                  <AdminTableCell>{formatDateTime(event.createdAt)}</AdminTableCell>
+                  <AdminTableCell>
+                    <SecondaryButton
+                      disabled={detailLoading}
+                      onClick={() => void viewEvent(event.id)}
+                    >
+                      View
+                    </SecondaryButton>
+                  </AdminTableCell>
+                </>
+              )}
+            />
           ) : null}
-        </Card>
+        </AdminSectionCard>
       </div>
 
       <AdminModal
@@ -240,7 +212,7 @@ export function EventStreamPage() {
             <>
               <DetailGrid>
                 <DetailField label="Event Type" value={<EventTypeBadge eventType={selectedEvent.eventType} />} />
-                <DetailField label="Status" value={<StatusBadge status={selectedEvent.status} />} />
+                <DetailField label="Status" value={<AdminStatusBadge status={selectedEvent.status} />} />
                 <DetailField label="Aggregate Type" value={selectedEvent.aggregateType} />
                 <DetailField label="Aggregate ID" value={selectedEvent.aggregateId} mono />
                 <DetailField label="Topic" value={selectedEvent.topic} />
@@ -271,15 +243,6 @@ function buildSummary(events: OutboxEventResponse[]) {
     failedEvents: events.filter((event) => event.status === "FAILED").length,
     totalRetries: events.reduce((total, event) => total + event.retryCount, 0),
   };
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
-    </Card>
-  );
 }
 
 function EventTypeBadge({ eventType }: { eventType: string }) {

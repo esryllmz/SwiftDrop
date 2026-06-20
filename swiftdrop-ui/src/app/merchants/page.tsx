@@ -12,13 +12,18 @@ import {
 } from "@/components/admin/modal";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
-  PageHeader,
   SecondaryButton,
 } from "@/components/ui";
+import {
+  AdminDataTable,
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminTableCell,
+} from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson } from "@/lib/api";
 import type { MerchantResponse } from "@/types/api";
@@ -59,46 +64,49 @@ export default function MerchantsPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="ME"
         title="Merchants"
-        description="Store records and delivery locations."
+        description="Store records and location data."
         action={<Button onClick={load}>Refresh</Button>}
       />
 
       <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_420px]">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SummaryCard label="Total Merchants" value={merchants.length} />
-          <Card>
-            <div className="text-sm text-slate-600">Active Demo Location</div>
-            <div className="mt-2 text-3xl font-semibold text-slate-950">
-              {activeDemoLocation ? "Yes" : "No"}
-            </div>
-            <div className="mt-2 break-all text-xs text-slate-500">
-              {demoMerchantId}
-            </div>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <AdminMetricCard label="Total Merchants" value={merchants.length} icon="T" />
+          <AdminMetricCard
+            label="Featured Merchant"
+            value={merchants[0]?.name ?? "-"}
+            hint={merchants[0]?.id ? shortId(merchants[0].id) : undefined}
+            tone="violet"
+            icon="F"
+            compact
+          />
+          <AdminMetricCard
+            label="Active Locations"
+            value={merchants.length}
+            hint={activeDemoLocation ? "Demo location available" : "Demo location unavailable"}
+            tone="emerald"
+            icon="L"
+          />
         </div>
-        <Card>
-          <h3 className="text-lg font-semibold text-slate-950">Delivery Location</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Merchant coordinates are used by logistics when assigning nearby drivers.
+        <AdminSectionCard title="Delivery Location">
+          <p className="text-sm leading-6 text-slate-600">
+            Merchant location is used for nearby driver assignment.
           </p>
-        </Card>
+        </AdminSectionCard>
       </div>
 
       <div className="grid gap-4">
-        <Card>
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">
-                Merchant List
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">Active merchant records.</p>
-            </div>
+        <AdminSectionCard
+          title="Merchant List"
+          description="Active merchant records."
+          action={
             <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
               Demo merchant: {shortId(demoMerchantId)}
             </span>
-          </div>
+          }
+        >
 
           {loading ? <LoadingState /> : null}
           {error ? (
@@ -110,70 +118,42 @@ export default function MerchantsPage() {
             <EmptyState message="No merchants found. Check Logistics seed data or service health." />
           ) : null}
           {merchants.length > 0 ? (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-slate-600">
-                  <tr>
-                    {[
-                      "Merchant ID",
-                      "User ID",
-                      "Name",
-                      "Latitude",
-                      "Longitude",
-                      "Actions",
-                    ].map((heading) => (
-                      <th key={heading} className="px-3 py-2 font-medium">
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {merchants.map((merchant) => (
-                    <tr key={merchant.id} className="transition hover:bg-slate-50">
-                      <td
-                        className="px-3 py-2 text-slate-700"
-                        title={merchant.id}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span>{shortId(merchant.id)}</span>
-                          {merchant.id === demoMerchantId ? (
-                            <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
-                              Demo Order
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td
-                        className="px-3 py-2 text-slate-700"
-                        title={merchant.userId}
-                      >
-                        {shortId(merchant.userId)}
-                      </td>
-                      <td className="px-3 py-2 text-slate-950">{merchant.name}</td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {merchant.latitude}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {merchant.longitude}
-                      </td>
-                      <td className="px-3 py-2">
-                        <SecondaryButton
-                          onClick={() => {
-                            setSelectedMerchant(merchant);
-                            setDetailModalOpen(true);
-                          }}
-                        >
-                          View
-                        </SecondaryButton>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AdminDataTable
+              columns={["Merchant ID", "User ID", "Name", "Latitude", "Longitude", "Actions"]}
+              rows={merchants}
+              emptyMessage="No merchants found."
+              getRowKey={(merchant) => merchant.id}
+              renderRow={(merchant) => (
+                <>
+                  <AdminTableCell title={merchant.id}>
+                    <div className="flex flex-col gap-1">
+                      <span>{shortId(merchant.id)}</span>
+                      {merchant.id === demoMerchantId ? (
+                        <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                          Demo Order
+                        </span>
+                      ) : null}
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell title={merchant.userId}>{shortId(merchant.userId)}</AdminTableCell>
+                  <AdminTableCell strong>{merchant.name}</AdminTableCell>
+                  <AdminTableCell>{merchant.latitude}</AdminTableCell>
+                  <AdminTableCell>{merchant.longitude}</AdminTableCell>
+                  <AdminTableCell>
+                    <SecondaryButton
+                      onClick={() => {
+                        setSelectedMerchant(merchant);
+                        setDetailModalOpen(true);
+                      }}
+                    >
+                      View
+                    </SecondaryButton>
+                  </AdminTableCell>
+                </>
+              )}
+            />
           ) : null}
-        </Card>
+        </AdminSectionCard>
       </div>
 
       <AdminModal
@@ -221,15 +201,6 @@ export default function MerchantsPage() {
         )}
       </AdminModal>
     </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <div className="text-sm text-slate-600">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
-    </Card>
   );
 }
 

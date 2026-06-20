@@ -12,14 +12,17 @@ import {
   ModalSection,
 } from "@/components/admin/modal";
 import {
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
-  PageHeader,
   SecondaryButton,
-  StatusBadge,
 } from "@/components/ui";
+import {
+  AdminMetricCard,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+} from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ApiError } from "@/lib/api";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
@@ -239,9 +242,10 @@ export default function UsersApprovalsPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="UA"
         title="Users & Approvals"
-        description="Review merchant and courier access requests."
+        description="Merchant and courier onboarding."
         action={
           <div className="flex flex-wrap gap-2">
             <SecondaryButton disabled={loading} onClick={() => void load()}>
@@ -252,20 +256,17 @@ export default function UsersApprovalsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Pending Merchant Applications" value={summary.pendingMerchants} />
-        <SummaryCard label="Pending Courier Applications" value={summary.pendingCouriers} />
-        <SummaryCard label="Approved Applications" value={summary.approved} />
-        <SummaryCard label="Rejected Applications" value={summary.rejected} />
+        <AdminMetricCard label="Pending Merchant Applications" value={summary.pendingMerchants} tone="amber" icon="M" />
+        <AdminMetricCard label="Pending Courier Applications" value={summary.pendingCouriers} tone="amber" icon="C" />
+        <AdminMetricCard label="Approved Applications" value={summary.approved} tone="emerald" icon="A" />
+        <AdminMetricCard label="Rejected Applications" value={summary.rejected} tone="red" icon="R" />
       </div>
 
-      <Card className="mt-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-950">Application Review Queue</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Review pending applications and inspect prior decisions.
-            </p>
-          </div>
+      <AdminSectionCard
+        className="mt-4"
+        title="Application Review Queue"
+        description="Review pending applications and inspect prior decisions."
+        action={
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
               <TabButton
@@ -295,7 +296,8 @@ export default function UsersApprovalsPage() {
               ))}
             </div>
           </div>
-        </div>
+        }
+      >
 
         <div className="mt-4">
           {loading ? <LoadingState /> : null}
@@ -325,7 +327,7 @@ export default function UsersApprovalsPage() {
             />
           ) : null}
         </div>
-      </Card>
+      </AdminSectionCard>
 
       <ApplicationDetailModal
         selection={detailSelection}
@@ -356,15 +358,6 @@ export default function UsersApprovalsPage() {
         onClose={closeApprovalSuccess}
       />
     </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <div className="text-sm font-medium text-slate-500">{label}</div>
-      <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
-    </Card>
   );
 }
 
@@ -427,7 +420,7 @@ function MerchantApplicationsTable({
               </td>
               <td className="px-3 py-2 text-slate-700">{application.contactEmail}</td>
               <td className="px-3 py-2">
-                <StatusBadge status={application.status} />
+                <AdminStatusBadge status={application.status} />
               </td>
               <td className="px-3 py-2 text-slate-700">
                 {formatDateTime(application.createdAt)}
@@ -495,7 +488,7 @@ function CourierApplicationsTable({
                 {vehicleTypeLabel(application.vehicleType)}
               </td>
               <td className="px-3 py-2">
-                <StatusBadge status={application.status} />
+                <AdminStatusBadge status={application.status} />
               </td>
               <td className="px-3 py-2 text-slate-700">
                 {formatDateTime(application.createdAt)}
@@ -585,7 +578,7 @@ function ApplicationDetailModal({
                 value={vehicleTypeLabel(selection.application.vehicleType)}
               />
             ) : null}
-            <DetailField label="Status" value={<StatusBadge status={selection.application.status} />} />
+            <DetailField label="Status" value={<AdminStatusBadge status={selection.application.status} />} />
             <DetailField
               label="Created At"
               value={formatDateTime(selection.application.createdAt)}
@@ -659,7 +652,7 @@ function ApprovalSuccessModal({
             <div className="text-sm font-medium text-emerald-900">
               Application approved successfully.
             </div>
-            <StatusBadge status="APPROVED" />
+            <AdminStatusBadge status="APPROVED" />
           </div>
 
           {account ? (

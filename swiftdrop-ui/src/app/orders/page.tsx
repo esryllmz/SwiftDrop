@@ -14,15 +14,19 @@ import {
 } from "@/components/admin/modal";
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   Field,
   LoadingState,
-  PageHeader,
   SecondaryButton,
-  StatusBadge,
 } from "@/components/ui";
+import {
+  AdminDataTable,
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+  AdminTableCell,
+} from "@/components/admin/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/format";
@@ -137,9 +141,10 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <PageHeader
+      <AdminPageHeader
+        icon="OR"
         title="Orders"
-        description="Create, filter, and inspect platform orders."
+        description="Manage and inspect all platform orders."
         action={
           <div className="flex flex-wrap gap-2">
             <SecondaryButton onClick={load}>Refresh</SecondaryButton>
@@ -153,25 +158,20 @@ export default function OrdersPage() {
       />
 
       <div className="grid gap-4">
-          <Card>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-950">
-                  Create Demo Order
-                </h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Creates a real order and refreshes this list.
-                </p>
-              </div>
-              {createResult ? (
+          <AdminSectionCard
+            title="Create Demo Order"
+            description="Creates a real order and refreshes this list."
+            action={
+              createResult ? (
                 <Link
                   href="/event-stream"
                   className="w-fit rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100"
                 >
                   View Outbox Events
                 </Link>
-              ) : null}
-            </div>
+              ) : null
+            }
+          >
             {createResult ? (
               <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
                 Order created successfully. The list was refreshed.
@@ -182,16 +182,12 @@ export default function OrdersPage() {
                 <ErrorState message={createError} />
               </div>
             ) : null}
-          </Card>
+          </AdminSectionCard>
 
-          <Card>
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-950">Order List</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Filter by status and open order details.
-                </p>
-              </div>
+          <AdminSectionCard
+            title="Order List"
+            description="Filter by status and open order details."
+            action={
               <div className="flex flex-wrap gap-2">
                 {statuses.map((status) => (
                   <SecondaryButton
@@ -203,11 +199,12 @@ export default function OrdersPage() {
                         : ""
                     }
                   >
-                    {status}
+                    {status === "All" ? "All orders" : status}
                   </SecondaryButton>
                 ))}
               </div>
-            </div>
+            }
+          >
 
             {loading ? <LoadingState /> : null}
             {error ? (
@@ -219,68 +216,33 @@ export default function OrdersPage() {
               <EmptyState message="No orders found. Create a demo order to start the event flow." />
             ) : null}
             {orders.length > 0 ? (
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50 text-left text-slate-600">
-                    <tr>
-                      {[
-                        "Order ID",
-                        "Customer ID",
-                        "Merchant",
-                        "Driver",
-                        "Status",
-                        "Total",
-                        "Created",
-                        "Actions",
-                      ].map((heading) => (
-                        <th key={heading} className="px-3 py-2 font-medium">
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {orders.map((order) => (
-                      <tr key={order.id} className="align-top transition hover:bg-slate-50">
-                        <td className="px-3 py-2 text-slate-700" title={order.id}>
-                          {shortId(order.id)}
-                        </td>
-                        <td
-                          className="px-3 py-2 text-slate-700"
-                          title={order.customerId}
-                        >
-                          {shortId(order.customerId)}
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {order.merchantName ?? "-"}
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {order.driverName ?? "-"}
-                        </td>
-                        <td className="px-3 py-2">
-                          <StatusBadge status={order.status} />
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {formatMoney(Number(order.totalAmount))}
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {formatDateTime(order.createdAt)}
-                        </td>
-                        <td className="px-3 py-2">
-                          <SecondaryButton
-                            disabled={detailLoading}
-                            onClick={() => void viewOrder(order.id)}
-                          >
-                            View
-                          </SecondaryButton>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <AdminDataTable
+                columns={["Order ID", "Customer", "Merchant", "Driver", "Status", "Amount", "Created", "Actions"]}
+                rows={orders}
+                emptyMessage="No orders found."
+                getRowKey={(order) => order.id}
+                renderRow={(order) => (
+                  <>
+                    <AdminTableCell title={order.id}>{shortId(order.id)}</AdminTableCell>
+                    <AdminTableCell title={order.customerId}>{shortId(order.customerId)}</AdminTableCell>
+                    <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
+                    <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
+                    <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
+                    <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
+                    <AdminTableCell>{formatDateTime(order.createdAt)}</AdminTableCell>
+                    <AdminTableCell>
+                      <SecondaryButton
+                        disabled={detailLoading}
+                        onClick={() => void viewOrder(order.id)}
+                      >
+                        View
+                      </SecondaryButton>
+                    </AdminTableCell>
+                  </>
+                )}
+              />
             ) : null}
-          </Card>
+          </AdminSectionCard>
       </div>
 
       <AdminModal
@@ -363,7 +325,7 @@ export default function OrdersPage() {
           {selectedOrder ? (
             <>
               <DetailGrid>
-                <DetailField label="Status" value={<StatusBadge status={selectedOrder.status} />} />
+                <DetailField label="Status" value={<AdminStatusBadge status={selectedOrder.status} />} />
                 <DetailField label="Amount" value={formatMoney(Number(selectedOrder.totalAmount))} />
                 <DetailField label="Merchant" value={selectedOrder.merchantName} />
                 <DetailField label="Driver" value={selectedOrder.driverName ?? "Unassigned"} />
