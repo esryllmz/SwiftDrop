@@ -1,0 +1,15 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.project.resourceFilters": [
+        "node_modules",
+        ".git",
+        "target"
+    ],
+    "files.exclude": {
+        "**/target": true
+    },
+    "search.exclude": {
+        "**/target": true
+    }
+}

@@ -5,6 +5,7 @@
 
 # Java / Maven
 target/
+**/target/
 *.class
 *.jar
 *.war
@@ -17,7 +18,8 @@ logs/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 *.iml
 
 # OS
