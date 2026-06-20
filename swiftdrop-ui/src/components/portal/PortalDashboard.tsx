@@ -50,10 +50,12 @@ export function OrdersTable({
   orders,
   emptyMessage,
   columns,
+  renderActions,
 }: {
   orders: OrderResponse[];
   emptyMessage: string;
-  columns: Array<"order" | "customer" | "merchant" | "driver" | "status" | "amount" | "created">;
+  columns: Array<"order" | "customer" | "merchant" | "driver" | "status" | "amount" | "created" | "actions">;
+  renderActions?: (order: OrderResponse) => React.ReactNode;
 }) {
   if (orders.length === 0) {
     return <EmptyState message={emptyMessage} />;
@@ -77,7 +79,7 @@ export function OrdersTable({
             <tr key={order.id} className="align-top transition-colors hover:bg-slate-50/60">
               {columns.map((column) => (
                 <td key={column} className="px-5 py-3.5 text-slate-700">
-                  {renderOrderCell(order, column)}
+                  {column === "actions" ? renderActions?.(order) ?? "-" : renderOrderCell(order, column)}
                 </td>
               ))}
             </tr>
@@ -123,6 +125,7 @@ function columnLabel(column: string) {
     status: "Status",
     amount: "Amount",
     created: "Created At",
+    actions: "Actions",
   };
   return labels[column] ?? column;
 }

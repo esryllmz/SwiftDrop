@@ -45,6 +45,10 @@ export function statusBadgeClass(status?: string) {
     return "border-yellow-200 bg-yellow-50 text-yellow-700";
   }
 
+  if (normalized === "READY_FOR_PICKUP") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
   if (normalized === "UNKNOWN") {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
@@ -61,9 +65,17 @@ export function statusBadgeClass(status?: string) {
     return "border-violet-200 bg-violet-50 text-violet-700";
   }
 
-  if (normalized === "ON_THE_WAY") {
-    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  if (["PICKED_UP", "ON_THE_WAY"].includes(normalized)) {
+    return "border-sky-200 bg-sky-50 text-sky-700";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-600";
+}
+
+export function formatStatusLabel(status?: string) {
+  return (status || "UNKNOWN")
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
 }

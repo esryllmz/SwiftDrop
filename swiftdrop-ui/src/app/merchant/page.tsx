@@ -7,11 +7,17 @@ import {
   PortalMetricCard,
   PortalSection,
 } from "@/components/portal/PortalDashboard";
+import { PortalActionButton } from "@/components/portal/PortalActionButton";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
-import { getMerchantOrders, getMerchantProfile } from "@/lib/portal";
-import { showErrorToast } from "@/lib/toast";
+import {
+  getMerchantOrders,
+  getMerchantProfile,
+  markMerchantOrderPreparing,
+  markMerchantOrderReadyForPickup,
+} from "@/lib/portal";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import type { MerchantProfileResponse, OrderResponse } from "@/types/api";
 
 export default function MerchantPage() {
@@ -19,14 +25,17 @@ export default function MerchantPage() {
   const [profile, setProfile] = useState<MerchantProfileResponse | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showLoading = true) => {
     if (!accessToken) {
       return;
     }
 
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const [nextProfile, nextOrders] = await Promise.all([
@@ -40,7 +49,9 @@ export default function MerchantPage() {
       setError(message);
       showErrorToast(message);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [accessToken]);
 
@@ -50,6 +61,60 @@ export default function MerchantPage() {
   }, [load]);
 
   const businessName = profile?.businessName ?? profile?.name ?? "Store";
+
+  const handleMerchantAction = async (
+    orderId: string,
+    action: "preparing" | "ready-for-pickup",
+  ) => {
+    if (!accessToken || actionOrderId) {
+      return;
+    }
+
+    setActionOrderId(orderId);
+    try {
+      if (action === "preparing") {
+        await markMerchantOrderPreparing(accessToken, orderId);
+        showSuccessToast("Order marked as preparing.");
+      } else {
+        await markMerchantOrderReadyForPickup(accessToken, orderId);
+        showSuccessToast("Order marked ready for pickup.");
+      }
+      await load(false);
+    } catch (err) {
+      const message = normalizeApiError(err, "Order action failed.");
+      showErrorToast(message);
+    } finally {
+      setActionOrderId(null);
+    }
+  };
+
+  const renderMerchantActions = (order: OrderResponse) => {
+    if (order.status === "PLACED" || order.status === "DRIVER_ASSIGNED") {
+      return (
+        <PortalActionButton
+          label="Mark preparing"
+          tone="warning"
+          loading={actionOrderId === order.id}
+          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
+          onClick={() => void handleMerchantAction(order.id, "preparing")}
+        />
+      );
+    }
+
+    if (order.status === "PREPARING") {
+      return (
+        <PortalActionButton
+          label="Ready for pickup"
+          tone="primary"
+          loading={actionOrderId === order.id}
+          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
+          onClick={() => void handleMerchantAction(order.id, "ready-for-pickup")}
+        />
+      );
+    }
+
+    return <span className="text-xs text-slate-400">No action</span>;
+  };
 
   return (
     <PortalShell
@@ -77,15 +142,13 @@ export default function MerchantPage() {
 
         <PortalSection
           title="Orders"
-          description="Read-only merchant order view."
+          description="Prepare orders and mark them ready for courier pickup."
         >
-          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            Order actions will be available after merchant order workflow is enabled.
-          </div>
           <OrdersTable
             orders={orders}
             emptyMessage="No merchant orders found."
-            columns={["order", "customer", "driver", "status", "amount", "created"]}
+            columns={["order", "customer", "driver", "status", "amount", "created", "actions"]}
+            renderActions={renderMerchantActions}
           />
         </PortalSection>
       </div>

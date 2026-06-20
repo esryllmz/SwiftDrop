@@ -1,4 +1,4 @@
-import { statusBadgeClass } from "@/lib/format";
+import { formatStatusLabel, statusBadgeClass } from "@/lib/format";
 
 export function AdminStatusBadge({ status }: { status?: string }) {
   const normalized = status || "UNKNOWN";
@@ -13,14 +13,6 @@ export function AdminStatusBadge({ status }: { status?: string }) {
   );
 }
 
-function formatStatusLabel(status: string) {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 function statusDotClass(status?: string) {
   const normalized = status?.toUpperCase() ?? "";
 
@@ -30,7 +22,7 @@ function statusDotClass(status?: string) {
   if (["PLACED"].includes(normalized)) {
     return "bg-blue-500";
   }
-  if (["PENDING", "PREPARING"].includes(normalized)) {
+  if (["PENDING", "PREPARING", "READY_FOR_PICKUP"].includes(normalized)) {
     return "bg-amber-500";
   }
   if (["FAILED", "DOWN", "REJECTED"].includes(normalized)) {
@@ -39,7 +31,7 @@ function statusDotClass(status?: string) {
   if (["DRIVER_ASSIGNED", "ASSIGNED", "BUSY"].includes(normalized)) {
     return "bg-violet-500";
   }
-  if (normalized === "ON_THE_WAY") {
+  if (["PICKED_UP", "ON_THE_WAY"].includes(normalized)) {
     return "bg-sky-500";
   }
   return "bg-slate-400";

@@ -1,5 +1,5 @@
 import type React from "react";
-import { statusBadgeClass } from "@/lib/format";
+import { formatStatusLabel, statusBadgeClass } from "@/lib/format";
 
 export function PageHeader({
   title,
@@ -96,7 +96,7 @@ export function StatusBadge({ status }: { status?: string }) {
     <span
       className={`inline-flex rounded-lg border px-2 py-1 text-xs font-medium ${statusBadgeClass(status)}`}
     >
-      {status || "UNKNOWN"}
+      {formatStatusLabel(status)}
     </span>
   );
 }

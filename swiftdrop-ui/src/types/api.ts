@@ -1,5 +1,16 @@
 export type UserRole = "CUSTOMER" | "MERCHANT" | "DRIVER" | "ADMIN";
 
+export type OrderStatus =
+  | "PLACED"
+  | "DRIVER_ASSIGNED"
+  | "PREPARING"
+  | "READY_FOR_PICKUP"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
+  | "DELIVERED";
+
+export type DriverStatus = "AVAILABLE" | "BUSY" | "OFFLINE";
+
 export type AuthResponse = {
   accessToken: string;
   tokenType: string;
@@ -52,7 +63,7 @@ export type OrderResponse = {
   merchantName?: string;
   driverId?: string;
   driverName?: string;
-  status: string;
+  status: OrderStatus;
   totalAmount: number;
   createdAt: string;
 };
@@ -85,7 +96,7 @@ export type CourierProfileResponse = {
   role: UserRole;
   driverId: string;
   fullName: string;
-  status: string;
+  status: DriverStatus;
   assignedOrders: number;
   deliveredOrders: number;
 };
@@ -99,7 +110,7 @@ export type DriverResponse = {
   id: string;
   userId: string;
   fullName: string;
-  status: string;
+  status: DriverStatus;
 };
 
 export type MerchantResponse = {
