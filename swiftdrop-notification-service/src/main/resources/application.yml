@@ -4,6 +4,19 @@ server:
 spring:
   application:
     name: swiftdrop-notification-service
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:postgresql://localhost:5439/swiftdrop_notification_db}
+    username: ${POSTGRES_USER:swiftdrop_user}
+    password: ${POSTGRES_PASSWORD:swiftdrop_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}

@@ -134,6 +134,9 @@ services:
     ports:
       - "8083:8083"
     environment:
+      NOTIFICATION_DB_URL: jdbc:postgresql://postgres:5432/swiftdrop_notification_db
+      POSTGRES_USER: ${POSTGRES_USER:-swiftdrop_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swiftdrop_password}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -144,6 +147,8 @@ services:
       KAFKA_RETRY_MAX_ATTEMPTS: ${KAFKA_RETRY_MAX_ATTEMPTS:-3}
       KAFKA_RETRY_BACKOFF_MS: ${KAFKA_RETRY_BACKOFF_MS:-1000}
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       kafka:
