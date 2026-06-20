@@ -314,7 +314,7 @@ export default function DashboardPage() {
         {summaryError ? <InlineError message={summaryError} /> : null}
         {summaryLoading && !summary ? <LoadingState /> : null}
         {summary ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {operationMetrics.map((metric) => (
               <MetricCard
                 key={metric.key}
@@ -329,7 +329,32 @@ export default function DashboardPage() {
         ) : null}
       </DashboardSection>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="mt-4">
+        <DashboardSection
+          title="Event Health Summary"
+          action={<SectionLink href="/event-stream" label="Open Event Stream" />}
+        >
+          {outboxError ? <InlineError message={outboxError} /> : null}
+          {outboxLoading && !summary ? <LoadingState /> : null}
+          {summary ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {eventMetrics.map((metric) => (
+                <MetricCard
+                  key={metric.key}
+                  label={metric.label}
+                  value={summary[metric.key]}
+                  hint={metric.hint}
+                  tone={metric.tone}
+                  icon={metric.icon}
+                  compact
+                />
+              ))}
+            </div>
+          ) : null}
+        </DashboardSection>
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
         <DashboardSection
           title="Live Demo Flow"
           action={<AdminStatusBadge status={lastDemoOrder ? "COMPLETED" : "PENDING"} />}
@@ -353,31 +378,6 @@ export default function DashboardPage() {
         </DashboardSection>
 
         <DashboardSection
-          title="Event Health Summary"
-          action={<SectionLink href="/event-stream" label="Open Event Stream" />}
-        >
-          {outboxError ? <InlineError message={outboxError} /> : null}
-          {outboxLoading && !summary ? <LoadingState /> : null}
-          {summary ? (
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-              {eventMetrics.map((metric) => (
-                <MetricCard
-                  key={metric.key}
-                  label={metric.label}
-                  value={summary[metric.key]}
-                  hint={metric.hint}
-                  tone={metric.tone}
-                  icon={metric.icon}
-                  compact
-                />
-              ))}
-            </div>
-          ) : null}
-        </DashboardSection>
-      </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <DashboardSection
           title="Recent Orders"
           action={<SectionLink href="/orders" label="View all" />}
         >
@@ -388,7 +388,9 @@ export default function DashboardPage() {
           ) : null}
           {orders.length > 0 ? <RecentOrdersTable orders={orders} /> : null}
         </DashboardSection>
+      </div>
 
+      <div className="mt-4">
         <DashboardSection
           title="System Status"
           action={<SectionLink href="/system-monitoring" label="View system monitoring" />}

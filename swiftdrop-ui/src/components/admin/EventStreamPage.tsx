@@ -100,10 +100,12 @@ export function EventStreamPage() {
       />
 
       <div className="mb-4 grid gap-4 xl:grid-cols-[1fr_340px]">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <AdminMetricCard label="Total Events" value={summary.totalEvents} tone="blue" icon="T" />
           <AdminMetricCard label="Pending" value={summary.pendingEvents} tone="amber" icon="P" />
           <AdminMetricCard label="Sent" value={summary.sentEvents} tone="emerald" icon="S" />
           <AdminMetricCard label="Failed" value={summary.failedEvents} tone="red" icon="F" />
+          <AdminMetricCard label="Total Retries" value={summary.totalRetries} tone="slate" icon="R" />
         </div>
         <AdminSectionCard title="Transactional Outbox">
           <p className="text-sm leading-6 text-slate-600">
@@ -123,7 +125,7 @@ export function EventStreamPage() {
                 : ""
             }
           >
-            {item}
+            {item === "All" ? "All events" : item}
           </SecondaryButton>
         ))}
       </div>

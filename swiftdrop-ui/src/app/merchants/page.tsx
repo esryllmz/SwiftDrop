@@ -136,7 +136,14 @@ export default function MerchantsPage() {
                     </div>
                   </AdminTableCell>
                   <AdminTableCell title={merchant.userId}>{shortId(merchant.userId)}</AdminTableCell>
-                  <AdminTableCell strong>{merchant.name}</AdminTableCell>
+                  <AdminTableCell strong>
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-xs font-semibold text-violet-700">
+                        M
+                      </span>
+                      {merchant.name}
+                    </span>
+                  </AdminTableCell>
                   <AdminTableCell>{merchant.latitude}</AdminTableCell>
                   <AdminTableCell>{merchant.longitude}</AdminTableCell>
                   <AdminTableCell>

@@ -15,12 +15,12 @@ export function AdminPageHeader({
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         {icon ? (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-sm font-semibold text-blue-700">
+          <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center text-sm font-semibold text-slate-400">
             {icon}
           </span>
         ) : null}
         <div>
-          <h2 className="text-2xl font-semibold tracking-normal text-slate-950">{title}</h2>
+          <h2 className="text-2xl font-semibold tracking-normal text-slate-900">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
         </div>
       </div>

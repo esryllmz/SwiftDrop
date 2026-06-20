@@ -19,8 +19,6 @@ type NavItem = {
   label: string;
   description: string;
   marker: React.ReactNode;
-  title: string;
-  subtitle: string;
 };
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -29,64 +27,48 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     description: "Operational overview",
     marker: <DashboardIcon />,
-    title: "Dashboard",
-    subtitle: "Operational overview",
   },
   {
     href: "/orders",
     label: "Orders",
     description: "Order operations",
     marker: <OrdersIcon />,
-    title: "Orders",
-    subtitle: "Order operations",
   },
   {
     href: "/drivers",
     label: "Drivers",
     description: "Courier availability",
     marker: <DriversIcon />,
-    title: "Drivers",
-    subtitle: "Courier availability",
   },
   {
     href: "/merchants",
     label: "Merchants",
     description: "Store locations",
     marker: <StoreIcon />,
-    title: "Merchants",
-    subtitle: "Store records and locations",
   },
   {
     href: "/event-stream",
     label: "Event Stream",
     description: "Outbox events",
     marker: <EventIcon />,
-    title: "Event Stream",
-    subtitle: "Transactional outbox events",
   },
   {
     href: "/system-monitoring",
     label: "System Monitoring",
     description: "Service health",
     marker: <HealthIcon />,
-    title: "System Monitoring",
-    subtitle: "Service health",
   },
   {
     href: "/users-approvals",
     label: "Users & Approvals",
     description: "Access review",
     marker: <UsersIcon />,
-    title: "Users & Approvals",
-    subtitle: "Merchant and courier application review",
   },
   {
     href: "/settings",
     label: "Settings",
     description: "Runtime config",
     marker: <SettingsIcon />,
-    title: "Settings",
-    subtitle: "Environment-managed configuration",
   },
 ];
 
@@ -94,13 +76,6 @@ const ROUTE_ALIASES: Record<string, string> = {
   "/outbox": "/event-stream",
   "/health": "/system-monitoring",
 };
-const ROUTE_METADATA: Record<string, { title: string; subtitle: string }> = {
-  "/profile": {
-    title: "Profile",
-    subtitle: "Account and access details",
-  },
-};
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -217,10 +192,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const normalizedPathname = ROUTE_ALIASES[pathname] ?? pathname;
-  const current = ADMIN_NAV_ITEMS.find((item) => normalizedPathname.startsWith(item.href));
-  const metadata = ROUTE_METADATA[normalizedPathname];
-  const title = current?.title ?? metadata?.title ?? "SwiftDrop";
-  const subtitle = current?.subtitle ?? metadata?.subtitle ?? "Operations Console";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 lg:grid lg:h-screen lg:grid-cols-[240px_1fr] lg:overflow-hidden">
@@ -268,24 +239,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
-          <div className="flex min-h-14 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
-              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <HeaderBadge label="Docker" value="Local" />
-              <HeaderBadge label="API" value=":8080" />
-              <a
-                href="http://localhost:8090"
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
-              >
-                Kafka UI :8090
-              </a>
-              <UserBadge email={user.email} />
-            </div>
+          <div className="flex min-h-14 items-center justify-end">
+            <UserBadge email={user.email} />
           </div>
         </header>
 
@@ -387,22 +342,16 @@ function AccessDenied({
   );
 }
 
-function HeaderBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-      <span className="text-slate-500">{label} </span>
-      <span className="font-medium text-slate-950">{value}</span>
-    </span>
-  );
-}
-
 function UserBadge({ email }: { email: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
+    <span className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm shadow-slate-200/60">
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
         {email.slice(0, 1).toUpperCase()}
       </span>
-      <span className="font-medium text-slate-950">{email}</span>
+      <span className="grid text-left">
+        <span className="text-[11px] font-semibold uppercase text-slate-400">Admin</span>
+        <span className="font-medium text-slate-950">{email}</span>
+      </span>
     </span>
   );
 }

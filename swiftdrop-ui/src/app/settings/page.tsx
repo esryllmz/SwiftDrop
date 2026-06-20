@@ -11,7 +11,7 @@ const settings = [
   { label: "API Gateway URL", value: "http://localhost:8080" },
   { label: "Kafka UI URL", value: "http://localhost:8090" },
   { label: "Frontend Origin", value: "http://localhost:3001" },
-  { label: "Environment", value: "Docker Local" },
+  { label: "Environment", value: "Local demo stack" },
   { label: "OneSignal Mode", value: "Mock" },
   { label: "Theme Preference", value: "Light" },
 ];
@@ -48,8 +48,7 @@ export default function SettingsPage() {
 
         <AdminSectionCard title="Configuration">
           <p className="text-sm leading-6 text-slate-600">
-            Settings are managed by environment variables and Docker Compose for
-            the local demo stack.
+            Settings are managed by environment variables for the local demo stack.
           </p>
           <div className="mt-4">
             <EmptyState message="Configuration is environment-managed." />

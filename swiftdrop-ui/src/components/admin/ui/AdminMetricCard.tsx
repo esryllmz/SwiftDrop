@@ -19,6 +19,7 @@ export function AdminMetricCard({
   tone = "blue",
   icon,
   compact = false,
+  iconVariant = "square",
 }: {
   label: string;
   value: React.ReactNode;
@@ -26,18 +27,19 @@ export function AdminMetricCard({
   tone?: Tone;
   icon?: React.ReactNode;
   compact?: boolean;
+  iconVariant?: "square" | "dot";
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70">
+    <section className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-200/60">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-slate-500">{label}</div>
-          <div className={`${compact ? "mt-1 text-2xl" : "mt-2 text-3xl"} font-semibold text-slate-950`}>
+          <div className="text-xs font-medium uppercase text-slate-500">{label}</div>
+          <div className={`${compact ? "mt-1 text-xl" : "mt-2 text-3xl"} font-semibold text-slate-950`}>
             {value}
           </div>
         </div>
         {icon ? (
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xs font-semibold ${toneClass[tone]}`}>
+          <span className={`${iconVariant === "dot" ? "mt-1 h-2.5 w-2.5 rounded-full border-0 p-0 text-transparent" : "flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold"} shrink-0 ${toneClass[tone]}`}>
             {icon}
           </span>
         ) : null}
