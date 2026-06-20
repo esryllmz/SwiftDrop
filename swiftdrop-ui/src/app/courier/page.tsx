@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  OrdersTable,
   PortalMetricCard,
   PortalSection,
 } from "@/components/portal/PortalDashboard";
-import { PortalActionButton } from "@/components/portal/PortalActionButton";
+import { CourierAssignmentsTable } from "@/components/portal/CourierAssignmentsTable";
+import { CourierAvailabilityCard } from "@/components/portal/CourierAvailabilityCard";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ErrorState, LoadingState, SecondaryButton, StatusBadge } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
@@ -23,6 +23,7 @@ import type { CourierProfileResponse, DriverStatus, OrderResponse } from "@/type
 
 export default function CourierPage() {
   const { accessToken, user } = useAuth();
+  const mountedRef = useRef(false);
   const [profile, setProfile] = useState<CourierProfileResponse | null>(null);
   const [assignments, setAssignments] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,31 +36,41 @@ export default function CourierPage() {
       return;
     }
 
-    if (showLoading) {
+    if (showLoading && mountedRef.current) {
       setLoading(true);
     }
-    setError(null);
+    if (mountedRef.current) {
+      setError(null);
+    }
     try {
       const [nextProfile, nextAssignments] = await Promise.all([
         getCourierProfile(accessToken),
         getCourierAssignments(accessToken),
       ]);
-      setProfile(nextProfile);
-      setAssignments(nextAssignments);
+      if (mountedRef.current) {
+        setProfile(nextProfile);
+        setAssignments(nextAssignments);
+      }
     } catch (err) {
       const message = normalizeApiError(err, "Courier portal request failed.");
-      setError(message);
+      if (mountedRef.current) {
+        setError(message);
+      }
       showErrorToast(message);
     } finally {
-      if (showLoading) {
+      if (showLoading && mountedRef.current) {
         setLoading(false);
       }
     }
   }, [accessToken]);
 
   useEffect(() => {
+    mountedRef.current = true;
     const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(timer);
+    };
   }, [load]);
 
   const handleAvailabilityChange = async (status: Extract<DriverStatus, "AVAILABLE" | "OFFLINE">) => {
@@ -70,13 +81,17 @@ export default function CourierPage() {
     setAvailabilityLoading(true);
     try {
       const nextProfile = await updateCourierAvailability(accessToken, status);
-      setProfile(nextProfile);
+      if (mountedRef.current) {
+        setProfile(nextProfile);
+      }
       showSuccessToast(status === "AVAILABLE" ? "Courier is available." : "Courier is offline.");
     } catch (err) {
       const message = normalizeApiError(err, "Availability update failed.");
       showErrorToast(message);
     } finally {
-      setAvailabilityLoading(false);
+      if (mountedRef.current) {
+        setAvailabilityLoading(false);
+      }
     }
   };
 
@@ -102,66 +117,10 @@ export default function CourierPage() {
       const message = normalizeApiError(err, "Assignment action failed.");
       showErrorToast(message);
     } finally {
-      setActionOrderId(null);
+      if (mountedRef.current) {
+        setActionOrderId(null);
+      }
     }
-  };
-
-  const renderAvailabilityAction = () => {
-    if (profile?.status === "AVAILABLE") {
-      return (
-        <PortalActionButton
-          label="Go offline"
-          tone="neutral"
-          loading={availabilityLoading}
-          onClick={() => void handleAvailabilityChange("OFFLINE")}
-        />
-      );
-    }
-
-    if (profile?.status === "OFFLINE") {
-      return (
-        <PortalActionButton
-          label="Go available"
-          tone="success"
-          loading={availabilityLoading}
-          onClick={() => void handleAvailabilityChange("AVAILABLE")}
-        />
-      );
-    }
-
-    if (profile?.status === "BUSY") {
-      return <p className="text-sm text-slate-500">You are busy with an active assignment.</p>;
-    }
-
-    return null;
-  };
-
-  const renderCourierActions = (order: OrderResponse) => {
-    if (order.status === "READY_FOR_PICKUP" || order.status === "DRIVER_ASSIGNED") {
-      return (
-        <PortalActionButton
-          label="Picked up"
-          tone="primary"
-          loading={actionOrderId === order.id}
-          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
-          onClick={() => void handleCourierAction(order.id, "picked-up")}
-        />
-      );
-    }
-
-    if (order.status === "PICKED_UP" || order.status === "ON_THE_WAY") {
-      return (
-        <PortalActionButton
-          label="Delivered"
-          tone="success"
-          loading={actionOrderId === order.id}
-          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
-          onClick={() => void handleCourierAction(order.id, "delivered")}
-        />
-      );
-    }
-
-    return <span className="text-xs text-slate-400">No action</span>;
   };
 
   return (
@@ -195,22 +154,23 @@ export default function CourierPage() {
         <PortalSection
           title="Availability"
           description="Control whether new delivery work can be assigned to this courier."
-          action={renderAvailabilityAction()}
         >
-          <div className="text-sm text-slate-600">
-            Current status: {profile?.status ? <StatusBadge status={profile.status} /> : "-"}
-          </div>
+          <CourierAvailabilityCard
+            status={profile?.status}
+            loading={availabilityLoading}
+            onChange={(status) => void handleAvailabilityChange(status)}
+          />
         </PortalSection>
 
         <PortalSection
           title="Assignments"
           description="Update pickup and delivery progress for assigned orders."
         >
-          <OrdersTable
-            orders={assignments}
-            emptyMessage="No courier assignments found."
-            columns={["order", "merchant", "status", "amount", "created", "actions"]}
-            renderActions={renderCourierActions}
+          <CourierAssignmentsTable
+            assignments={assignments}
+            actionOrderId={actionOrderId}
+            onPickedUp={(orderId) => void handleCourierAction(orderId, "picked-up")}
+            onDelivered={(orderId) => void handleCourierAction(orderId, "delivered")}
           />
         </PortalSection>
       </div>

@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  OrdersTable,
   PortalMetricCard,
   PortalSection,
 } from "@/components/portal/PortalDashboard";
-import { PortalActionButton } from "@/components/portal/PortalActionButton";
+import { MerchantOrdersTable } from "@/components/portal/MerchantOrdersTable";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
@@ -22,6 +21,7 @@ import type { MerchantProfileResponse, OrderResponse } from "@/types/api";
 
 export default function MerchantPage() {
   const { accessToken, user } = useAuth();
+  const mountedRef = useRef(false);
   const [profile, setProfile] = useState<MerchantProfileResponse | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,31 +33,41 @@ export default function MerchantPage() {
       return;
     }
 
-    if (showLoading) {
+    if (showLoading && mountedRef.current) {
       setLoading(true);
     }
-    setError(null);
+    if (mountedRef.current) {
+      setError(null);
+    }
     try {
       const [nextProfile, nextOrders] = await Promise.all([
         getMerchantProfile(accessToken),
         getMerchantOrders(accessToken),
       ]);
-      setProfile(nextProfile);
-      setOrders(nextOrders);
+      if (mountedRef.current) {
+        setProfile(nextProfile);
+        setOrders(nextOrders);
+      }
     } catch (err) {
       const message = normalizeApiError(err, "Merchant portal request failed.");
-      setError(message);
+      if (mountedRef.current) {
+        setError(message);
+      }
       showErrorToast(message);
     } finally {
-      if (showLoading) {
+      if (showLoading && mountedRef.current) {
         setLoading(false);
       }
     }
   }, [accessToken]);
 
   useEffect(() => {
+    mountedRef.current = true;
     const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(timer);
+    };
   }, [load]);
 
   const businessName = profile?.businessName ?? profile?.name ?? "Store";
@@ -84,36 +94,10 @@ export default function MerchantPage() {
       const message = normalizeApiError(err, "Order action failed.");
       showErrorToast(message);
     } finally {
-      setActionOrderId(null);
+      if (mountedRef.current) {
+        setActionOrderId(null);
+      }
     }
-  };
-
-  const renderMerchantActions = (order: OrderResponse) => {
-    if (order.status === "PLACED" || order.status === "DRIVER_ASSIGNED") {
-      return (
-        <PortalActionButton
-          label="Mark preparing"
-          tone="warning"
-          loading={actionOrderId === order.id}
-          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
-          onClick={() => void handleMerchantAction(order.id, "preparing")}
-        />
-      );
-    }
-
-    if (order.status === "PREPARING") {
-      return (
-        <PortalActionButton
-          label="Ready for pickup"
-          tone="primary"
-          loading={actionOrderId === order.id}
-          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
-          onClick={() => void handleMerchantAction(order.id, "ready-for-pickup")}
-        />
-      );
-    }
-
-    return <span className="text-xs text-slate-400">No action</span>;
   };
 
   return (
@@ -144,11 +128,11 @@ export default function MerchantPage() {
           title="Orders"
           description="Prepare orders and mark them ready for courier pickup."
         >
-          <OrdersTable
+          <MerchantOrdersTable
             orders={orders}
-            emptyMessage="No merchant orders found."
-            columns={["order", "customer", "driver", "status", "amount", "created", "actions"]}
-            renderActions={renderMerchantActions}
+            actionOrderId={actionOrderId}
+            onPreparing={(orderId) => void handleMerchantAction(orderId, "preparing")}
+            onReadyForPickup={(orderId) => void handleMerchantAction(orderId, "ready-for-pickup")}
           />
         </PortalSection>
       </div>
