@@ -7,6 +7,7 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Button, Card, ErrorState, LoadingState } from "@/components/ui";
 import { resetPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
+import { hasOuterWhitespace } from "@/lib/normalize";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
@@ -105,6 +106,9 @@ function ResetPasswordContent() {
 function validatePasswordForm(newPassword: string, confirmPassword: string) {
   if (newPassword !== confirmPassword) {
     return "New password and confirmation do not match.";
+  }
+  if (hasOuterWhitespace(newPassword) || hasOuterWhitespace(confirmPassword)) {
+    return "Password cannot start or end with a space.";
   }
   if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/\d/.test(newPassword)) {
     return "New password must include at least 8 characters, uppercase, lowercase, and number.";

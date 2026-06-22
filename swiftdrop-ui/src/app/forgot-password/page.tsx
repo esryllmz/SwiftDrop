@@ -7,6 +7,7 @@ import { FormEvent, Suspense, useMemo, useState } from "react";
 import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
 import { forgotPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
+import { normalizeEmail } from "@/lib/normalize";
 import { showErrorToast, showInfoToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
@@ -50,7 +51,7 @@ function ForgotPasswordContent() {
     setDevToken(null);
     setLoading(true);
     try {
-      const response = await forgotPassword(email, config.apiValue);
+      const response = await forgotPassword(normalizeEmail(email), config.apiValue);
       const nextMessage = response.message || GENERIC_RESET_MESSAGE;
       setMessage(nextMessage);
       setDevToken(response.devResetToken ?? null);

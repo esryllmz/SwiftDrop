@@ -44,6 +44,7 @@ import com.swiftdrop.auth.repository.RefreshTokenRepository;
 import com.swiftdrop.auth.repository.UserRepository;
 import com.swiftdrop.auth.service.AuthService;
 import com.swiftdrop.auth.service.JwtService;
+import com.swiftdrop.auth.util.EmailNormalizer;
 
 import io.jsonwebtoken.JwtException;
 
@@ -96,11 +97,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResult register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        final String normalizedEmail = requireValidEmail(request.email());
+        validateRegisterPassword(request.password());
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new DuplicateResourceException("Bu email adresi zaten kayitli.");
         }
 
         final User user = Objects.requireNonNull(userMapper.toEntity(request), "mapped user must not be null");
+        user.setEmail(normalizedEmail);
         user.setRole(Role.CUSTOMER);
         user.setPassword(passwordEncoder.encode(request.password()));
         final User savedUser = Objects.requireNonNull(userRepository.save(user), "saved user must not be null");
@@ -111,7 +116,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        final String normalizedEmail = requireValidEmail(request.email());
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new AuthenticationFailedException("Email veya sifre hatali."));
 
         if (!user.isEnabled() || !passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -168,8 +174,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUserFromToken(String accessToken) {
-        String email = extractEmail(accessToken);
-        User user = userRepository.findByEmail(email)
+        String email = EmailNormalizer.normalize(extractEmail(accessToken));
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new AuthenticationFailedException("Gecersiz access token."));
 
         if (!jwtService.isTokenValid(accessToken, user.getEmail()) || !user.isEnabled()) {
@@ -238,10 +244,10 @@ public class AuthServiceImpl implements AuthService {
                 "forgot password request must not be null"
         );
         final Role requestedRole = resolvePortalRole(forgotPasswordRequest.portal());
-        final String email = normalizeEmail(forgotPasswordRequest.email());
+        final String email = requireValidEmail(forgotPasswordRequest.email());
         final Instant expiresAt = Instant.now().plusSeconds(passwordResetTokenTtlMinutes * 60);
 
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmailIgnoreCase(email)
                 .filter(User::isEnabled)
                 .filter(user -> user.getRole() == requestedRole)
                 .map(user -> createPasswordResetResponse(user, expiresAt))
@@ -340,8 +346,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private User findValidUser(String accessToken) {
-        String email = extractEmail(accessToken);
-        User user = userRepository.findByEmail(email)
+        String email = EmailNormalizer.normalize(extractEmail(accessToken));
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new AuthenticationFailedException("Gecersiz access token."));
 
         if (!jwtService.isTokenValid(accessToken, user.getEmail()) || !user.isEnabled()) {
@@ -355,6 +361,8 @@ public class AuthServiceImpl implements AuthService {
         if (Objects.equals(currentPassword, newPassword)) {
             throw new IllegalArgumentException("New password must be different from current password");
         }
+
+        validatePasswordOuterWhitespace(newPassword);
 
         if (!meetsPasswordPolicy(newPassword)) {
             throw new IllegalArgumentException("New password does not meet requirements");
@@ -409,6 +417,8 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("New password and confirmation do not match");
         }
 
+        validatePasswordOuterWhitespace(request.newPassword());
+
         if (!meetsPasswordPolicy(request.newPassword())) {
             throw new IllegalArgumentException("New password does not meet requirements");
         }
@@ -450,8 +460,22 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private String normalizeEmail(String email) {
-        return Objects.requireNonNull(email, "email must not be null").trim().toLowerCase(Locale.ROOT);
+    private String requireValidEmail(String email) {
+        String normalizedEmail = EmailNormalizer.normalize(Objects.requireNonNull(email, "email must not be null"));
+        if (!EmailNormalizer.isValidNormalizedEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Enter a valid email address.");
+        }
+        return normalizedEmail;
+    }
+
+    private void validateRegisterPassword(String password) {
+        validatePasswordOuterWhitespace(password);
+    }
+
+    private void validatePasswordOuterWhitespace(String password) {
+        if (password != null && !Objects.equals(password, password.trim())) {
+            throw new IllegalArgumentException("Password must not start or end with whitespace.");
+        }
     }
 
     private String extractEmail(String accessToken) {

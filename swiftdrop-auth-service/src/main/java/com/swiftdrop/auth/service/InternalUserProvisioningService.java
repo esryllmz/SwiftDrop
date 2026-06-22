@@ -1,7 +1,6 @@
 package com.swiftdrop.auth.service;
 
 import java.security.SecureRandom;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -19,6 +18,7 @@ import com.swiftdrop.auth.exception.InvalidInternalApiKeyException;
 import com.swiftdrop.auth.exception.UnsupportedProvisioningRoleException;
 import com.swiftdrop.auth.exception.UserRoleConflictException;
 import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.auth.util.EmailNormalizer;
 
 @Service
 public class InternalUserProvisioningService {
@@ -57,8 +57,8 @@ public class InternalUserProvisioningService {
         Role requestedRole = Objects.requireNonNull(provisioningRequest.role(), "provision role must not be null");
         validateProvisioningRole(requestedRole);
 
-        final String email = normalizeEmail(provisioningRequest.email());
-        final Optional<User> existingUser = userRepository.findByEmail(email);
+        final String email = requireValidEmail(provisioningRequest.email());
+        final Optional<User> existingUser = userRepository.findByEmailIgnoreCase(email);
         if (existingUser.isPresent()) {
             final User user = Objects.requireNonNull(existingUser.get(), "existing user must not be null");
             return toExistingUserResponse(user, requestedRole);
@@ -128,7 +128,13 @@ public class InternalUserProvisioningService {
         return password.toString();
     }
 
-    private String normalizeEmail(String email) {
-        return Objects.requireNonNull(email, "provision email must not be null").trim().toLowerCase(Locale.ROOT);
+    private String requireValidEmail(String email) {
+        String normalizedEmail = EmailNormalizer.normalize(
+                Objects.requireNonNull(email, "provision email must not be null")
+        );
+        if (!EmailNormalizer.isValidNormalizedEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Enter a valid email address.");
+        }
+        return normalizedEmail;
     }
 }

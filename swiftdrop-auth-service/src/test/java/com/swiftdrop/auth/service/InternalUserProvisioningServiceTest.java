@@ -69,7 +69,7 @@ class InternalUserProvisioningServiceTest {
     @Test
     void provisionCreatesMerchantUserWithTemporaryPassword() {
         ProvisionUserRequest request = new ProvisionUserRequest("Merchant.Demo@SwiftDrop.com ", Role.MERCHANT);
-        when(userRepository.findByEmail("merchant.demo@swiftdrop.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("merchant.demo@swiftdrop.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temporary-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             final User user = Objects.requireNonNull(
@@ -111,7 +111,7 @@ class InternalUserProvisioningServiceTest {
                 .passwordChangeRequired(true)
                 .build();
         final Optional<User> existingUserResult = optionalUser(existingUser);
-        when(userRepository.findByEmail("driver.demo@swiftdrop.com")).thenReturn(existingUserResult);
+        when(userRepository.findByEmailIgnoreCase("driver.demo@swiftdrop.com")).thenReturn(existingUserResult);
 
         ProvisionUserResponse response = service.provision(
                 INTERNAL_API_KEY,
@@ -138,7 +138,7 @@ class InternalUserProvisioningServiceTest {
                 .enabled(true)
                 .build();
         final Optional<User> existingUserResult = optionalUser(existingUser);
-        when(userRepository.findByEmail("user.demo@swiftdrop.com")).thenReturn(existingUserResult);
+        when(userRepository.findByEmailIgnoreCase("user.demo@swiftdrop.com")).thenReturn(existingUserResult);
 
         assertThatThrownBy(() -> service.provision(
                 INTERNAL_API_KEY,

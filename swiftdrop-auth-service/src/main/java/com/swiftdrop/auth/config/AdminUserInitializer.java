@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
 import com.swiftdrop.auth.repository.UserRepository;
+import com.swiftdrop.auth.util.EmailNormalizer;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,7 +35,10 @@ public class AdminUserInitializer implements CommandLineRunner {
         this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder must not be null");
         this.enabled = enabled;
-        this.email = Objects.requireNonNull(email, "seed admin email must not be null");
+        this.email = Objects.requireNonNull(
+                EmailNormalizer.normalize(email),
+                "seed admin email must not be null"
+        );
         this.password = Objects.requireNonNull(password, "seed admin password must not be null");
     }
 
@@ -48,7 +52,7 @@ public class AdminUserInitializer implements CommandLineRunner {
 
         validateSeedConfig();
 
-        if (userRepository.existsByEmail(email)) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             log.info("Local admin seed user already exists for email={}. Existing user was not modified.", email);
             return;
         }

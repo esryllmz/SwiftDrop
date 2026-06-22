@@ -10,6 +10,7 @@ import {
   submitCourierApplication,
   submitMerchantApplication,
 } from "@/lib/applications";
+import { normalizeEmail } from "@/lib/normalize";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type ModalKind = "merchant" | "courier";
@@ -102,17 +103,19 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
 
     try {
       if (isMerchant) {
+        const contactEmail = normalizeEmail(merchantForm.contactEmail);
         const response = await submitMerchantApplication({
           businessName: merchantForm.businessName.trim(),
-          contactEmail: merchantForm.contactEmail.trim(),
+          contactEmail,
           message: optionalText(merchantForm.message),
         });
         setResult(toMerchantResult(response));
         showSuccessToast("Merchant access request submitted.");
       } else {
+        const contactEmail = normalizeEmail(courierForm.contactEmail);
         const response = await submitCourierApplication({
           fullName: courierForm.fullName.trim(),
-          contactEmail: courierForm.contactEmail.trim(),
+          contactEmail,
           vehicleType: courierForm.vehicleType,
           message: optionalText(courierForm.message),
         });
@@ -346,17 +349,17 @@ function TextArea({
 }
 
 function validateForm(kind: ModalKind, merchantForm: MerchantForm, courierForm: CourierForm) {
-  const email = kind === "merchant" ? merchantForm.contactEmail : courierForm.contactEmail;
+  const email = normalizeEmail(kind === "merchant" ? merchantForm.contactEmail : courierForm.contactEmail);
   if (kind === "merchant" && !merchantForm.businessName.trim()) {
     return "Business name is required.";
   }
   if (kind === "courier" && !courierForm.fullName.trim()) {
     return "Full name is required.";
   }
-  if (!email.trim()) {
+  if (!email) {
     return "Contact email is required.";
   }
-  if (!emailPattern.test(email.trim())) {
+  if (!emailPattern.test(email)) {
     return "Enter a valid contact email.";
   }
   if (kind === "courier" && !courierForm.vehicleType) {

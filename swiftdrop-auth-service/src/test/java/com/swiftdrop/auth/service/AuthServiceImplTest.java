@@ -33,6 +33,7 @@ import com.swiftdrop.auth.entity.RefreshToken;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
 import com.swiftdrop.auth.exception.AuthenticationFailedException;
+import com.swiftdrop.auth.exception.DuplicateResourceException;
 import com.swiftdrop.auth.mapper.UserMapper;
 import com.swiftdrop.auth.repository.PasswordResetTokenRepository;
 import com.swiftdrop.auth.repository.RefreshTokenRepository;
@@ -78,7 +79,7 @@ class AuthServiceImplTest {
 
     @Test
     void registerCreatesCustomerWithoutPasswordChangeRequirement() {
-        when(userRepository.existsByEmail("customer@swiftdrop.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(false);
         when(passwordEncoder.encode("Customer123")).thenReturn("encoded-customer-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0, User.class);
@@ -96,9 +97,48 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void registerStoresLowercaseTrimmedEmail() {
+        when(userRepository.existsByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(false);
+        when(passwordEncoder.encode("Customer123")).thenReturn("encoded-customer-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0, User.class);
+            user.setId(USER_ID);
+            return user;
+        });
+        when(jwtService.generateToken(USER_ID, "customer@swiftdrop.com", "CUSTOMER", false))
+                .thenReturn("access-token");
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthResult result = service.register(new RegisterRequest("  Customer@SwiftDrop.COM  ", "Customer123"));
+
+        assertThat(result.response().email()).isEqualTo("customer@swiftdrop.com");
+        verify(userRepository).existsByEmailIgnoreCase("customer@swiftdrop.com");
+    }
+
+    @Test
+    void registerRejectsDuplicateEmailWithDifferentCasing() {
+        when(userRepository.existsByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(new RegisterRequest("Customer@SwiftDrop.COM", "Customer123")))
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessage("Bu email adresi zaten kayitli.");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void registerRejectsPasswordWithOuterWhitespace() {
+        assertThatThrownBy(() -> service.register(new RegisterRequest("customer@swiftdrop.com", "Customer123 ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password must not start or end with whitespace.");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     void loginResponseContainsPasswordChangeRequirement() {
         User merchant = provisionedMerchant("encoded-temporary-password");
-        when(userRepository.findByEmail("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
         when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
         when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
@@ -113,10 +153,39 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void loginAcceptsEmailWithOuterWhitespaceAndUppercase() {
+        User merchant = provisionedMerchant("encoded-temporary-password");
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
+        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
+        when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
+        when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", true))
+                .thenReturn("access-token");
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthResult result = service.login(new LoginRequest("  MERCHANT@SwiftDrop.COM  ", "TempPass123"));
+
+        assertThat(result.response().role()).isEqualTo(Role.MERCHANT);
+        verify(userRepository).findByEmailIgnoreCase("merchant@swiftdrop.com");
+    }
+
+    @Test
+    void loginDoesNotTrimPassword() {
+        User merchant = provisionedMerchant("encoded-temporary-password");
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(passwordEncoder.matches("TempPass123 ", "encoded-temporary-password")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("merchant@swiftdrop.com", "TempPass123 ")))
+                .isInstanceOf(AuthenticationFailedException.class);
+
+        verify(passwordEncoder).matches("TempPass123 ", "encoded-temporary-password");
+    }
+
+    @Test
     void changePasswordRejectsWrongCurrentPassword() {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(jwtService.extractEmail("access-token")).thenReturn("merchant@swiftdrop.com");
-        when(userRepository.findByEmail("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(jwtService.isTokenValid("access-token", "merchant@swiftdrop.com")).thenReturn(true);
         when(passwordEncoder.matches("Wrong123", "encoded-temporary-password")).thenReturn(false);
 
@@ -133,7 +202,7 @@ class AuthServiceImplTest {
     void changePasswordRejectsWeakNewPassword() {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(jwtService.extractEmail("access-token")).thenReturn("merchant@swiftdrop.com");
-        when(userRepository.findByEmail("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(jwtService.isTokenValid("access-token", "merchant@swiftdrop.com")).thenReturn(true);
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
 
@@ -147,10 +216,27 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void changePasswordRejectsNewPasswordWithOuterWhitespace() {
+        User merchant = provisionedMerchant("encoded-temporary-password");
+        when(jwtService.extractEmail("access-token")).thenReturn("merchant@swiftdrop.com");
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(jwtService.isTokenValid("access-token", "merchant@swiftdrop.com")).thenReturn(true);
+        when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.changePassword(
+                "access-token",
+                new ChangePasswordRequest("TempPass123", "Merchant123 ")
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password must not start or end with whitespace.");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     void changePasswordSuccessClearsRequirementAndInvalidatesOldPassword() {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(jwtService.extractEmail("access-token")).thenReturn("merchant@swiftdrop.com");
-        when(userRepository.findByEmail("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(jwtService.isTokenValid("access-token", "merchant@swiftdrop.com")).thenReturn(true);
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
         when(passwordEncoder.encode("Merchant123")).thenReturn("encoded-new-password");
@@ -172,7 +258,7 @@ class AuthServiceImplTest {
         assertThat(merchant.getPassword()).isEqualTo("encoded-new-password");
         assertThat(merchant.isPasswordChangeRequired()).isFalse();
 
-        when(userRepository.findByEmail("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
+        when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(passwordEncoder.matches("TempPass123", "encoded-new-password")).thenReturn(false);
 
         assertThatThrownBy(() -> service.login(new LoginRequest("merchant@swiftdrop.com", "TempPass123")))
@@ -189,13 +275,13 @@ class AuthServiceImplTest {
                 .enabled(true)
                 .passwordChangeRequired(false)
                 .build();
-        when(userRepository.findByEmail("customer@swiftdrop.com")).thenReturn(Optional.of(customer));
+        when(userRepository.findByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(Optional.of(customer));
         when(passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(USER_ID)).thenReturn(List.of());
         when(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ForgotPasswordResponse response = service.forgotPassword(
-                new ForgotPasswordRequest("customer@swiftdrop.com", "CUSTOMER")
+                new ForgotPasswordRequest("  Customer@SwiftDrop.COM  ", "CUSTOMER")
         );
 
         assertThat(response.message()).isEqualTo(
@@ -208,7 +294,7 @@ class AuthServiceImplTest {
 
     @Test
     void forgotPasswordUnknownEmailReturnsGenericResponseWithoutToken() {
-        when(userRepository.findByEmail("missing@swiftdrop.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("missing@swiftdrop.com")).thenReturn(Optional.empty());
 
         ForgotPasswordResponse response = service.forgotPassword(
                 new ForgotPasswordRequest("missing@swiftdrop.com", "CUSTOMER")
@@ -222,7 +308,7 @@ class AuthServiceImplTest {
     @Test
     void forgotPasswordRoleMismatchReturnsGenericResponseWithoutToken() {
         User driver = provisionedDriver("encoded-password");
-        when(userRepository.findByEmail("driver@swiftdrop.com")).thenReturn(Optional.of(driver));
+        when(userRepository.findByEmailIgnoreCase("driver@swiftdrop.com")).thenReturn(Optional.of(driver));
 
         ForgotPasswordResponse response = service.forgotPassword(
                 new ForgotPasswordRequest("driver@swiftdrop.com", "MERCHANT")
@@ -282,6 +368,16 @@ class AuthServiceImplTest {
                 new ResetPasswordRequest("raw-token", "weakpass", "weakpass")
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New password does not meet requirements");
+
+        verify(passwordResetTokenRepository, never()).findByTokenHashAndUsedAtIsNull(anyString());
+    }
+
+    @Test
+    void resetPasswordRejectsNewPasswordWithOuterWhitespace() {
+        assertThatThrownBy(() -> service.resetPassword(
+                new ResetPasswordRequest("raw-token", "Merchant123 ", "Merchant123 ")
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password must not start or end with whitespace.");
 
         verify(passwordResetTokenRepository, never()).findByTokenHashAndUsedAtIsNull(anyString());
     }

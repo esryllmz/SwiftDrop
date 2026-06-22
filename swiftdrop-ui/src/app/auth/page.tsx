@@ -17,6 +17,7 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
 import { normalizeApiError } from "@/lib/api";
+import { hasOuterWhitespace, normalizeEmail } from "@/lib/normalize";
 import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showInfoToast, showSuccessToast } from "@/lib/toast";
 
@@ -178,8 +179,16 @@ function AuthPageContent() {
   }
 
   async function handleSubmit() {
+    const normalizedEmail = normalizeEmail(email);
     if (mode === "register" && password !== confirmPassword) {
       const message = "Password and confirmation do not match.";
+      setError(message);
+      showErrorToast(message);
+      return;
+    }
+
+    if (mode === "register" && (hasOuterWhitespace(password) || hasOuterWhitespace(confirmPassword))) {
+      const message = "Password cannot start or end with a space.";
       setError(message);
       showErrorToast(message);
       return;
@@ -191,8 +200,8 @@ function AuthPageContent() {
     try {
       const response =
         mode === "register"
-          ? await auth.register(email, password)
-          : await auth.login(email, password);
+          ? await auth.register(normalizedEmail, password)
+          : await auth.login(normalizedEmail, password);
 
       if (response.role !== config.expectedRole) {
         await auth.logout();
