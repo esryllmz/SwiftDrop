@@ -78,7 +78,12 @@ function ForgotPasswordContent() {
           </p>
         ) : null}
         <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-          <Field label="Email" value={email} onChange={setEmail} />
+          <Field
+            label="Email"
+            value={email}
+            onChange={setEmail}
+            placeholder="name@example.com"
+          />
           <Button type="submit" disabled={loading} className="h-11 w-full">
             {loading ? "Sending..." : "Send reset instructions"}
           </Button>

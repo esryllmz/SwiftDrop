@@ -300,13 +300,23 @@ function AuthPageContent() {
                 void handleSubmit();
               }}
             >
-              <Field label="Email" value={email} onChange={setEmail} />
+              <Field
+                label="Email"
+                value={email}
+                onChange={setEmail}
+                placeholder="name@example.com"
+              />
               <PasswordInput
                 id="auth-password"
                 name="password"
                 label="Password"
                 value={password}
                 onChange={setPassword}
+                placeholder={
+                  mode === "register"
+                    ? "At least 8 characters, uppercase, lowercase and number"
+                    : "Enter your password"
+                }
                 autoComplete={mode === "register" ? "new-password" : "current-password"}
                 required
                 disabled={loading}
@@ -318,6 +328,7 @@ function AuthPageContent() {
                   label="Confirm password"
                   value={confirmPassword}
                   onChange={setConfirmPassword}
+                  placeholder="Re-enter your new password"
                   autoComplete="new-password"
                   required
                   disabled={loading}

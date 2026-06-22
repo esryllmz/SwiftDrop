@@ -197,6 +197,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setMerchantForm((current) => ({ ...current, businessName: value }))
                     }
+                    placeholder="e.g. Kadikoy Burger"
                     autoComplete="organization"
                   />
                   <TextField
@@ -205,6 +206,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setMerchantForm((current) => ({ ...current, contactEmail: value }))
                     }
+                    placeholder="name@example.com"
                     autoComplete="email"
                     inputMode="email"
                   />
@@ -214,7 +216,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setMerchantForm((current) => ({ ...current, message: value }))
                     }
-                    placeholder="Tell us about your store and delivery needs."
+                    placeholder="Optional note for the review history"
                   />
                 </>
               ) : (
@@ -225,6 +227,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setCourierForm((current) => ({ ...current, fullName: value }))
                     }
+                    placeholder="e.g. Ahmet Yilmaz"
                     autoComplete="name"
                   />
                   <TextField
@@ -233,6 +236,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setCourierForm((current) => ({ ...current, contactEmail: value }))
                     }
+                    placeholder="name@example.com"
                     autoComplete="email"
                     inputMode="email"
                   />
@@ -261,7 +265,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
                     onChange={(value) =>
                       setCourierForm((current) => ({ ...current, message: value }))
                     }
-                    placeholder="Tell us about your delivery experience."
+                    placeholder="Optional note for the review history"
                   />
                 </>
               )}
@@ -302,12 +306,14 @@ function TextField({
   onChange,
   autoComplete,
   inputMode,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete?: string;
   inputMode?: "email";
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -317,6 +323,7 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
         inputMode={inputMode}
+        placeholder={placeholder}
         className="mt-1 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
       />
     </label>

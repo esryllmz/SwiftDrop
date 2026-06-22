@@ -74,6 +74,7 @@ export default function ChangePasswordPage() {
               label="Current password"
               value={currentPassword}
               onChange={setCurrentPassword}
+              placeholder="Enter your current password"
               autoComplete="current-password"
               required
               disabled={loading}
@@ -84,6 +85,7 @@ export default function ChangePasswordPage() {
               label="New password"
               value={newPassword}
               onChange={setNewPassword}
+              placeholder="At least 8 characters, uppercase, lowercase and number"
               autoComplete="new-password"
               required
               disabled={loading}
@@ -94,6 +96,7 @@ export default function ChangePasswordPage() {
               label="Confirm new password"
               value={confirmPassword}
               onChange={setConfirmPassword}
+              placeholder="Re-enter your new password"
               autoComplete="new-password"
               required
               disabled={loading}

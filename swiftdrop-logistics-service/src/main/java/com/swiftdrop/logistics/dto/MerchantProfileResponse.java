@@ -7,6 +7,7 @@ public record MerchantProfileResponse(
         String email,
         String role,
         UUID merchantId,
+        String businessName,
         String name,
         double latitude,
         double longitude,

@@ -82,6 +82,7 @@ public class PortalService {
                 user.role(),
                 merchantId,
                 merchant.getName(),
+                merchant.getName(),
                 merchant.getLatitude(),
                 merchant.getLongitude(),
                 totalOrders,

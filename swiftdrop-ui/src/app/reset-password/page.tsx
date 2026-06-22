@@ -69,6 +69,7 @@ function ResetPasswordContent() {
               label="New password"
               value={newPassword}
               onChange={setNewPassword}
+              placeholder="At least 8 characters, uppercase, lowercase and number"
               autoComplete="new-password"
               required
               disabled={loading}
@@ -79,6 +80,7 @@ function ResetPasswordContent() {
               label="Confirm new password"
               value={confirmPassword}
               onChange={setConfirmPassword}
+              placeholder="Re-enter your new password"
               autoComplete="new-password"
               required
               disabled={loading}
