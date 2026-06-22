@@ -13,6 +13,7 @@ import {
   SecondaryButton,
 } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
 import { normalizeApiError } from "@/lib/api";
@@ -161,6 +162,7 @@ function AuthPageContent() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [activeModal, setActiveModal] = useState<ApplicationModalKind | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,11 +172,19 @@ function AuthPageContent() {
   function clearFormState() {
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
     setError(null);
     setSuccess(null);
   }
 
   async function handleSubmit() {
+    if (mode === "register" && password !== confirmPassword) {
+      const message = "Password and confirmation do not match.";
+      setError(message);
+      showErrorToast(message);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -268,7 +278,28 @@ function AuthPageContent() {
               }}
             >
               <Field label="Email" value={email} onChange={setEmail} />
-              <Field label="Password" type="password" value={password} onChange={setPassword} />
+              <PasswordInput
+                id="auth-password"
+                name="password"
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                required
+                disabled={loading}
+              />
+              {mode === "register" ? (
+                <PasswordInput
+                  id="auth-confirm-password"
+                  name="confirmPassword"
+                  label="Confirm password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  autoComplete="new-password"
+                  required
+                  disabled={loading}
+                />
+              ) : null}
               {mode === "login" ? (
                 <div className="flex justify-end">
                   <Link

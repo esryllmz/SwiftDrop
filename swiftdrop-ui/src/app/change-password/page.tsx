@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { Button, Card, ErrorState, Field } from "@/components/ui";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { Button, Card, ErrorState } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { normalizeApiError } from "@/lib/api";
 import { resolveRoleRedirect } from "@/lib/routes";
@@ -66,23 +67,35 @@ export default function ChangePasswordPage() {
           </p>
 
           <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-            <Field
+            <PasswordInput
+              id="current-password"
+              name="currentPassword"
               label="Current password"
-              type="password"
               value={currentPassword}
               onChange={setCurrentPassword}
+              autoComplete="current-password"
+              required
+              disabled={loading}
             />
-            <Field
+            <PasswordInput
+              id="new-password"
+              name="newPassword"
               label="New password"
-              type="password"
               value={newPassword}
               onChange={setNewPassword}
+              autoComplete="new-password"
+              required
+              disabled={loading}
             />
-            <Field
+            <PasswordInput
+              id="confirm-new-password"
+              name="confirmNewPassword"
               label="Confirm new password"
-              type="password"
               value={confirmPassword}
               onChange={setConfirmPassword}
+              autoComplete="new-password"
+              required
+              disabled={loading}
             />
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
               At least 8 characters with uppercase, lowercase, and number.

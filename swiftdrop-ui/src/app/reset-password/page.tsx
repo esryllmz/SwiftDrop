@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
-import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { Button, Card, ErrorState, LoadingState } from "@/components/ui";
 import { resetPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
@@ -61,8 +62,26 @@ function ResetPasswordContent() {
             Set a new password for your SwiftDrop account.
           </p>
           <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-            <Field label="New password" type="password" value={newPassword} onChange={setNewPassword} />
-            <Field label="Confirm new password" type="password" value={confirmPassword} onChange={setConfirmPassword} />
+            <PasswordInput
+              id="reset-new-password"
+              name="newPassword"
+              label="New password"
+              value={newPassword}
+              onChange={setNewPassword}
+              autoComplete="new-password"
+              required
+              disabled={loading}
+            />
+            <PasswordInput
+              id="reset-confirm-password"
+              name="confirmPassword"
+              label="Confirm new password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+              required
+              disabled={loading}
+            />
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
               At least 8 characters with uppercase, lowercase, and number.
             </div>
