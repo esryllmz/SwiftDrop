@@ -11,11 +11,17 @@ export function formatDateTime(value?: string | null) {
   return date.toLocaleString();
 }
 
-export function formatMoney(value: number) {
-  return new Intl.NumberFormat("en-US", {
+export function formatCurrencyTRY(value?: number | null) {
+  const amount = Number(value ?? 0);
+  return new Intl.NumberFormat("tr-TR", {
     style: "currency",
-    currency: "USD",
-  }).format(value);
+    currency: "TRY",
+    minimumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+export function formatMoney(value: number) {
+  return formatCurrencyTRY(value);
 }
 
 export function prettyJson(value: unknown) {

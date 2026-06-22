@@ -17,7 +17,16 @@ import {
   markMerchantOrderReadyForPickup,
 } from "@/lib/portal";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
-import type { MerchantProfileResponse, OrderResponse } from "@/types/api";
+import type { MerchantProfileResponse, OrderResponse, OrderStatus } from "@/types/api";
+
+const activeMerchantStatuses: OrderStatus[] = [
+  "PLACED",
+  "DRIVER_ASSIGNED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+];
 
 export default function MerchantPage() {
   const { accessToken, user } = useAuth();
@@ -70,7 +79,11 @@ export default function MerchantPage() {
     };
   }, [load]);
 
-  const businessName = profile?.businessName ?? profile?.name ?? "Store";
+  const businessName = profile?.businessName ?? profile?.name ?? (loading ? "-" : "Store");
+  const totalOrders = profile?.totalOrders ?? orders.length;
+  const activeOrders =
+    profile?.activeOrders ??
+    orders.filter((order) => activeMerchantStatuses.includes(order.status)).length;
 
   const handleMerchantAction = async (
     orderId: string,
@@ -120,8 +133,8 @@ export default function MerchantPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <PortalMetricCard label="Business Name" value={businessName} />
-          <PortalMetricCard label="Total Orders" value={profile?.totalOrders ?? "-"} />
-          <PortalMetricCard label="Active Orders" value={profile?.activeOrders ?? "-"} />
+          <PortalMetricCard label="Total Orders" value={loading && !profile ? "-" : totalOrders} />
+          <PortalMetricCard label="Active Orders" value={loading && !profile ? "-" : activeOrders} />
         </div>
 
         <PortalSection

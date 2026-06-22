@@ -110,6 +110,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 || isAuthEndpoint(method, path, "/api/v1/auth/login", HttpMethod.POST)
                 || isAuthEndpoint(method, path, "/api/v1/auth/refresh", HttpMethod.POST)
                 || isAuthEndpoint(method, path, "/api/v1/auth/logout", HttpMethod.POST)
+                || isAuthEndpoint(method, path, "/api/v1/auth/forgot-password", HttpMethod.POST)
+                || isAuthEndpoint(method, path, "/api/v1/auth/reset-password", HttpMethod.POST)
                 || isPublicApplicationEndpoint(method, path)
                 || isEndpoint(method, path, "/actuator/health", HttpMethod.GET)
                 || isEndpoint(method, path, "/actuator/info", HttpMethod.GET)

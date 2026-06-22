@@ -19,7 +19,14 @@ import {
   updateCourierAvailability,
 } from "@/lib/portal";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
-import type { CourierProfileResponse, DriverStatus, OrderResponse } from "@/types/api";
+import type { CourierProfileResponse, DriverStatus, OrderResponse, OrderStatus } from "@/types/api";
+
+const activeCourierStatuses: OrderStatus[] = [
+  "DRIVER_ASSIGNED",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+];
 
 export default function CourierPage() {
   const { accessToken, user } = useAuth();
@@ -123,6 +130,14 @@ export default function CourierPage() {
     }
   };
 
+  const fullName = profile?.fullName ?? (loading ? "-" : "Courier");
+  const assignedOrders =
+    profile?.assignedOrders ??
+    assignments.filter((assignment) => activeCourierStatuses.includes(assignment.status)).length;
+  const deliveredOrders =
+    profile?.deliveredOrders ??
+    assignments.filter((assignment) => assignment.status === "DELIVERED").length;
+
   return (
     <PortalShell
       portalType="courier"
@@ -142,13 +157,13 @@ export default function CourierPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-4">
-          <PortalMetricCard label="Full Name" value={profile?.fullName ?? "Courier"} />
+          <PortalMetricCard label="Full Name" value={fullName} />
           <PortalMetricCard
             label="Status"
             value={profile?.status ? <StatusBadge status={profile.status} /> : "-"}
           />
-          <PortalMetricCard label="Assigned Orders" value={profile?.assignedOrders ?? "-"} />
-          <PortalMetricCard label="Delivered Orders" value={profile?.deliveredOrders ?? "-"} />
+          <PortalMetricCard label="Assigned Orders" value={loading && !profile ? "-" : assignedOrders} />
+          <PortalMetricCard label="Delivered Orders" value={loading && !profile ? "-" : deliveredOrders} />
         </div>
 
         <PortalSection

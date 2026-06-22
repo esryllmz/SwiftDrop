@@ -21,7 +21,17 @@ import type {
   CustomerMerchantOption,
   CustomerProfileResponse,
   OrderResponse,
+  OrderStatus,
 } from "@/types/api";
+
+const activeCustomerStatuses: OrderStatus[] = [
+  "PLACED",
+  "DRIVER_ASSIGNED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+];
 
 export default function CustomerPage() {
   const { accessToken, user } = useAuth();
@@ -144,6 +154,13 @@ export default function CustomerPage() {
 
   const parsedTotalAmount = Number(totalAmount);
   const totalAmountValid = Number.isFinite(parsedTotalAmount) && parsedTotalAmount > 0;
+  const totalOrders = profile?.totalOrders ?? orders.length;
+  const activeOrders =
+    profile?.activeOrders ??
+    orders.filter((order) => activeCustomerStatuses.includes(order.status)).length;
+  const deliveredOrders =
+    profile?.deliveredOrders ??
+    orders.filter((order) => order.status === "DELIVERED").length;
   const merchantSelectDisabled =
     creating || merchantsLoading || Boolean(merchantsError) || merchants.length === 0;
   const createDisabled =
@@ -172,9 +189,9 @@ export default function CustomerPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-3">
-          <PortalMetricCard label="Total Orders" value={profile?.totalOrders ?? "-"} />
-          <PortalMetricCard label="Active Orders" value={profile?.activeOrders ?? "-"} />
-          <PortalMetricCard label="Delivered" value={profile?.deliveredOrders ?? "-"} />
+          <PortalMetricCard label="Total Orders" value={loading && !profile ? "-" : totalOrders} />
+          <PortalMetricCard label="Active Orders" value={loading && !profile ? "-" : activeOrders} />
+          <PortalMetricCard label="Delivered" value={loading && !profile ? "-" : deliveredOrders} />
         </div>
 
         <PortalSection

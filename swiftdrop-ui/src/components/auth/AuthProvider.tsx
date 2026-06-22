@@ -28,6 +28,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (email: string, password: string) => Promise<AuthResponse>;
+  commitAuthResponse: (response: AuthResponse) => Promise<AuthResponse>;
   refresh: () => Promise<AuthResponse | null>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<ChangePasswordResponse>;
   logout: () => Promise<void>;
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         applyAuthResponse(await loginRequest(email, password)),
       register: async (email, password) =>
         applyAuthResponse(await registerRequest(email, password)),
+      commitAuthResponse: applyAuthResponse,
       refresh,
       changePassword: async (currentPassword, newPassword) => {
         if (!accessToken) {

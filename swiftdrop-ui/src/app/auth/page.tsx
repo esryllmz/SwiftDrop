@@ -17,6 +17,7 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PublicApplicationModal } from "@/components/public/PublicApplicationModal";
 import type { UserRole } from "@/types/api";
 import { normalizeApiError } from "@/lib/api";
+import { login as loginRequest, register as registerRequest } from "@/lib/auth";
 import { hasOuterWhitespace, normalizeEmail } from "@/lib/normalize";
 import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showInfoToast, showSuccessToast } from "@/lib/toast";
@@ -168,7 +169,9 @@ function AuthPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [rejectedRole, setRejectedRole] = useState<UserRole | null>(null);
   const accent = accentClass[config.accent];
+  const currentSessionRoleMismatch = Boolean(auth.user && auth.user.role !== config.expectedRole);
 
   function clearFormState() {
     setEmail("");
@@ -176,6 +179,7 @@ function AuthPageContent() {
     setConfirmPassword("");
     setError(null);
     setSuccess(null);
+    setRejectedRole(null);
   }
 
   async function handleSubmit() {
@@ -197,19 +201,28 @@ function AuthPageContent() {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setRejectedRole(null);
     try {
+      if (currentSessionRoleMismatch) {
+        await auth.logout();
+      }
+
       const response =
         mode === "register"
-          ? await auth.register(normalizedEmail, password)
-          : await auth.login(normalizedEmail, password);
+          ? await registerRequest(normalizedEmail, password)
+          : await loginRequest(normalizedEmail, password);
 
       if (response.role !== config.expectedRole) {
         await auth.logout();
+        auth.clearSession();
+        setRejectedRole(response.role);
         const message = "This account is not authorized for this portal.";
         setError(message);
         showErrorToast(message);
         return;
       }
+
+      await auth.commitAuthResponse(response);
 
       if (response.passwordChangeRequired) {
         showInfoToast("Please set a new password to continue.");
@@ -240,6 +253,7 @@ function AuthPageContent() {
     setError(null);
     try {
       await auth.logout();
+      setRejectedRole(null);
       setSuccess("Signed out.");
       showSuccessToast("Signed out.");
     } catch (err) {
@@ -372,7 +386,7 @@ function AuthPageContent() {
               </p>
             ) : null}
 
-            {auth.user ? (
+            {auth.user && !currentSessionRoleMismatch ? (
               <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
                 <div className="text-xs font-medium uppercase text-slate-500">Current session</div>
                 <div className="mt-1 break-all text-sm font-medium text-slate-950">
@@ -382,6 +396,23 @@ function AuthPageContent() {
                   Logout
                 </SecondaryButton>
               </div>
+            ) : null}
+
+            {auth.user && currentSessionRoleMismatch ? (
+              <AccessDeniedCard
+                email={auth.user.email}
+                role={auth.user.role}
+                loading={loading}
+                onLogout={handleLogout}
+              />
+            ) : null}
+
+            {!auth.user && rejectedRole ? (
+              <AccessDeniedCard
+                role={rejectedRole}
+                loading={loading}
+                onLogout={handleLogout}
+              />
             ) : null}
 
             {success ? (
@@ -431,6 +462,41 @@ function PublicHeader() {
         </Link>
       </div>
     </header>
+  );
+}
+
+function AccessDeniedCard({
+  email,
+  role,
+  loading,
+  onLogout,
+}: {
+  email?: string;
+  role: UserRole;
+  loading: boolean;
+  onLogout: () => Promise<void>;
+}) {
+  return (
+    <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
+      <div className="text-xs font-medium uppercase text-red-700">Access denied</div>
+      <p className="mt-2 text-sm leading-6 text-red-800">
+        This account is not authorized for this portal.
+      </p>
+      {email ? (
+        <div className="mt-2 break-all text-sm font-medium text-red-950">{email}</div>
+      ) : null}
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Link
+          href={resolveRoleRedirect(role)}
+          className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+        >
+          Go to your portal
+        </Link>
+        <SecondaryButton className="w-full" disabled={loading} onClick={onLogout}>
+          Logout
+        </SecondaryButton>
+      </div>
+    </div>
   );
 }
 
