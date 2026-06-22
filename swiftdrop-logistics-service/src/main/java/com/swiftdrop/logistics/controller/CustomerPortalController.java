@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
+import com.swiftdrop.logistics.dto.CustomerMerchantOptionResponse;
 import com.swiftdrop.logistics.dto.CustomerProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
 import com.swiftdrop.logistics.security.AuthenticatedUser;
@@ -41,6 +42,12 @@ public class CustomerPortalController {
     public ResponseEntity<List<OrderResponse>> findOrders(HttpServletRequest request) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
         return ResponseEntity.ok(portalService.findCustomerOrders(user));
+    }
+
+    @GetMapping("/merchants")
+    public ResponseEntity<List<CustomerMerchantOptionResponse>> findMerchants(HttpServletRequest request) {
+        authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
+        return ResponseEntity.ok(portalService.findCustomerMerchantOptions());
     }
 
     @PostMapping("/orders")

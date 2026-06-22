@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.swiftdrop.logistics.dto.CourierProfileResponse;
 import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
+import com.swiftdrop.logistics.dto.CustomerMerchantOptionResponse;
 import com.swiftdrop.logistics.dto.CustomerProfileResponse;
 import com.swiftdrop.logistics.dto.MerchantProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
@@ -54,6 +55,13 @@ public class PortalService {
     @Transactional(readOnly = true)
     public List<OrderResponse> findCustomerOrders(AuthenticatedUser user) {
         return orderService.findCustomerOrders(user.userId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerMerchantOptionResponse> findCustomerMerchantOptions() {
+        return merchantRepository.findCustomerMerchantOptions().stream()
+                .map(this::toCustomerMerchantOption)
+                .toList();
     }
 
     @Transactional
@@ -154,6 +162,21 @@ public class PortalService {
     private Driver findDriver(UUID userId) {
         return driverRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Courier profile not found."));
+    }
+
+    private CustomerMerchantOptionResponse toCustomerMerchantOption(
+            MerchantRepository.CustomerMerchantOptionView merchant
+    ) {
+        String merchantName = merchant.getName();
+        String displayName = merchantName == null || merchantName.isBlank()
+                ? "Unnamed merchant"
+                : merchantName.trim();
+
+        return new CustomerMerchantOptionResponse(
+                merchant.getId(),
+                displayName,
+                null
+        );
     }
 
     private CourierProfileResponse toCourierProfile(AuthenticatedUser user, Driver driver) {
