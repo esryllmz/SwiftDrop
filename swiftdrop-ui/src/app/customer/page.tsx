@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   OrdersTable,
@@ -10,17 +10,57 @@ import {
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Button, ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
-import { getCustomerOrders, getCustomerProfile } from "@/lib/portal";
-import { showErrorToast } from "@/lib/toast";
-import type { CustomerProfileResponse, OrderResponse } from "@/types/api";
+import {
+  createCustomerOrder,
+  getCustomerMerchants,
+  getCustomerOrders,
+  getCustomerProfile,
+} from "@/lib/portal";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import type {
+  CustomerMerchantOption,
+  CustomerProfileResponse,
+  OrderResponse,
+} from "@/types/api";
 
 export default function CustomerPage() {
   const { accessToken, user } = useAuth();
   const [profile, setProfile] = useState<CustomerProfileResponse | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [merchants, setMerchants] = useState<CustomerMerchantOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [merchantsLoading, setMerchantsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [merchantsError, setMerchantsError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedMerchantId, setSelectedMerchantId] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const loadMerchants = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    setMerchantsLoading(true);
+    setMerchantsError(null);
+    try {
+      const nextMerchants = await getCustomerMerchants(accessToken);
+      setMerchants(nextMerchants);
+      setSelectedMerchantId((current) =>
+        nextMerchants.some((merchant) => merchant.id === current)
+          ? current
+          : nextMerchants[0]?.id ?? "",
+      );
+    } catch (err) {
+      setMerchants([]);
+      setSelectedMerchantId("");
+      setMerchantsError(normalizeApiError(err, "Merchant list could not be loaded."));
+    } finally {
+      setMerchantsLoading(false);
+    }
+  }, [accessToken]);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -46,9 +86,72 @@ export default function CustomerPage() {
   }, [accessToken]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
+    const timer = window.setTimeout(() => {
+      void load();
+      void loadMerchants();
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [load, loadMerchants]);
+
+  const closeModal = useCallback(() => {
+    if (creating) {
+      return;
+    }
+
+    setModalOpen(false);
+    setCreateError(null);
+    setTotalAmount("");
+    setSelectedMerchantId(merchants[0]?.id ?? "");
+  }, [creating, merchants]);
+
+  const handleCreateOrder = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accessToken) {
+      const message = "Please sign in again before creating an order.";
+      setCreateError(message);
+      showErrorToast(message);
+      return;
+    }
+
+    const parsedAmount = Number(totalAmount);
+    if (!selectedMerchantId || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      const message = "Select a merchant and enter a valid total amount.";
+      setCreateError(message);
+      showErrorToast(message);
+      return;
+    }
+
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await createCustomerOrder(accessToken, {
+        merchantId: selectedMerchantId,
+        totalAmount: parsedAmount,
+      });
+      showSuccessToast("Order created successfully.");
+      setModalOpen(false);
+      setSelectedMerchantId(merchants[0]?.id ?? "");
+      setTotalAmount("");
+      await load();
+    } catch (err) {
+      const message = normalizeApiError(err, "Order could not be created.");
+      setCreateError(message);
+      showErrorToast(message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const parsedTotalAmount = Number(totalAmount);
+  const totalAmountValid = Number.isFinite(parsedTotalAmount) && parsedTotalAmount > 0;
+  const merchantSelectDisabled =
+    creating || merchantsLoading || Boolean(merchantsError) || merchants.length === 0;
+  const createDisabled =
+    creating ||
+    merchantsLoading ||
+    merchants.length === 0 ||
+    !selectedMerchantId ||
+    !totalAmountValid;
 
   return (
     <PortalShell
@@ -94,12 +197,13 @@ export default function CustomerPage() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">Create order</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Merchant selection is not available yet.
+                  Choose an available merchant and enter the order total.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={closeModal}
+                disabled={creating}
                 className="rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-500 transition hover:bg-slate-50"
                 aria-label="Close"
               >
@@ -107,16 +211,80 @@ export default function CustomerPage() {
               </button>
             </div>
 
-            <div className="mt-5 grid gap-4">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-                A customer-safe merchant picker endpoint is required before orders can be created from this portal.
-              </div>
-              <div className="flex justify-end">
-                <SecondaryButton type="button" onClick={() => setModalOpen(false)}>
-                  Close
+            <form className="mt-5 grid gap-4" onSubmit={handleCreateOrder}>
+              {merchantsLoading ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                  Loading merchants...
+                </div>
+              ) : null}
+
+              {merchantsError ? (
+                <div className="grid gap-3">
+                  <ErrorState message={merchantsError} />
+                  <SecondaryButton
+                    type="button"
+                    className="w-fit"
+                    onClick={() => void loadMerchants()}
+                    disabled={merchantsLoading || creating}
+                  >
+                    Retry
+                  </SecondaryButton>
+                </div>
+              ) : null}
+
+              {!merchantsLoading && !merchantsError && merchants.length === 0 ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                  No merchants are available for new orders yet.
+                </div>
+              ) : null}
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Merchant</span>
+                <select
+                  value={selectedMerchantId}
+                  onChange={(event) => setSelectedMerchantId(event.target.value)}
+                  disabled={merchantSelectDisabled}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                >
+                  {merchants.length === 0 ? (
+                    <option value="">No merchants are currently available.</option>
+                  ) : (
+                    merchants.map((merchant) => (
+                      <option key={merchant.id} value={merchant.id}>
+                        {merchant.locationLabel
+                          ? `${merchant.name} - ${merchant.locationLabel}`
+                          : merchant.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">Total Amount</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={totalAmount}
+                  onChange={(event) => setTotalAmount(event.target.value)}
+                  disabled={creating}
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                />
+              </label>
+
+              {createError ? <ErrorState message={createError} /> : null}
+
+              <div className="flex justify-end gap-2">
+                <SecondaryButton type="button" onClick={closeModal} disabled={creating}>
+                  Cancel
                 </SecondaryButton>
+                <Button type="submit" disabled={createDisabled}>
+                  {creating ? "Creating..." : "Create Order"}
+                </Button>
               </div>
-            </div>
+            </form>
           </section>
         </div>
       ) : null}

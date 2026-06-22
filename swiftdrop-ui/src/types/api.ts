@@ -77,6 +77,12 @@ export type CustomerProfileResponse = {
   deliveredOrders: number;
 };
 
+export type CustomerMerchantOption = {
+  id: string;
+  name: string;
+  locationLabel?: string | null;
+};
+
 export type MerchantProfileResponse = {
   userId: string;
   email: string;

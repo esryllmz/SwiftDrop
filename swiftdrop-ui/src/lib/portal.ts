@@ -2,6 +2,7 @@ import { getJson, postJson } from "@/lib/api";
 import type {
   CourierProfileResponse,
   CreateCustomerOrderRequest,
+  CustomerMerchantOption,
   CustomerProfileResponse,
   DriverStatus,
   MerchantProfileResponse,
@@ -14,6 +15,14 @@ export function getCustomerProfile(accessToken: string | null) {
 
 export function getCustomerOrders(accessToken: string | null) {
   return getJson<OrderResponse[]>("/api/v1/customer/orders", undefined, accessToken);
+}
+
+export function getCustomerMerchants(accessToken: string | null) {
+  return getJson<CustomerMerchantOption[]>(
+    "/api/v1/customer/merchants",
+    undefined,
+    accessToken,
+  );
 }
 
 export function createCustomerOrder(
