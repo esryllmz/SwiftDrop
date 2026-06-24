@@ -1,19 +1,30 @@
 param(
     [string]$BaseUrl = "http://localhost:8080",
     [string]$AdminEmail = "admin@swiftdrop.com",
-    [string]$AdminPassword = $env:SEED_ADMIN_PASSWORD,
+    [Parameter(Mandatory = $true)]
+    [SecureString]$AdminPassword,
     [string]$CustomerEmail = "customer.demo@swiftdrop.com",
-    [string]$CustomerPassword = "Customer123!",
+    [Parameter(Mandatory = $true)]
+    [SecureString]$CustomerPassword,
     [string]$MerchantEmail = "merchant.demo@swiftdrop.com",
     [string]$CourierEmail = "courier.demo@swiftdrop.com",
-    [string]$NewMerchantPassword = "MerchantDemo123!",
-    [string]$NewCourierPassword = "CourierDemo123!"
+    [Parameter(Mandatory = $true)]
+    [SecureString]$NewMerchantPassword,
+    [Parameter(Mandatory = $true)]
+    [SecureString]$NewCourierPassword
 )
 
 $ErrorActionPreference = "Stop"
 
-if ([string]::IsNullOrWhiteSpace($AdminPassword)) {
-    throw "AdminPassword is required. Pass -AdminPassword or set SEED_ADMIN_PASSWORD locally."
+function ConvertFrom-SecurePassword {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [SecureString]$SecurePassword
+    )
+
+    $credential = [PSCredential]::new("unused", $SecurePassword)
+    return $credential.GetNetworkCredential().Password
 }
 
 function Invoke-Json {
@@ -43,29 +54,56 @@ function Invoke-Json {
     Invoke-RestMethod @params
 }
 
-function Login {
-    param([string]$Email, [string]$Password)
+function Connect-DemoAccount {
+    param(
+        [Parameter(Mandatory = $true)][string]$Email,
+        [Parameter(Mandatory = $true)][SecureString]$Password
+    )
 
-    Invoke-Json -Method "POST" -Path "/api/v1/auth/login" -Body @{
-        email = $Email
-        password = $Password
+    $plainText = ConvertFrom-SecurePassword -SecurePassword $Password
+    try {
+        Invoke-Json -Method "POST" -Path "/api/v1/auth/login" -Body @{
+            email = $Email
+            password = $plainText
+        }
+    }
+    finally {
+        $plainText = $null
     }
 }
 
-function Change-Password {
-    param([string]$AccessToken, [string]$CurrentPassword, [string]$NewPassword)
+function Set-DemoAccountPassword {
+    param(
+        [Parameter(Mandatory = $true)][string]$AccessToken,
+        [Parameter(Mandatory = $true)][SecureString]$CurrentPassword,
+        [Parameter(Mandatory = $true)][SecureString]$NewPassword
+    )
 
-    Invoke-Json -Method "POST" -Path "/api/v1/auth/change-password" -AccessToken $AccessToken -Body @{
-        currentPassword = $CurrentPassword
-        newPassword = $NewPassword
+    $currentPlainText = ConvertFrom-SecurePassword -SecurePassword $CurrentPassword
+    $newPlainText = ConvertFrom-SecurePassword -SecurePassword $NewPassword
+    try {
+        Invoke-Json -Method "POST" -Path "/api/v1/auth/change-password" -AccessToken $AccessToken -Body @{
+            currentPassword = $currentPlainText
+            newPassword = $newPlainText
+        }
+    }
+    finally {
+        $currentPlainText = $null
+        $newPlainText = $null
     }
 }
 
 Write-Host "Seeding SwiftDrop local demo flow through API at $BaseUrl"
 
-$customer = Invoke-Json -Method "POST" -Path "/api/v1/auth/register" -Body @{
-    email = $CustomerEmail
-    password = $CustomerPassword
+$customerPlainText = ConvertFrom-SecurePassword -SecurePassword $CustomerPassword
+try {
+    Invoke-Json -Method "POST" -Path "/api/v1/auth/register" -Body @{
+        email = $CustomerEmail
+        password = $customerPlainText
+    } | Out-Null
+}
+finally {
+    $customerPlainText = $null
 }
 
 $merchantApplication = Invoke-Json -Method "POST" -Path "/api/v1/applications/merchant" -Body @{
@@ -81,7 +119,7 @@ $courierApplication = Invoke-Json -Method "POST" -Path "/api/v1/applications/cou
     message = "Local demo courier application"
 }
 
-$admin = Login -Email $AdminEmail -Password $AdminPassword
+$admin = Connect-DemoAccount -Email $AdminEmail -Password $AdminPassword
 $adminToken = $admin.accessToken
 
 $merchantReview = Invoke-Json -Method "POST" -Path "/api/v1/admin/applications/merchants/$($merchantApplication.id)/approve" -AccessToken $adminToken -Body @{
@@ -92,18 +130,21 @@ $courierReview = Invoke-Json -Method "POST" -Path "/api/v1/admin/applications/co
     reviewNote = "Approved for local demo seed"
 }
 
-$merchantTempPassword = $merchantReview.provisionedAccount.temporaryPassword
-$courierTempPassword = $courierReview.provisionedAccount.temporaryPassword
-
-Write-Host "Local temporary merchant password: $merchantTempPassword"
-Write-Host "Local temporary courier password: $courierTempPassword"
-
-$merchantLogin = Login -Email $MerchantEmail -Password $merchantTempPassword
-$merchantSession = Change-Password -AccessToken $merchantLogin.accessToken -CurrentPassword $merchantTempPassword -NewPassword $NewMerchantPassword
+$merchantTempPlainText = $merchantReview.provisionedAccount.temporaryPassword
+$merchantTempPassword = ConvertTo-SecureString $merchantTempPlainText -AsPlainText -Force
+$merchantTempPlainText = $null
+$merchantLogin = Connect-DemoAccount -Email $MerchantEmail -Password $merchantTempPassword
+$merchantSession = Set-DemoAccountPassword -AccessToken $merchantLogin.accessToken -CurrentPassword $merchantTempPassword -NewPassword $NewMerchantPassword
+$merchantTempPassword = $null
 $merchantToken = $merchantSession.accessToken
+$merchantProfile = Invoke-Json -Method "GET" -Path "/api/v1/merchant/profile" -AccessToken $merchantToken
 
-$courierLogin = Login -Email $CourierEmail -Password $courierTempPassword
-$courierSession = Change-Password -AccessToken $courierLogin.accessToken -CurrentPassword $courierTempPassword -NewPassword $NewCourierPassword
+$courierTempPlainText = $courierReview.provisionedAccount.temporaryPassword
+$courierTempPassword = ConvertTo-SecureString $courierTempPlainText -AsPlainText -Force
+$courierTempPlainText = $null
+$courierLogin = Connect-DemoAccount -Email $CourierEmail -Password $courierTempPassword
+$courierSession = Set-DemoAccountPassword -AccessToken $courierLogin.accessToken -CurrentPassword $courierTempPassword -NewPassword $NewCourierPassword
+$courierTempPassword = $null
 $courierToken = $courierSession.accessToken
 
 $courierProfile = Invoke-Json -Method "GET" -Path "/api/v1/courier/profile" -AccessToken $courierToken
@@ -117,16 +158,17 @@ Invoke-Json -Method "POST" -Path "/api/v1/drivers/location" -AccessToken $adminT
     longitude = 0.0
 } | Out-Null
 
-$customerLogin = Login -Email $CustomerEmail -Password $CustomerPassword
+$customerLogin = Connect-DemoAccount -Email $CustomerEmail -Password $CustomerPassword
 $customerToken = $customerLogin.accessToken
-$merchants = @(Invoke-Json -Method "GET" -Path "/api/v1/customer/merchants" -AccessToken $customerToken)
-$merchantOption = $merchants | Where-Object { $_.name -eq "Kadikoy Burger" } | Select-Object -First 1
+$merchants = Invoke-Json -Method "GET" -Path "/api/v1/customer/merchants" -AccessToken $customerToken
+$merchantId = [string]$merchantProfile.merchantId
+$merchantOption = $merchants | Where-Object { [string]$_.id -eq $merchantId } | Select-Object -First 1
 if (-not $merchantOption) {
-    throw "Kadikoy Burger was not returned by the customer merchant picker."
+    throw "The approved merchant was not returned by the customer merchant picker."
 }
 
 $order = Invoke-Json -Method "POST" -Path "/api/v1/customer/orders" -AccessToken $customerToken -Body @{
-    merchantId = $merchantOption.id
+    merchantId = [string]$merchantOption.id
     totalAmount = 42.50
 }
 
