@@ -102,9 +102,13 @@ public class OrderServiceImpl implements OrderService {
                 .sortAscending();
 
         var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
+        final GeoReference<String> merchantReference = Objects.requireNonNull(
+                GeoReference.fromCoordinate(merchantLocation),
+                "merchant Geo reference must not be null"
+        );
         GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.search(
                 DRIVER_GEO_KEY,
-                GeoReference.fromCoordinate(merchantLocation),
+                merchantReference,
                 searchRadius,
                 args
         );
@@ -118,7 +122,10 @@ public class OrderServiceImpl implements OrderService {
             String driverIdValue = Objects.requireNonNull(result.getContent().getName(), "driver id must not be null");
             final UUID parsedDriverId = UUID.fromString(driverIdValue);
             UUID driverId = Objects.requireNonNull(parsedDriverId, "driver UUID must not be null");
-            RLock driverLock = redissonClient.getLock("lock:driver:" + driverIdValue);
+            RLock driverLock = Objects.requireNonNull(
+                    redissonClient.getLock("lock:driver:" + driverIdValue),
+                    "driver lock must not be null"
+            );
 
             try {
                 if (driverLock.tryLock(0, 3, TimeUnit.SECONDS)) {

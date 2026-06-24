@@ -2,8 +2,8 @@ package com.swiftdrop.gateway.security;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -198,9 +198,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 {"timestamp":"%s","status":%d,"error":"%s","message":"%s","path":"%s"}\
                 """.formatted(LocalDateTime.now(), status.value(), error, message, path);
 
-        final byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
-        final DataBuffer responseBuffer = response.bufferFactory().wrap(responseBytes);
-        final Publisher<? extends DataBuffer> responseBody = Mono.just(responseBuffer);
+        final byte[] responseBytes = Objects.requireNonNull(
+                body.getBytes(StandardCharsets.UTF_8),
+                "serialized error response must not be null"
+        );
+        final DataBuffer responseBuffer = Objects.requireNonNull(
+                response.bufferFactory().wrap(responseBytes),
+                "response data buffer must not be null"
+        );
+        final Mono<DataBuffer> responseBody = Objects.requireNonNull(
+                Mono.just(responseBuffer),
+                "error response publisher must not be null"
+        );
         return response.writeWith(responseBody);
     }
 

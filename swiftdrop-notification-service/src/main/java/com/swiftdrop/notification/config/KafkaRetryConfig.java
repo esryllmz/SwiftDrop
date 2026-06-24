@@ -31,7 +31,10 @@ public class KafkaRetryConfig {
                 consumerFactory,
                 "consumerFactory must not be null"
         );
-        CommonErrorHandler errorHandler = defaultErrorHandler(kafkaTemplate, maxAttempts, backoffMs);
+        CommonErrorHandler errorHandler = Objects.requireNonNull(
+                defaultErrorHandler(kafkaTemplate, maxAttempts, backoffMs),
+                "Kafka error handler must not be null"
+        );
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(typedConsumerFactory);
@@ -63,7 +66,7 @@ public class KafkaRetryConfig {
         );
         long retryAttempts = Math.max(maxAttempts - 1L, 0L);
         FixedBackOff backOff = new FixedBackOff(backoffMs, retryAttempts);
-        CommonErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
-        return errorHandler;
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
+        return Objects.requireNonNull(errorHandler, "default Kafka error handler must not be null");
     }
 }

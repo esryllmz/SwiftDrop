@@ -29,11 +29,19 @@ public class DriverLocationController {
     public ResponseEntity<Map<String, String>> updateLocation(
             @Valid @RequestBody DriverLocationUpdateRequest request
     ) {
+        final DriverLocationUpdateRequest locationRequest = Objects.requireNonNull(
+                request,
+                "driver location request must not be null"
+        );
+        final String driverMember = Objects.requireNonNull(
+                locationRequest.driverId().toString(),
+                "driver Geo member must not be null"
+        );
         var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
         geoOperations.add(
                 DRIVER_GEO_KEY,
-                new Point(request.longitude(), request.latitude()),
-                request.driverId().toString()
+                new Point(locationRequest.longitude(), locationRequest.latitude()),
+                driverMember
         );
 
         return ResponseEntity.ok(Map.of("message", "Driver location updated in Redis."));

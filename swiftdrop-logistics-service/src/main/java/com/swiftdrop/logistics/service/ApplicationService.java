@@ -283,7 +283,11 @@ public class ApplicationService {
                 .latitude(0.0)
                 .longitude(0.0)
                 .build();
-        Objects.requireNonNull(merchantRepository.save(merchant), "approved merchant profile must not be null");
+        final Merchant savedMerchant = Objects.requireNonNull(
+                merchantRepository.save(merchant),
+                "approved merchant profile must not be null"
+        );
+        Objects.requireNonNull(savedMerchant.getId(), "approved merchant profile id must not be null");
     }
 
     private void ensureDriverProfile(CourierApplication application, UUID provisionedUserId) {
@@ -296,7 +300,11 @@ public class ApplicationService {
                 .fullName(application.getFullName())
                 .status(DriverStatus.OFFLINE)
                 .build();
-        Objects.requireNonNull(driverRepository.save(driver), "approved courier profile must not be null");
+        final Driver savedDriver = Objects.requireNonNull(
+                driverRepository.save(driver),
+                "approved courier profile must not be null"
+        );
+        Objects.requireNonNull(savedDriver.getId(), "approved courier profile id must not be null");
     }
 
     private MerchantApplicationResponse toMerchantResponse(MerchantApplication application) {

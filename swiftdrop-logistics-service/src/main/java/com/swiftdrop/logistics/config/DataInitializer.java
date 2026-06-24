@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.config;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.boot.CommandLineRunner;
@@ -35,18 +36,21 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        final Merchant burgerLab = merchantRepository.findById(BURGER_LAB_ID)
-                .orElseGet(this::saveBurgerLabMerchant);
-
-        final Driver nearDriver = driverRepository.findById(NEAR_DRIVER_ID)
-                .orElseGet(this::saveNearDriver);
-
-        final Driver farDriver = driverRepository.findById(FAR_DRIVER_ID)
-                .orElseGet(this::saveFarDriver);
+        final Merchant burgerLab = findOrCreateMerchant();
+        final Driver nearDriver = findOrCreateDriver(NEAR_DRIVER_ID, this::saveNearDriver);
+        final Driver farDriver = findOrCreateDriver(FAR_DRIVER_ID, this::saveFarDriver);
 
         var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
-        geoOperations.add(DRIVER_GEO_KEY, new Point(29.0260, 41.0205), nearDriver.getId().toString());
-        geoOperations.add(DRIVER_GEO_KEY, new Point(29.2300, 40.8900), farDriver.getId().toString());
+        final String nearDriverMember = Objects.requireNonNull(
+                nearDriver.getId().toString(),
+                "near driver Geo member must not be null"
+        );
+        final String farDriverMember = Objects.requireNonNull(
+                farDriver.getId().toString(),
+                "far driver Geo member must not be null"
+        );
+        geoOperations.add(DRIVER_GEO_KEY, new Point(29.0260, 41.0205), nearDriverMember);
+        geoOperations.add(DRIVER_GEO_KEY, new Point(29.2300, 40.8900), farDriverMember);
 
         log.info("Seed data loaded. merchantId={}, nearDriverId={}, farDriverId={}",
                 burgerLab.getId(), nearDriver.getId(), farDriver.getId());
@@ -55,6 +59,22 @@ public class DataInitializer implements CommandLineRunner {
     private static UUID uuid(String value) {
         final UUID seedUuid = UUID.fromString(value);
         return Objects.requireNonNull(seedUuid, "seed UUID must not be null");
+    }
+
+    private Merchant findOrCreateMerchant() {
+        final Optional<Merchant> existingMerchant = merchantRepository.findById(BURGER_LAB_ID);
+        if (existingMerchant.isPresent()) {
+            return Objects.requireNonNull(existingMerchant.get(), "seed merchant must not be null");
+        }
+        return saveBurgerLabMerchant();
+    }
+
+    private Driver findOrCreateDriver(UUID driverId, java.util.function.Supplier<Driver> creator) {
+        final Optional<Driver> existingDriver = driverRepository.findById(driverId);
+        if (existingDriver.isPresent()) {
+            return Objects.requireNonNull(existingDriver.get(), "seed driver must not be null");
+        }
+        return Objects.requireNonNull(creator.get(), "created seed driver must not be null");
     }
 
     private Merchant saveBurgerLabMerchant() {

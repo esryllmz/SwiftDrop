@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -82,13 +84,14 @@ class AuthServiceImplTest {
         when(userRepository.existsByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(false);
         when(passwordEncoder.encode("Customer123")).thenReturn("encoded-customer-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0, User.class);
+            User user = requiredArgument(invocation, 0, User.class);
             user.setId(USER_ID);
             return user;
         });
         when(jwtService.generateToken(USER_ID, "customer@swiftdrop.com", "CUSTOMER", false))
                 .thenReturn("access-token");
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
 
         AuthResult result = service.register(new RegisterRequest("customer@swiftdrop.com", "Customer123"));
 
@@ -101,13 +104,14 @@ class AuthServiceImplTest {
         when(userRepository.existsByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(false);
         when(passwordEncoder.encode("Customer123")).thenReturn("encoded-customer-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0, User.class);
+            User user = requiredArgument(invocation, 0, User.class);
             user.setId(USER_ID);
             return user;
         });
         when(jwtService.generateToken(USER_ID, "customer@swiftdrop.com", "CUSTOMER", false))
                 .thenReturn("access-token");
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
 
         AuthResult result = service.register(new RegisterRequest("  Customer@SwiftDrop.COM  ", "Customer123"));
 
@@ -140,11 +144,13 @@ class AuthServiceImplTest {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
-        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
-        when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
+        final List<RefreshToken> noActiveTokens = List.of();
+        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(noActiveTokens);
+        when(refreshTokenRepository.saveAll(noActiveTokens)).thenReturn(noActiveTokens);
         when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", true))
                 .thenReturn("access-token");
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
 
         AuthResult result = service.login(new LoginRequest("merchant@swiftdrop.com", "TempPass123"));
 
@@ -157,11 +163,13 @@ class AuthServiceImplTest {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
-        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
-        when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
+        final List<RefreshToken> noActiveTokens = List.of();
+        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(noActiveTokens);
+        when(refreshTokenRepository.saveAll(noActiveTokens)).thenReturn(noActiveTokens);
         when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", true))
                 .thenReturn("access-token");
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
 
         AuthResult result = service.login(new LoginRequest("  MERCHANT@SwiftDrop.COM  ", "TempPass123"));
 
@@ -240,12 +248,15 @@ class AuthServiceImplTest {
         when(jwtService.isTokenValid("access-token", "merchant@swiftdrop.com")).thenReturn(true);
         when(passwordEncoder.matches("TempPass123", "encoded-temporary-password")).thenReturn(true);
         when(passwordEncoder.encode("Merchant123")).thenReturn("encoded-new-password");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of());
-        when(refreshTokenRepository.saveAll(List.of())).thenReturn(List.of());
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, User.class));
+        final List<RefreshToken> noActiveTokens = List.of();
+        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(noActiveTokens);
+        when(refreshTokenRepository.saveAll(noActiveTokens)).thenReturn(noActiveTokens);
         when(jwtService.generateToken(USER_ID, "merchant@swiftdrop.com", "MERCHANT", false))
                 .thenReturn("new-access-token");
-        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
 
         ChangePasswordResult result = service.changePassword(
                 "access-token",
@@ -278,7 +289,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmailIgnoreCase("customer@swiftdrop.com")).thenReturn(Optional.of(customer));
         when(passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(USER_ID)).thenReturn(List.of());
         when(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, PasswordResetToken.class));
 
         ForgotPasswordResponse response = service.forgotPassword(
                 new ForgotPasswordRequest("  Customer@SwiftDrop.COM  ", "CUSTOMER")
@@ -331,7 +342,12 @@ class AuthServiceImplTest {
                 .thenReturn(Optional.of(resetToken));
         when(passwordEncoder.matches("Merchant123", "encoded-old-password")).thenReturn(false);
         when(passwordEncoder.encode("Merchant123")).thenReturn("encoded-new-password");
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, User.class));
+        when(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, PasswordResetToken.class));
         when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(List.of(refreshToken));
+        when(refreshTokenRepository.saveAll(List.of(refreshToken))).thenReturn(List.of(refreshToken));
 
         var response = service.resetPassword(
                 new ResetPasswordRequest("raw-token", "Merchant123", "Merchant123")
@@ -353,6 +369,8 @@ class AuthServiceImplTest {
                 .build();
         when(passwordResetTokenRepository.findByTokenHashAndUsedAtIsNull(anyString()))
                 .thenReturn(Optional.of(resetToken));
+        when(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, PasswordResetToken.class));
 
         assertThatThrownBy(() -> service.resetPassword(
                 new ResetPasswordRequest("raw-token", "Merchant123", "Merchant123")
@@ -413,5 +431,12 @@ class AuthServiceImplTest {
                 .enabled(true)
                 .passwordChangeRequired(true)
                 .build();
+    }
+
+    private static <T> T requiredArgument(InvocationOnMock invocation, int index, Class<T> type) {
+        return Objects.requireNonNull(
+                invocation.getArgument(index, type),
+                "mock invocation argument must not be null"
+        );
     }
 }

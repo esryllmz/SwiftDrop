@@ -24,7 +24,13 @@ public class RedisProcessedEventService implements ProcessedEventService {
             @Value("${application.notification.processed-event-ttl-hours:24}") long ttlHours
     ) {
         this.redisTemplate = Objects.requireNonNull(redisTemplate, "redisTemplate must not be null");
-        final Duration processedEventTtl = Duration.ofHours(ttlHours);
+        if (ttlHours <= 0) {
+            throw new IllegalArgumentException("processed event ttl hours must be positive");
+        }
+        final Duration processedEventTtl = Objects.requireNonNull(
+                Duration.ofHours(ttlHours),
+                "processed event ttl must not be null"
+        );
         this.ttl = Objects.requireNonNull(processedEventTtl, "processed event ttl must not be null");
     }
 

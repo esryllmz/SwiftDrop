@@ -270,7 +270,10 @@ public class AuthServiceImpl implements AuthService {
         final Instant now = Instant.now();
         if (resetToken.getExpiresAt().isBefore(now)) {
             resetToken.setUsedAt(now);
-            passwordResetTokenRepository.save(resetToken);
+            Objects.requireNonNull(
+                    passwordResetTokenRepository.save(resetToken),
+                    "expired password reset token must not be null"
+            );
             throw new IllegalArgumentException("Invalid or expired password reset token");
         }
 
@@ -286,9 +289,15 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(resetPasswordRequest.newPassword()));
         user.setPasswordChangeRequired(false);
         resetToken.setUsedAt(now);
-        userRepository.save(user);
-        passwordResetTokenRepository.save(resetToken);
-        revokeActiveTokens(user);
+        final User savedUser = Objects.requireNonNull(
+                userRepository.save(user),
+                "password reset user must not be null"
+        );
+        Objects.requireNonNull(
+                passwordResetTokenRepository.save(resetToken),
+                "used password reset token must not be null"
+        );
+        revokeActiveTokens(savedUser);
 
         return new ResetPasswordResponse(RESET_PASSWORD_SUCCESS_MESSAGE);
     }
@@ -328,7 +337,10 @@ public class AuthServiceImpl implements AuthService {
     private void revokeActiveTokens(User user) {
         final List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUser_IdAndRevokedFalse(user.getId());
         activeTokens.forEach(refreshToken -> refreshToken.setRevoked(true));
-        refreshTokenRepository.saveAll(activeTokens);
+        Objects.requireNonNull(
+                refreshTokenRepository.saveAll(activeTokens),
+                "revoked refresh tokens must not be null"
+        );
     }
 
     private RefreshToken createRefreshToken(User user) {
@@ -395,7 +407,10 @@ public class AuthServiceImpl implements AuthService {
                 .tokenHash(hashToken(rawToken))
                 .expiresAt(expiresAt)
                 .build();
-        passwordResetTokenRepository.save(resetToken);
+        Objects.requireNonNull(
+                passwordResetTokenRepository.save(resetToken),
+                "saved password reset token must not be null"
+        );
 
         return new ForgotPasswordResponse(
                 FORGOT_PASSWORD_MESSAGE,
@@ -409,7 +424,10 @@ public class AuthServiceImpl implements AuthService {
         final List<PasswordResetToken> activeTokens =
                 passwordResetTokenRepository.findAllByUser_IdAndUsedAtIsNull(user.getId());
         activeTokens.forEach(resetToken -> resetToken.setUsedAt(now));
-        passwordResetTokenRepository.saveAll(activeTokens);
+        Objects.requireNonNull(
+                passwordResetTokenRepository.saveAll(activeTokens),
+                "revoked password reset tokens must not be null"
+        );
     }
 
     private void validateResetPasswordRequest(ResetPasswordRequest request) {

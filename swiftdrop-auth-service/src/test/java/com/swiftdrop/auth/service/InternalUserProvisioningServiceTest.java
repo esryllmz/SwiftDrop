@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -72,10 +73,7 @@ class InternalUserProvisioningServiceTest {
         when(userRepository.findByEmailIgnoreCase("merchant.demo@swiftdrop.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temporary-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            final User user = Objects.requireNonNull(
-                    invocation.getArgument(0, User.class),
-                    "saved user must not be null"
-            );
+            final User user = requiredArgument(invocation, 0, User.class);
             user.setId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
             return user;
         });
@@ -150,5 +148,12 @@ class InternalUserProvisioningServiceTest {
 
     private static Optional<User> optionalUser(User user) {
         return Optional.of(Objects.requireNonNull(user, "user must not be null"));
+    }
+
+    private static <T> T requiredArgument(InvocationOnMock invocation, int index, Class<T> type) {
+        return Objects.requireNonNull(
+                invocation.getArgument(index, type),
+                "mock invocation argument must not be null"
+        );
     }
 }
