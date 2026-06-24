@@ -3,11 +3,11 @@ param(
     [string]$AdminEmail = "admin@swiftdrop.com",
     [Parameter(Mandatory = $true)]
     [SecureString]$AdminPassword,
-    [string]$CustomerEmail = "customer.demo@swiftdrop.com",
+    [string]$CustomerEmail = "elif.kaya@swiftdrop.demo",
     [Parameter(Mandatory = $true)]
     [SecureString]$CustomerPassword,
-    [string]$MerchantEmail = "merchant.demo@swiftdrop.com",
-    [string]$CourierEmail = "courier.demo@swiftdrop.com",
+    [string]$MerchantEmail = "kadikoy.burger@swiftdrop.demo",
+    [string]$CourierEmail = "ahmet.yilmaz@swiftdrop.demo",
     [Parameter(Mandatory = $true)]
     [SecureString]$NewMerchantPassword,
     [Parameter(Mandatory = $true)]
@@ -44,11 +44,12 @@ function Invoke-Json {
         Method = $Method
         Uri = "$BaseUrl$Path"
         Headers = $headers
-        ContentType = "application/json"
+        ContentType = "application/json; charset=utf-8"
     }
 
     if ($null -ne $Body) {
-        $params.Body = ($Body | ConvertTo-Json -Depth 8)
+        $jsonBody = $Body | ConvertTo-Json -Depth 8
+        $params.Body = [Text.Encoding]::UTF8.GetBytes($jsonBody)
     }
 
     Invoke-RestMethod @params
@@ -95,6 +96,11 @@ function Set-DemoAccountPassword {
 
 Write-Host "Seeding SwiftDrop local demo flow through API at $BaseUrl"
 
+$merchantBusinessName = '"Kad\u0131k\u00f6y Burger"' | ConvertFrom-Json
+$merchantMessage = '"Kad\u0131k\u00f6y b\u00f6lgesinde paket servis i\u00e7in SwiftDrop a\u011f\u0131na kat\u0131lmak istiyoruz."' | ConvertFrom-Json
+$courierFullName = '"Ahmet Y\u0131lmaz"' | ConvertFrom-Json
+$courierMessage = '"Kad\u0131k\u00f6y ve \u00e7evresinde motosikletli kurye olarak \u00e7al\u0131\u015fmak istiyorum."' | ConvertFrom-Json
+
 $customerPlainText = ConvertFrom-SecurePassword -SecurePassword $CustomerPassword
 try {
     Invoke-Json -Method "POST" -Path "/api/v1/auth/register" -Body @{
@@ -107,16 +113,16 @@ finally {
 }
 
 $merchantApplication = Invoke-Json -Method "POST" -Path "/api/v1/applications/merchant" -Body @{
-    businessName = "Kadikoy Burger"
+    businessName = $merchantBusinessName
     contactEmail = $MerchantEmail
-    message = "Local demo merchant application"
+    message = $merchantMessage
 }
 
 $courierApplication = Invoke-Json -Method "POST" -Path "/api/v1/applications/courier" -Body @{
-    fullName = "Ahmet Yilmaz"
+    fullName = $courierFullName
     contactEmail = $CourierEmail
     vehicleType = "MOTORBIKE"
-    message = "Local demo courier application"
+    message = $courierMessage
 }
 
 $admin = Connect-DemoAccount -Email $AdminEmail -Password $AdminPassword
@@ -169,8 +175,14 @@ if (-not $merchantOption) {
 
 $order = Invoke-Json -Method "POST" -Path "/api/v1/customer/orders" -AccessToken $customerToken -Body @{
     merchantId = [string]$merchantOption.id
-    totalAmount = 42.50
+    totalAmount = 485.50
 }
+
+Invoke-Json -Method "POST" -Path "/api/v1/drivers/location" -AccessToken $adminToken -Body @{
+    driverId = $courierProfile.driverId
+    latitude = 40.99
+    longitude = 29.03
+} | Out-Null
 
 Invoke-Json -Method "POST" -Path "/api/v1/merchant/orders/$($order.id)/preparing" -AccessToken $merchantToken | Out-Null
 Invoke-Json -Method "POST" -Path "/api/v1/merchant/orders/$($order.id)/ready-for-pickup" -AccessToken $merchantToken | Out-Null
