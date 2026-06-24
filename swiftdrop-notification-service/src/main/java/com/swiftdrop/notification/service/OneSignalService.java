@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+import com.swiftdrop.notification.config.properties.OneSignalProperties;
 import com.swiftdrop.notification.dto.OrderKafkaEvent;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +25,18 @@ public class OneSignalService {
 
     public OneSignalService(
             RestClient.Builder restClientBuilder,
-            @Value("${application.onesignal.app-id}") String appId,
-            @Value("${application.onesignal.api-key}") String apiKey,
-            @Value("${application.onesignal.mock-enabled}") boolean mockEnabled
+            OneSignalProperties oneSignalProperties
     ) {
         this.restClient = Objects.requireNonNull(restClientBuilder, "restClientBuilder must not be null")
                 .baseUrl("https://onesignal.com/api/v1")
                 .build();
-        this.appId = appId;
-        this.apiKey = apiKey;
-        this.mockEnabled = mockEnabled;
+        OneSignalProperties properties = Objects.requireNonNull(
+                oneSignalProperties,
+                "OneSignal properties must not be null"
+        );
+        this.appId = properties.appId();
+        this.apiKey = properties.apiKey();
+        this.mockEnabled = properties.mockEnabled();
     }
 
     public void sendWebPushNotification(OrderKafkaEvent event) {

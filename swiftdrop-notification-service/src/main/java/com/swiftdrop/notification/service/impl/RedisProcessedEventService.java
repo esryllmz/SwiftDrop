@@ -3,10 +3,10 @@ package com.swiftdrop.notification.service.impl;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.swiftdrop.notification.config.properties.IdempotencyProperties;
 import com.swiftdrop.notification.dto.OrderKafkaEvent;
 import com.swiftdrop.notification.service.ProcessedEventService;
 
@@ -21,17 +21,17 @@ public class RedisProcessedEventService implements ProcessedEventService {
 
     public RedisProcessedEventService(
             StringRedisTemplate redisTemplate,
-            @Value("${application.notification.processed-event-ttl-hours:24}") long ttlHours
+            IdempotencyProperties idempotencyProperties
     ) {
         this.redisTemplate = Objects.requireNonNull(redisTemplate, "redisTemplate must not be null");
-        if (ttlHours <= 0) {
-            throw new IllegalArgumentException("processed event ttl hours must be positive");
-        }
-        final Duration processedEventTtl = Objects.requireNonNull(
-                Duration.ofHours(ttlHours),
+        final IdempotencyProperties properties = Objects.requireNonNull(
+                idempotencyProperties,
+                "idempotency properties must not be null"
+        );
+        this.ttl = Objects.requireNonNull(
+                properties.processedEventTtl(),
                 "processed event ttl must not be null"
         );
-        this.ttl = Objects.requireNonNull(processedEventTtl, "processed event ttl must not be null");
     }
 
     @Override

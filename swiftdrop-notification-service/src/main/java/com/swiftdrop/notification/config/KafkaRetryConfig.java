@@ -3,7 +3,6 @@ package com.swiftdrop.notification.config;
 import java.util.Objects;
 
 import org.apache.kafka.common.TopicPartition;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -13,6 +12,8 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
+
+import com.swiftdrop.notification.config.properties.KafkaRetryProperties;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,15 +25,14 @@ public class KafkaRetryConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
             ConsumerFactory<String, Object> consumerFactory,
             KafkaTemplate<String, Object> kafkaTemplate,
-            @Value("${application.kafka.retry.max-attempts:3}") int maxAttempts,
-            @Value("${application.kafka.retry.backoff-ms:1000}") long backoffMs
+            KafkaRetryProperties retryProperties
     ) {
         ConsumerFactory<String, Object> typedConsumerFactory = Objects.requireNonNull(
                 consumerFactory,
                 "consumerFactory must not be null"
         );
         CommonErrorHandler errorHandler = Objects.requireNonNull(
-                defaultErrorHandler(kafkaTemplate, maxAttempts, backoffMs),
+                defaultErrorHandler(kafkaTemplate, retryProperties),
                 "Kafka error handler must not be null"
         );
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
@@ -44,10 +44,13 @@ public class KafkaRetryConfig {
 
     private CommonErrorHandler defaultErrorHandler(
             KafkaTemplate<String, Object> kafkaTemplate,
-            int maxAttempts,
-            long backoffMs
+            KafkaRetryProperties retryProperties
     ) {
         KafkaTemplate<String, Object> template = Objects.requireNonNull(kafkaTemplate, "kafkaTemplate must not be null");
+        KafkaRetryProperties properties = Objects.requireNonNull(
+                retryProperties,
+                "Kafka retry properties must not be null"
+        );
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
                 template,
                 (record, ex) -> {
@@ -64,8 +67,8 @@ public class KafkaRetryConfig {
                     return new TopicPartition(dltTopic, record.partition());
                 }
         );
-        long retryAttempts = Math.max(maxAttempts - 1L, 0L);
-        FixedBackOff backOff = new FixedBackOff(backoffMs, retryAttempts);
+        long retryAttempts = Math.max(properties.maxAttempts() - 1L, 0L);
+        FixedBackOff backOff = new FixedBackOff(properties.backoff().toMillis(), retryAttempts);
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
         return Objects.requireNonNull(errorHandler, "default Kafka error handler must not be null");
     }

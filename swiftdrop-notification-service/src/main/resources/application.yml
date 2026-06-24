@@ -31,17 +31,17 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.swiftdrop.logistics.dto,com.swiftdrop.notification.dto"
-        spring.json.value.default.type: "com.swiftdrop.notification.dto.OrderKafkaEvent"
-        spring.json.use.type.headers: false
+        "[spring.json.trusted.packages]": "com.swiftdrop.logistics.dto,com.swiftdrop.notification.dto"
+        "[spring.json.value.default.type]": "com.swiftdrop.notification.dto.OrderKafkaEvent"
+        "[spring.json.use.type.headers]": false
 
 application:
-  notification:
-    processed-event-ttl-hours: ${PROCESSED_EVENT_TTL_HOURS:24}
+  idempotency:
+    processed-event-ttl: ${PROCESSED_EVENT_TTL_HOURS:24}
   kafka:
     retry:
       max-attempts: ${KAFKA_RETRY_MAX_ATTEMPTS:3}
-      backoff-ms: ${KAFKA_RETRY_BACKOFF_MS:1000}
+      backoff: ${KAFKA_RETRY_BACKOFF_MS:1000}
   onesignal:
     app-id: ${ONESIGNAL_APP_ID:}
     api-key: ${ONESIGNAL_API_KEY:}
