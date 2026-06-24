@@ -62,6 +62,9 @@ class AuthServiceImplTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private AuthServiceImpl service;
 
     @BeforeEach
@@ -73,9 +76,9 @@ class AuthServiceImplTest {
                 passwordEncoder,
                 jwtService,
                 new UserMapper(),
+                eventPublisher,
                 604800000L,
-                15L,
-                true
+                15L
         );
     }
 
@@ -277,7 +280,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void forgotPasswordExistingCustomerReturnsGenericResponseWithDevToken() {
+    void forgotPasswordExistingCustomerReturnsGenericResponse() {
         User customer = User.builder()
                 .id(USER_ID)
                 .email("customer@swiftdrop.com")
@@ -298,26 +301,27 @@ class AuthServiceImplTest {
         assertThat(response.message()).isEqualTo(
                 "If an account exists for this portal, password reset instructions will be sent."
         );
-        assertThat(response.devResetToken()).isNotBlank();
-        assertThat(response.expiresAt()).isNotNull();
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+        verify(eventPublisher).publishEvent(any());
     }
 
     @Test
-    void forgotPasswordUnknownEmailReturnsGenericResponseWithoutToken() {
+    void forgotPasswordUnknownEmailReturnsGenericResponse() {
         when(userRepository.findByEmailIgnoreCase("missing@swiftdrop.com")).thenReturn(Optional.empty());
 
         ForgotPasswordResponse response = service.forgotPassword(
                 new ForgotPasswordRequest("missing@swiftdrop.com", "CUSTOMER")
         );
 
-        assertThat(response.devResetToken()).isNull();
-        assertThat(response.expiresAt()).isNull();
+        assertThat(response.message()).isEqualTo(
+                "If an account exists for this portal, password reset instructions will be sent."
+        );
         verify(passwordResetTokenRepository, never()).save(any(PasswordResetToken.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void forgotPasswordRoleMismatchReturnsGenericResponseWithoutToken() {
+    void forgotPasswordRoleMismatchReturnsGenericResponse() {
         User driver = provisionedDriver("encoded-password");
         when(userRepository.findByEmailIgnoreCase("driver@swiftdrop.com")).thenReturn(Optional.of(driver));
 
@@ -325,8 +329,11 @@ class AuthServiceImplTest {
                 new ForgotPasswordRequest("driver@swiftdrop.com", "MERCHANT")
         );
 
-        assertThat(response.devResetToken()).isNull();
+        assertThat(response.message()).isEqualTo(
+                "If an account exists for this portal, password reset instructions will be sent."
+        );
         verify(passwordResetTokenRepository, never()).save(any(PasswordResetToken.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test

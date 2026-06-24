@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type React from "react";
-import { FormEvent, Suspense, useMemo, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
 import { forgotPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
@@ -36,25 +36,18 @@ function ForgotPasswordContent() {
   const config = portalLabels[portal];
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [devToken, setDevToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const resetHref = useMemo(
-    () => devToken ? `/reset-password?portal=${portal}&token=${encodeURIComponent(devToken)}` : "",
-    [devToken, portal],
-  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setMessage(null);
-    setDevToken(null);
     setLoading(true);
     try {
       const response = await forgotPassword(normalizeEmail(email), config.apiValue);
       const nextMessage = response.message || GENERIC_RESET_MESSAGE;
       setMessage(nextMessage);
-      setDevToken(response.devResetToken ?? null);
       showInfoToast(nextMessage);
     } catch (err) {
       const nextError = normalizePasswordRecoveryError(err);
@@ -70,13 +63,8 @@ function ForgotPasswordContent() {
       <Card>
         <h1 className="text-2xl font-semibold text-slate-950">{config.title}</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Enter your account email. If it exists for this portal, reset instructions will be created.
+          Password reset links are only sent to verified and active accounts.
         </p>
-        {portal === "merchant" || portal === "courier" ? (
-          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-            Only approved accounts can reset their password. If your application is still pending, please wait for approval.
-          </p>
-        ) : null}
         <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
           <Field
             label="Email"
@@ -91,15 +79,6 @@ function ForgotPasswordContent() {
         {message ? (
           <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
             {message}
-          </div>
-        ) : null}
-        {devToken ? (
-          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3">
-            <div className="text-xs font-semibold uppercase text-blue-700">Development reset token</div>
-            <div className="mt-2 break-all font-mono text-xs text-slate-800">{devToken}</div>
-            <Link href={resetHref} className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:text-blue-800">
-              Continue to reset password
-            </Link>
           </div>
         ) : null}
         {error ? <div className="mt-4"><ErrorState message={error} /></div> : null}

@@ -76,6 +76,16 @@ services:
     networks:
       - swiftdrop-network
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: swiftdrop-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+    networks:
+      - swiftdrop-network
+
   swiftdrop-auth-service:
     build: ./swiftdrop-auth-service
     container_name: swiftdrop-auth-service
@@ -94,6 +104,15 @@ services:
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@swiftdrop.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      PASSWORD_RESET_EMAIL_PROVIDER: ${PASSWORD_RESET_EMAIL_PROVIDER:-smtp}
+      PASSWORD_RESET_FROM_ADDRESS: ${PASSWORD_RESET_FROM_ADDRESS:-no-reply@swiftdrop.local}
+      PASSWORD_RESET_FROM_NAME: ${PASSWORD_RESET_FROM_NAME:-SwiftDrop}
     depends_on:
       postgres:
         condition: service_healthy

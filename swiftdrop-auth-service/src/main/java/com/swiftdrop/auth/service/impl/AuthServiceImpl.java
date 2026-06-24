@@ -13,9 +13,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.swiftdrop.auth.dto.AuthResult;
 import com.swiftdrop.auth.dto.AuthResponse;
@@ -34,6 +37,7 @@ import com.swiftdrop.auth.entity.PasswordResetToken;
 import com.swiftdrop.auth.entity.RefreshToken;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
+import com.swiftdrop.auth.event.PasswordResetTokenCreatedEvent;
 import com.swiftdrop.auth.exception.AuthenticationFailedException;
 import com.swiftdrop.auth.exception.DuplicateResourceException;
 import com.swiftdrop.auth.exception.InvalidRefreshTokenException;
@@ -57,9 +61,9 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
     private final long refreshTokenExpiration;
     private final long passwordResetTokenTtlMinutes;
-    private final boolean exposePasswordResetTokenInResponse;
     private final SecureRandom secureRandom;
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int RESET_TOKEN_BYTES = 32;
@@ -75,9 +79,9 @@ public class AuthServiceImpl implements AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             UserMapper userMapper,
+            ApplicationEventPublisher eventPublisher,
             @Value("${application.security.jwt.refresh-token.expiration}") long refreshTokenExpiration,
-            @Value("${application.password-reset.token-ttl-minutes}") long passwordResetTokenTtlMinutes,
-            @Value("${application.password-reset.expose-token-in-response}") boolean exposePasswordResetTokenInResponse
+            @Value("${application.password-reset.token-ttl-minutes}") long passwordResetTokenTtlMinutes
     ) {
         this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
         this.refreshTokenRepository = Objects.requireNonNull(refreshTokenRepository, "refreshTokenRepository must not be null");
@@ -88,9 +92,9 @@ public class AuthServiceImpl implements AuthService {
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder must not be null");
         this.jwtService = Objects.requireNonNull(jwtService, "jwtService must not be null");
         this.userMapper = Objects.requireNonNull(userMapper, "userMapper must not be null");
+        this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher must not be null");
         this.refreshTokenExpiration = refreshTokenExpiration;
         this.passwordResetTokenTtlMinutes = passwordResetTokenTtlMinutes;
-        this.exposePasswordResetTokenInResponse = exposePasswordResetTokenInResponse;
         this.secureRandom = new SecureRandom();
     }
 
@@ -243,15 +247,18 @@ public class AuthServiceImpl implements AuthService {
                 request,
                 "forgot password request must not be null"
         );
-        final Role requestedRole = resolvePortalRole(forgotPasswordRequest.portal());
+        final String portal = forgotPasswordRequest.portal();
+        final Role requestedRole = resolvePortalRole(portal);
         final String email = requireValidEmail(forgotPasswordRequest.email());
         final Instant expiresAt = Instant.now().plusSeconds(passwordResetTokenTtlMinutes * 60);
 
-        return userRepository.findByEmailIgnoreCase(email)
+        userRepository.findByEmailIgnoreCase(email)
                 .filter(User::isEnabled)
                 .filter(user -> user.getRole() == requestedRole)
-                .map(user -> createPasswordResetResponse(user, expiresAt))
-                .orElseGet(() -> new ForgotPasswordResponse(FORGOT_PASSWORD_MESSAGE, null, null));
+                .ifPresent(user -> createPasswordResetResponse(user, expiresAt, portal));
+
+        // Always return the same generic message regardless of whether account exists
+        return new ForgotPasswordResponse(FORGOT_PASSWORD_MESSAGE);
     }
 
     @Override
@@ -399,7 +406,7 @@ public class AuthServiceImpl implements AuthService {
         return hasUppercase && hasLowercase && hasDigit;
     }
 
-    private ForgotPasswordResponse createPasswordResetResponse(User user, Instant expiresAt) {
+    private ForgotPasswordResponse createPasswordResetResponse(User user, Instant expiresAt, String portal) {
         revokeUnusedPasswordResetTokens(user);
         final String rawToken = generateRawResetToken();
         final PasswordResetToken resetToken = PasswordResetToken.builder()
@@ -412,11 +419,19 @@ public class AuthServiceImpl implements AuthService {
                 "saved password reset token must not be null"
         );
 
-        return new ForgotPasswordResponse(
-                FORGOT_PASSWORD_MESSAGE,
-                exposePasswordResetTokenInResponse ? rawToken : null,
-                expiresAt
-        );
+        // Publish event for email sending after transaction commit
+        String requestId = UUID.randomUUID().toString();
+        eventPublisher.publishEvent(new PasswordResetTokenCreatedEvent(
+                this,
+                user.getEmail(),
+                rawToken,
+                expiresAt,
+                portal,
+                requestId
+        ));
+
+        // Always return the same generic response to prevent account enumeration
+        return new ForgotPasswordResponse(FORGOT_PASSWORD_MESSAGE);
     }
 
     private void revokeUnusedPasswordResetTokens(User user) {

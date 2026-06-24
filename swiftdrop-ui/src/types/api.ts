@@ -34,8 +34,6 @@ export type ChangePasswordResponse = AuthResponse & {
 
 export type ForgotPasswordResponse = {
   message: string;
-  devResetToken?: string | null;
-  expiresAt?: string | null;
 };
 
 export type ResetPasswordResponse = {
