@@ -6,33 +6,35 @@ spring:
     name: swiftdrop-gateway
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          "[/**]":
-            allowedOrigins: "${FRONTEND_ORIGIN:http://localhost:3001}"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-      routes:
-        - id: auth-service
-          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
-          predicates:
-            - Path=/api/v1/auth/**,/api/v1/health
-        - id: auth-health-alias
-          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
-          predicates:
-            - Path=/api/health
-          filters:
-            - SetPath=/api/v1/health
-        - id: logistics-service
-          uri: ${LOGISTICS_SERVICE_URI:http://localhost:8082}
-          predicates:
-            - Path=/api/v1/logistics/**,/api/v1/orders/**,/api/v1/drivers/**,/api/v1/merchants/**,/api/v1/dashboard/**,/api/v1/outbox-events/**,/api/v1/applications/**,/api/v1/admin/applications/**,/api/v1/customer/**,/api/v1/merchant/**,/api/v1/courier/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              "[/**]":
+                allowedOrigins: "${FRONTEND_ORIGIN:http://localhost:3001}"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+          routes:
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/health
+            - id: auth-health-alias
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/health
+              filters:
+                - SetPath=/api/v1/health
+            - id: logistics-service
+              uri: ${LOGISTICS_SERVICE_URI:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/logistics/**,/api/v1/orders/**,/api/v1/drivers/**,/api/v1/merchants/**,/api/v1/dashboard/**,/api/v1/outbox-events/**,/api/v1/applications/**,/api/v1/admin/applications/**,/api/v1/customer/**,/api/v1/merchant/**,/api/v1/courier/**
 
 management:
   endpoints:

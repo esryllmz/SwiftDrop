@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.6</version>
+        <version>3.5.15</version>
         <relativePath/>
     </parent>
 
@@ -19,14 +19,14 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
         <jjwt.version>0.12.5</jjwt.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
+            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

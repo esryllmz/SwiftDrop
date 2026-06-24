@@ -13,9 +13,9 @@ import com.swiftdrop.logistics.dto.EventEnvelope;
 import com.swiftdrop.logistics.dto.OrderKafkaEvent;
 import com.swiftdrop.logistics.entity.OutboxEvent;
 import com.swiftdrop.logistics.entity.OutboxStatus;
-import com.swiftdrop.logistics.repository.OutboxEventRepository;
 import com.swiftdrop.logistics.service.OutboxService;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -26,7 +26,7 @@ public class OutboxServiceImpl implements OutboxService {
     private static final String ORDER_AGGREGATE_TYPE = "ORDER";
     private static final int EVENT_VERSION = 1;
 
-    private final OutboxEventRepository outboxEventRepository;
+    private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -61,8 +61,8 @@ public class OutboxServiceImpl implements OutboxService {
                 .correlationId(correlationId)
                 .version(EVENT_VERSION)
                 .build();
-        OutboxEvent eventToSave = Objects.requireNonNull(outboxEvent, "outbox event must not be null");
-        Objects.requireNonNull(outboxEventRepository.save(eventToSave), "saved outbox event must not be null");
+        OutboxEvent eventToPersist = Objects.requireNonNull(outboxEvent, "outbox event must not be null");
+        entityManager.persist(eventToPersist);
     }
 
     private String serialize(EventEnvelope envelope) {
