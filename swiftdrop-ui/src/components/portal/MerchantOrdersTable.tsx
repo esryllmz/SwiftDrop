@@ -68,5 +68,11 @@ function MerchantOrderAction({
     );
   }
 
-  return <span className="text-xs text-slate-400">No action</span>;
+  return (
+    <span className="text-xs text-slate-400">
+      {order.status === "READY_FOR_PICKUP"
+        ? "Waiting for courier pickup"
+        : "No action is available for this status"}
+    </span>
+  );
 }

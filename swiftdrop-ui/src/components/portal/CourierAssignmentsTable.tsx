@@ -68,5 +68,5 @@ function CourierAssignmentAction({
     );
   }
 
-  return <span className="text-xs text-slate-400">No action</span>;
+  return <span className="text-xs text-slate-400">No action is available for this status</span>;
 }

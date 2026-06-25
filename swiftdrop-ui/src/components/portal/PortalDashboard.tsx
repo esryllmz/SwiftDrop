@@ -1,6 +1,7 @@
 import type React from "react";
 import { EmptyState, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatDisplayId, formatMoney } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import type { OrderResponse } from "@/types/api";
 
 export function PortalMetricCard({
@@ -109,7 +110,7 @@ function renderOrderCell(order: OrderResponse, column: string) {
     return order.driverName ?? <span className="text-slate-400">Unassigned</span>;
   }
   if (column === "status") {
-    return <StatusBadge status={order.status} />;
+    return <StatusBadge status={order.status} label={formatOrderStatus(order.status)} />;
   }
   if (column === "amount") {
     return formatMoney(Number(order.totalAmount));
@@ -125,7 +126,7 @@ function columnLabel(column: string) {
     order: "Order",
     customer: "Customer",
     merchant: "Merchant",
-    driver: "Driver",
+    driver: "Courier",
     status: "Status",
     amount: "Amount",
     created: "Created At",

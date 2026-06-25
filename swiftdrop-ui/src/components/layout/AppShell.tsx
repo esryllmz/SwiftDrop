@@ -15,6 +15,7 @@ import {
   resolvePortalRouteRole,
   resolveRoleRedirect,
 } from "@/lib/routes";
+import { formatStatusLabel } from "@/lib/format";
 
 const ADMIN_NAV_ITEMS: ShellNavItemConfig[] = [
   {
@@ -29,7 +30,7 @@ const ADMIN_NAV_ITEMS: ShellNavItemConfig[] = [
   },
   {
     href: "/drivers",
-    label: "Drivers",
+    label: "Couriers",
     marker: <DriversIcon />,
   },
   {
@@ -128,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AccessDenied
           email={user.email}
           role={user.role}
-          message={`This portal requires ${portalRouteRole} access.`}
+          message={`This portal requires ${formatStatusLabel(portalRouteRole)} access.`}
           actionHref={resolveRoleRedirect(user.role)}
           actionLabel="Go to your portal"
           onLogout={() => {

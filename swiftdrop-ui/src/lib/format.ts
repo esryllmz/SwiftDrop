@@ -77,15 +77,11 @@ export function statusBadgeClass(status?: string) {
     return "border-blue-200 bg-blue-50 text-blue-700";
   }
 
-  if (["PENDING", "PREPARING"].includes(normalized)) {
+  if (["PENDING", "PREPARING", "DEGRADED", "UNKNOWN"].includes(normalized)) {
     return "border-yellow-200 bg-yellow-50 text-yellow-700";
   }
 
   if (normalized === "READY_FOR_PICKUP") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (normalized === "UNKNOWN") {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
@@ -109,9 +105,23 @@ export function statusBadgeClass(status?: string) {
 }
 
 export function formatStatusLabel(status?: string) {
+  if (isOrderStatus(status)) {
+    return formatOrderStatus(status);
+  }
+
+  if (["UP", "DOWN", "DEGRADED", "UNKNOWN"].includes(status?.toUpperCase() ?? "UNKNOWN")) {
+    return formatHealthStatus(status);
+  }
+
+  if (status?.toUpperCase() === "DRIVER") {
+    return "Courier";
+  }
+
   return (status || "UNKNOWN")
     .toLowerCase()
     .split("_")
     .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
     .join(" ");
 }
+import { formatOrderStatus, isOrderStatus } from "@/lib/order-status";
+import { formatHealthStatus } from "@/lib/system-monitoring";

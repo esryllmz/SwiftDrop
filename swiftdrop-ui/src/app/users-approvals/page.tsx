@@ -34,7 +34,7 @@ import {
   rejectCourierApplication,
   rejectMerchantApplication,
 } from "@/lib/adminApplications";
-import { formatDateTime, formatDisplayId, maskTechnicalId } from "@/lib/format";
+import { formatDateTime, formatDisplayId, formatStatusLabel, maskTechnicalId } from "@/lib/format";
 import type {
   CourierApplicationResponse,
   MerchantApplicationResponse,
@@ -290,7 +290,7 @@ export default function UsersApprovalsPage() {
                       : ""
                   }
                 >
-                  {status}
+                  {status === "All" ? "All applications" : formatStatusLabel(status)}
                 </SecondaryButton>
               ))}
             </div>
@@ -661,7 +661,7 @@ function ApprovalSuccessModal({
             <ModalSection title="Provisioned account">
               <DetailGrid>
                 <DetailField label="Email" value={account.email} />
-                <DetailField label="Role" value={account.role} />
+                <DetailField label="Role" value={formatStatusLabel(account.role)} />
                 <DetailField label="Created" value={account.created ? "Yes" : "No"} />
               </DetailGrid>
               <AdvancedDetails title="Advanced details">

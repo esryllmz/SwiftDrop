@@ -11,6 +11,7 @@ import {
   submitMerchantApplication,
 } from "@/lib/applications";
 import { normalizeEmail } from "@/lib/normalize";
+import { formatStatusLabel } from "@/lib/format";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type ModalKind = "merchant" | "courier";
@@ -171,7 +172,7 @@ export function PublicApplicationModal({ kind, onClose }: PublicApplicationModal
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-950">{result.message}</p>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${theme.badge}`}>
-                  {result.status}
+                  {formatStatusLabel(result.status)}
                 </span>
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-600">

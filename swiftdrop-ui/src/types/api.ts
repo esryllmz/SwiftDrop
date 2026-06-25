@@ -7,7 +7,8 @@ export type OrderStatus =
   | "READY_FOR_PICKUP"
   | "PICKED_UP"
   | "ON_THE_WAY"
-  | "DELIVERED";
+  | "DELIVERED"
+  | "CANCELLED";
 
 export type DriverStatus = "AVAILABLE" | "BUSY" | "OFFLINE";
 

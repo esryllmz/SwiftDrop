@@ -94,12 +94,12 @@ export function Field({
   );
 }
 
-export function StatusBadge({ status }: { status?: string }) {
+export function StatusBadge({ status, label }: { status?: string; label?: string }) {
   return (
     <span
       className={`inline-flex rounded-lg border px-2 py-1 text-xs font-medium ${statusBadgeClass(status)}`}
     >
-      {formatStatusLabel(status)}
+      {label ?? formatStatusLabel(status)}
     </span>
   );
 }

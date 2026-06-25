@@ -21,6 +21,8 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDisplayId, formatMoney } from "@/lib/format";
+import { normalizeSystemMonitoringResponse, type ServiceHealth } from "@/lib/system-monitoring";
+import { formatOrderStatus } from "@/lib/order-status";
 import type {
   DashboardSummaryResponse,
   MerchantResponse,
@@ -36,13 +38,6 @@ type MetricDefinition = {
   hint: string;
   tone: Tone;
   icon: string;
-};
-
-type HealthProxyResponse = {
-  services: Array<{
-    name: string;
-    status: string;
-  }>;
 };
 
 const fallbackCustomerId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -65,7 +60,7 @@ const operationMetrics: MetricDefinition[] = [
   },
   {
     key: "assignedOrders",
-    label: "Driver Assigned",
+    label: "Courier Assigned",
     hint: "Courier in flow",
     tone: "violet",
     icon: "D",
@@ -79,21 +74,21 @@ const operationMetrics: MetricDefinition[] = [
   },
   {
     key: "availableDrivers",
-    label: "Available Drivers",
+    label: "Available Couriers",
     hint: "Ready for assignment",
     tone: "green",
     icon: "A",
   },
   {
     key: "busyDrivers",
-    label: "Busy Drivers",
+    label: "Busy Couriers",
     hint: "Currently assigned",
     tone: "violet",
     icon: "B",
   },
   {
     key: "offlineDrivers",
-    label: "Offline Drivers",
+    label: "Offline Couriers",
     hint: "Not available",
     tone: "slate",
     icon: "F",
@@ -136,7 +131,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [outboxEvents, setOutboxEvents] = useState<OutboxEventResponse[]>([]);
-  const [health, setHealth] = useState<HealthProxyResponse | null>(null);
+  const [health, setHealth] = useState<ServiceHealth[] | null>(null);
   const [firstMerchantId, setFirstMerchantId] = useState<string | null>(null);
   const [lastDemoOrder, setLastDemoOrder] = useState<OrderResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -204,7 +199,8 @@ export default function DashboardPage() {
     setHealthLoading(true);
     setHealthError(null);
     try {
-      setHealth(await getJson<HealthProxyResponse>("/api/health"));
+      const raw = await getJson<unknown>("/api/health");
+      setHealth(normalizeSystemMonitoringResponse(raw).services);
     } catch (err) {
       setHealthError(err instanceof Error ? err.message : "Health request failed");
     } finally {
@@ -401,7 +397,7 @@ export default function DashboardPage() {
         >
           {healthError ? <InlineError message={healthError} /> : null}
           {healthLoading && !health ? <LoadingState /> : null}
-          {health ? <MiniHealthStrip services={health.services} /> : null}
+          {health ? <MiniHealthStrip services={health} /> : null}
         </DashboardSection>
       </div>
     </div>
@@ -501,7 +497,7 @@ function FlowStep({
 function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
   return (
     <AdminDataTable
-      columns={["Order", "Merchant", "Driver", "Status", "Amount"]}
+      columns={["Order", "Merchant", "Courier", "Status", "Amount"]}
       rows={orders}
       emptyMessage="No recent orders found."
       getRowKey={(order) => order.id}
@@ -510,7 +506,9 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
           <AdminTableCell title={formatDisplayId(order.id, "Order")}><AdminIdChip value={order.id} prefix="Order" /></AdminTableCell>
           <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
           <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
-          <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
+          <AdminTableCell>
+            <AdminStatusBadge status={order.status} label={formatOrderStatus(order.status)} />
+          </AdminTableCell>
           <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
         </>
       )}
@@ -521,7 +519,7 @@ function RecentOrdersTable({ orders }: { orders: OrderResponse[] }) {
 function MiniHealthStrip({
   services,
 }: {
-  services?: HealthProxyResponse["services"] | null;
+  services?: ServiceHealth[] | null;
 }) {
   const safeServices = Array.isArray(services) ? services : [];
 
@@ -587,10 +585,10 @@ function buildFlowSteps(
       completed: hasOrder,
     },
     {
-      label: "Driver Assigned",
+      label: "Courier Assigned",
       detail:
         order?.driverName || order?.status === "DRIVER_ASSIGNED"
-          ? `Assigned to ${order.driverName ?? "driver"}.`
+          ? `Assigned to ${order.driverName ?? "courier"}.`
           : "Assignment is tracked by logistics service.",
       completed: hasOrder,
     },

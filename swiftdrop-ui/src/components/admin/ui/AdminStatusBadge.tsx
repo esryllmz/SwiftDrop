@@ -1,6 +1,6 @@
 import { formatStatusLabel, statusBadgeClass } from "@/lib/format";
 
-export function AdminStatusBadge({ status }: { status?: string }) {
+export function AdminStatusBadge({ status, label }: { status?: string; label?: string }) {
   const normalized = status || "UNKNOWN";
 
   return (
@@ -8,7 +8,7 @@ export function AdminStatusBadge({ status }: { status?: string }) {
       className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-current/10 px-2.5 py-1 text-xs font-medium ${statusBadgeClass(status)}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass(status)}`} />
-      {formatStatusLabel(normalized)}
+      {label ?? formatStatusLabel(normalized)}
     </span>
   );
 }
@@ -22,7 +22,7 @@ function statusDotClass(status?: string) {
   if (["PLACED"].includes(normalized)) {
     return "bg-blue-500";
   }
-  if (["PENDING", "PREPARING", "READY_FOR_PICKUP"].includes(normalized)) {
+  if (["PENDING", "PREPARING", "READY_FOR_PICKUP", "DEGRADED", "UNKNOWN"].includes(normalized)) {
     return "bg-amber-500";
   }
   if (["FAILED", "DOWN", "REJECTED"].includes(normalized)) {

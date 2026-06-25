@@ -33,6 +33,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatDisplayId, formatMoney, maskTechnicalId } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import type { MerchantResponse, OrderResponse } from "@/types/api";
 
 const fallbackCustomerId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -195,7 +196,7 @@ export default function OrdersPage() {
                 <AdminFilterPills
                   items={statuses}
                   selected={selectedStatus}
-                  getLabel={(status) => status === "All" ? "All orders" : status}
+                  getLabel={(status) => status === "All" ? "All orders" : formatOrderStatus(status)}
                   onSelect={setSelectedStatus}
                 />
               </div>
@@ -213,7 +214,7 @@ export default function OrdersPage() {
             ) : null}
             {orders.length > 0 ? (
               <AdminDataTable
-                columns={["Order", "Customer", "Merchant", "Driver", "Status", "Amount", "Created", "Actions"]}
+                columns={["Order", "Customer", "Merchant", "Courier", "Status", "Amount", "Created", "Actions"]}
                 rows={orders}
                 emptyMessage="No orders found."
                 getRowKey={(order) => order.id}
@@ -223,7 +224,9 @@ export default function OrdersPage() {
                     <AdminTableCell>Customer account</AdminTableCell>
                     <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
                     <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
-                    <AdminTableCell><AdminStatusBadge status={order.status} /></AdminTableCell>
+                    <AdminTableCell>
+                      <AdminStatusBadge status={order.status} label={formatOrderStatus(order.status)} />
+                    </AdminTableCell>
                     <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
                     <AdminTableCell>{formatDateTime(order.createdAt)}</AdminTableCell>
                     <AdminTableCell>
@@ -319,10 +322,18 @@ export default function OrdersPage() {
           {selectedOrder ? (
             <>
               <DetailGrid>
-                <DetailField label="Status" value={<AdminStatusBadge status={selectedOrder.status} />} />
+                <DetailField
+                  label="Status"
+                  value={
+                    <AdminStatusBadge
+                      status={selectedOrder.status}
+                      label={formatOrderStatus(selectedOrder.status)}
+                    />
+                  }
+                />
                 <DetailField label="Amount" value={formatMoney(Number(selectedOrder.totalAmount))} />
                 <DetailField label="Merchant" value={selectedOrder.merchantName} />
-                <DetailField label="Driver" value={selectedOrder.driverName ?? "Unassigned"} />
+                <DetailField label="Courier" value={selectedOrder.driverName ?? "Unassigned"} />
                 <DetailField label="Created At" value={formatDateTime(selectedOrder.createdAt)} />
               </DetailGrid>
               <AdvancedDetails title="Advanced details">
