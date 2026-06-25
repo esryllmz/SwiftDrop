@@ -15,7 +15,7 @@ import com.swiftdrop.auth.service.PasswordResetEmailSender;
 @ConditionalOnProperty(
         name = "application.password-reset.email.provider",
         havingValue = "none",
-        matchIfMissing = false
+        matchIfMissing = true
 )
 public class NoOpPasswordResetEmailSender implements PasswordResetEmailSender {
 
@@ -28,6 +28,6 @@ public class NoOpPasswordResetEmailSender implements PasswordResetEmailSender {
             Instant expiresAt,
             String requestId
     ) {
-        LOG.info("Email sending disabled - skipping password reset email [requestId={}]", requestId);
+        LOG.info("Password reset email delivery is disabled [requestId={}]", requestId);
     }
 }

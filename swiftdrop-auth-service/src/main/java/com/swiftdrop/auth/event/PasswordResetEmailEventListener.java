@@ -3,10 +3,10 @@ package com.swiftdrop.auth.event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import com.swiftdrop.auth.service.PasswordResetEmailSender;
 
 /**
@@ -30,7 +30,7 @@ public class PasswordResetEmailEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePasswordResetTokenCreated(PasswordResetTokenCreatedEvent event) {
         try {
             String resetUrl = String.format(
@@ -47,10 +47,13 @@ public class PasswordResetEmailEventListener {
                     event.getRequestId()
             );
             
-            LOG.debug("Password reset email sent successfully for request [requestId={}]", event.getRequestId());
+            LOG.info("Password reset email sent [requestId={}]", event.getRequestId());
         } catch (Exception e) {
-            LOG.error("Failed to send password reset email [requestId={}]", event.getRequestId(), e);
-            // Error is logged but not thrown to prevent breaking the password reset flow
+            LOG.error(
+                    "Password reset email delivery failed [requestId={}, errorType={}]",
+                    event.getRequestId(),
+                    e.getClass().getSimpleName()
+            );
         }
     }
 }

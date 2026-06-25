@@ -56,6 +56,10 @@ application:
       provider: ${PASSWORD_RESET_EMAIL_PROVIDER:smtp}
       from-address: ${PASSWORD_RESET_FROM_ADDRESS:no-reply@swiftdrop.local}
       from-name: ${PASSWORD_RESET_FROM_NAME:SwiftDrop}
+      onesignal:
+        app-id: ${PASSWORD_RESET_ONESIGNAL_APP_ID:}
+        api-key: ${PASSWORD_RESET_ONESIGNAL_API_KEY:}
+        api-url: ${PASSWORD_RESET_ONESIGNAL_API_URL:https://api.onesignal.com/notifications}
   internal:
     api-key: ${INTERNAL_API_KEY:local-internal-api-key}
   provisioning:
