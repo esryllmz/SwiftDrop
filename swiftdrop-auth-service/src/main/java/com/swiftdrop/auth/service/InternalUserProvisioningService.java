@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import com.swiftdrop.auth.dto.ProvisionUserRequest;
 import com.swiftdrop.auth.dto.ProvisionUserResponse;
+import com.swiftdrop.auth.dto.UserOwnershipResponse;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
 import com.swiftdrop.auth.exception.InvalidInternalApiKeyException;
@@ -65,6 +66,15 @@ public class InternalUserProvisioningService {
         }
 
         return createUser(email, requestedRole);
+    }
+
+    @Transactional(readOnly = true)
+    public UserOwnershipResponse findOwnership(String providedApiKey, String email) {
+        validateInternalApiKey(providedApiKey);
+        final String normalizedEmail = requireValidEmail(email);
+        return userRepository.findByEmailIgnoreCase(normalizedEmail)
+                .map(user -> new UserOwnershipResponse(true, user.getRole(), user.isEnabled()))
+                .orElseGet(UserOwnershipResponse::notFound);
     }
 
     private void validateInternalApiKey(String providedApiKey) {

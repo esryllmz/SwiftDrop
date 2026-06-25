@@ -26,8 +26,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             DuplicateApplicationException.class,
+            ApplicationEmailConflictException.class,
             ApplicationAlreadyReviewedException.class,
-            UserProvisioningConflictException.class,
             InvalidOrderTransitionException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
@@ -35,6 +35,18 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserProvisioningConflictException.class)
+    public ResponseEntity<ErrorResponse> handleProvisioningConflict(
+            UserProvisioningConflictException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "The application cannot be approved because the email is already assigned to another account.",
+                request
+        );
     }
 
     @ExceptionHandler(MissingAuthenticationContextException.class)
@@ -96,7 +108,11 @@ public class GlobalExceptionHandler {
             UserProvisioningUnavailableException ex,
             HttpServletRequest request
     ) {
-        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "We could not process the application right now. Please try again later.",
+                request
+        );
     }
 
     @ExceptionHandler(Exception.class)

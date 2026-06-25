@@ -792,7 +792,7 @@ function resolveLoadError(error: unknown) {
 function resolveReviewError(error: unknown) {
   if (error instanceof ApiError) {
     if (error.status === 409) {
-      return "This application has already been reviewed.";
+      return error.message || "The application cannot be approved because the email is already assigned to another account.";
     }
     if ([502, 503, 504].includes(error.status)) {
       return "User provisioning is currently unavailable. The application was not approved.";

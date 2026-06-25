@@ -17,6 +17,7 @@ import com.swiftdrop.logistics.dto.MerchantApplicationResponse;
 import com.swiftdrop.logistics.dto.ProvisionUserResponse;
 import com.swiftdrop.logistics.dto.ProvisionedAccountResponse;
 import com.swiftdrop.logistics.entity.ApplicationStatus;
+import com.swiftdrop.logistics.entity.ApplicationType;
 import com.swiftdrop.logistics.entity.CourierApplication;
 import com.swiftdrop.logistics.entity.Driver;
 import com.swiftdrop.logistics.entity.DriverStatus;
@@ -24,7 +25,6 @@ import com.swiftdrop.logistics.entity.Merchant;
 import com.swiftdrop.logistics.entity.MerchantApplication;
 import com.swiftdrop.logistics.client.AuthProvisioningClient;
 import com.swiftdrop.logistics.exception.ApplicationAlreadyReviewedException;
-import com.swiftdrop.logistics.exception.DuplicateApplicationException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.repository.CourierApplicationRepository;
 import com.swiftdrop.logistics.repository.DriverRepository;
@@ -42,6 +42,7 @@ public class ApplicationService {
     private final AuthProvisioningClient authProvisioningClient;
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
+    private final ApplicationEmailOwnershipService emailOwnershipService;
 
     @Transactional
     public MerchantApplicationResponse createMerchantApplication(MerchantApplicationRequest request) {
@@ -49,8 +50,8 @@ public class ApplicationService {
                 request,
                 "merchant application request must not be null"
         );
-        String contactEmail = normalizeEmail(applicationRequest.contactEmail());
-        validateNoDuplicateMerchantApplication(contactEmail);
+        String contactEmail = emailOwnershipService.normalize(applicationRequest.contactEmail());
+        emailOwnershipService.reserveForSubmission(contactEmail, ApplicationType.MERCHANT);
 
         MerchantApplication application = MerchantApplication.builder()
                 .businessName(applicationRequest.businessName().trim())
@@ -60,8 +61,12 @@ public class ApplicationService {
                 .build();
 
         MerchantApplication savedApplication = Objects.requireNonNull(
-                merchantApplicationRepository.save(application),
+                merchantApplicationRepository.saveAndFlush(application),
                 "saved merchant application must not be null"
+        );
+        emailOwnershipService.bindReservation(
+                contactEmail,
+                Objects.requireNonNull(savedApplication.getId(), "merchant application id must not be null")
         );
         return toMerchantResponse(savedApplication);
     }
@@ -72,8 +77,8 @@ public class ApplicationService {
                 request,
                 "courier application request must not be null"
         );
-        String contactEmail = normalizeEmail(applicationRequest.contactEmail());
-        validateNoDuplicateCourierApplication(contactEmail);
+        String contactEmail = emailOwnershipService.normalize(applicationRequest.contactEmail());
+        emailOwnershipService.reserveForSubmission(contactEmail, ApplicationType.COURIER);
 
         CourierApplication application = CourierApplication.builder()
                 .fullName(applicationRequest.fullName().trim())
@@ -84,8 +89,12 @@ public class ApplicationService {
                 .build();
 
         CourierApplication savedApplication = Objects.requireNonNull(
-                courierApplicationRepository.save(application),
+                courierApplicationRepository.saveAndFlush(application),
                 "saved courier application must not be null"
+        );
+        emailOwnershipService.bindReservation(
+                contactEmail,
+                Objects.requireNonNull(savedApplication.getId(), "courier application id must not be null")
         );
         return toCourierResponse(savedApplication);
     }
@@ -117,6 +126,11 @@ public class ApplicationService {
         MerchantApplication application = merchantApplicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant application not found."));
         ensurePending(application.getStatus());
+        emailOwnershipService.assertApprovalAllowed(
+                application.getContactEmail(),
+                ApplicationType.MERCHANT,
+                application.getId()
+        );
 
         final ProvisionUserResponse provisionedUser = Objects.requireNonNull(
                 authProvisioningClient.provisionUser(
@@ -145,6 +159,7 @@ public class ApplicationService {
                 merchantApplicationRepository.save(application),
                 "approved merchant application must not be null"
         );
+        emailOwnershipService.markApproved(application.getContactEmail());
         return new MerchantApplicationReviewResponse(
                 toMerchantResponse(savedApplication),
                 toProvisionedAccountResponse(provisionedUser)
@@ -161,6 +176,11 @@ public class ApplicationService {
         CourierApplication application = courierApplicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Courier application not found."));
         ensurePending(application.getStatus());
+        emailOwnershipService.assertApprovalAllowed(
+                application.getContactEmail(),
+                ApplicationType.COURIER,
+                application.getId()
+        );
 
         final ProvisionUserResponse provisionedUser = Objects.requireNonNull(
                 authProvisioningClient.provisionUser(
@@ -189,6 +209,7 @@ public class ApplicationService {
                 courierApplicationRepository.save(application),
                 "approved courier application must not be null"
         );
+        emailOwnershipService.markApproved(application.getContactEmail());
         return new CourierApplicationReviewResponse(
                 toCourierResponse(savedApplication),
                 toProvisionedAccountResponse(provisionedUser)
@@ -221,6 +242,9 @@ public class ApplicationService {
                 merchantApplicationRepository.save(application),
                 "reviewed merchant application must not be null"
         );
+        if (status == ApplicationStatus.REJECTED) {
+            emailOwnershipService.release(application.getContactEmail());
+        }
         return toMerchantResponse(savedApplication);
     }
 
@@ -245,25 +269,10 @@ public class ApplicationService {
                 courierApplicationRepository.save(application),
                 "reviewed courier application must not be null"
         );
+        if (status == ApplicationStatus.REJECTED) {
+            emailOwnershipService.release(application.getContactEmail());
+        }
         return toCourierResponse(savedApplication);
-    }
-
-    private void validateNoDuplicateMerchantApplication(String contactEmail) {
-        if (merchantApplicationRepository.existsByContactEmailAndStatus(contactEmail, ApplicationStatus.PENDING)) {
-            throw new DuplicateApplicationException("A pending merchant application already exists for this email.");
-        }
-        if (merchantApplicationRepository.existsByContactEmailAndStatus(contactEmail, ApplicationStatus.APPROVED)) {
-            throw new DuplicateApplicationException("An approved merchant application already exists for this email.");
-        }
-    }
-
-    private void validateNoDuplicateCourierApplication(String contactEmail) {
-        if (courierApplicationRepository.existsByContactEmailAndStatus(contactEmail, ApplicationStatus.PENDING)) {
-            throw new DuplicateApplicationException("A pending courier application already exists for this email.");
-        }
-        if (courierApplicationRepository.existsByContactEmailAndStatus(contactEmail, ApplicationStatus.APPROVED)) {
-            throw new DuplicateApplicationException("An approved courier application already exists for this email.");
-        }
     }
 
     private void ensurePending(ApplicationStatus status) {
@@ -348,10 +357,6 @@ public class ApplicationService {
                 provisionedUser.created(),
                 provisionedUser.temporaryPassword()
         );
-    }
-
-    private String normalizeEmail(String email) {
-        return Objects.requireNonNull(email, "contact email must not be null").trim().toLowerCase();
     }
 
     private String trimToNull(String value) {

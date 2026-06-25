@@ -74,7 +74,7 @@ async function submitApplication<T>(path: string, body: unknown): Promise<T> {
       if (error.status === 409) {
         throw new ApplicationSubmitError(
           "duplicate",
-          "There is already a pending or approved request for this email.",
+          "This email address cannot be used for this application. Please use a different email address.",
         );
       }
       if (error.status === 400) {

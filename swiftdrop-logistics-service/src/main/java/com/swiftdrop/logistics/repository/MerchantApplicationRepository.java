@@ -14,5 +14,11 @@ public interface MerchantApplicationRepository extends JpaRepository<MerchantApp
 
     List<MerchantApplication> findByStatusOrderByCreatedAtDesc(ApplicationStatus status);
 
-    boolean existsByContactEmailAndStatus(String contactEmail, ApplicationStatus status);
+    boolean existsByContactEmailAndStatusIn(String contactEmail, List<ApplicationStatus> statuses);
+
+    boolean existsByContactEmailAndStatusInAndIdNot(
+            String contactEmail,
+            List<ApplicationStatus> statuses,
+            UUID id
+    );
 }

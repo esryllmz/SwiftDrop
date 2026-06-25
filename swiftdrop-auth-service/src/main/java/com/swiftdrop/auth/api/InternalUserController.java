@@ -5,6 +5,8 @@ import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.auth.dto.ProvisionUserRequest;
 import com.swiftdrop.auth.dto.ProvisionUserResponse;
+import com.swiftdrop.auth.dto.UserOwnershipResponse;
 import com.swiftdrop.auth.service.InternalUserProvisioningService;
 
 import jakarta.validation.Valid;
@@ -39,5 +42,13 @@ public class InternalUserController {
         ProvisionUserResponse response = provisioningService.provision(internalApiKey, request);
         HttpStatus status = response.created() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
+    }
+
+    @GetMapping("/ownership")
+    public ResponseEntity<UserOwnershipResponse> findOwnership(
+            @RequestHeader(name = INTERNAL_API_KEY_HEADER, required = false) String internalApiKey,
+            @RequestParam String email
+    ) {
+        return ResponseEntity.ok(provisioningService.findOwnership(internalApiKey, email));
     }
 }

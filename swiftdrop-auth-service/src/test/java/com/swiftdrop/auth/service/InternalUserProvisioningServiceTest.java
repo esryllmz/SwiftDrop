@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.swiftdrop.auth.dto.ProvisionUserRequest;
 import com.swiftdrop.auth.dto.ProvisionUserResponse;
+import com.swiftdrop.auth.dto.UserOwnershipResponse;
 import com.swiftdrop.auth.entity.Role;
 import com.swiftdrop.auth.entity.User;
 import com.swiftdrop.auth.exception.InvalidInternalApiKeyException;
@@ -144,6 +145,33 @@ class InternalUserProvisioningServiceTest {
         )).isInstanceOf(UserRoleConflictException.class);
 
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void ownershipReturnsNormalizedExistingUserWithoutSensitiveFields() {
+        User existingUser = User.builder()
+                .email("customer@swiftdrop.com")
+                .role(Role.CUSTOMER)
+                .enabled(true)
+                .build();
+        when(userRepository.findByEmailIgnoreCase("customer@swiftdrop.com"))
+                .thenReturn(Optional.of(existingUser));
+
+        UserOwnershipResponse response =
+                service.findOwnership(INTERNAL_API_KEY, "  Customer@SwiftDrop.COM ");
+
+        assertThat(response).isEqualTo(new UserOwnershipResponse(true, Role.CUSTOMER, true));
+    }
+
+    @Test
+    void ownershipReturnsNotFoundForUnusedEmail() {
+        when(userRepository.findByEmailIgnoreCase("unused@swiftdrop.com"))
+                .thenReturn(Optional.empty());
+
+        UserOwnershipResponse response =
+                service.findOwnership(INTERNAL_API_KEY, "unused@swiftdrop.com");
+
+        assertThat(response).isEqualTo(UserOwnershipResponse.notFound());
     }
 
     private static Optional<User> optionalUser(User user) {
