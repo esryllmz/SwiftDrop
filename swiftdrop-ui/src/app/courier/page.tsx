@@ -15,6 +15,7 @@ import {
   getCourierAssignments,
   getCourierProfile,
   markCourierOrderDelivered,
+  markCourierOrderOnTheWay,
   markCourierOrderPickedUp,
   updateCourierAvailability,
 } from "@/lib/portal";
@@ -104,7 +105,7 @@ export default function CourierPage() {
 
   const handleCourierAction = async (
     orderId: string,
-    action: "picked-up" | "delivered",
+    action: "picked-up" | "on-the-way" | "delivered",
   ) => {
     if (!accessToken || actionOrderId) {
       return;
@@ -115,6 +116,9 @@ export default function CourierPage() {
       if (action === "picked-up") {
         await markCourierOrderPickedUp(accessToken, orderId);
         showSuccessToast("Order marked as picked up.");
+      } else if (action === "on-the-way") {
+        await markCourierOrderOnTheWay(accessToken, orderId);
+        showSuccessToast("Order marked on the way.");
       } else {
         await markCourierOrderDelivered(accessToken, orderId);
         showSuccessToast("Order marked as delivered.");
@@ -137,6 +141,7 @@ export default function CourierPage() {
   const deliveredOrders =
     profile?.deliveredOrders ??
     assignments.filter((assignment) => assignment.status === "DELIVERED").length;
+  const activeAssignments = assignments.filter((assignment) => activeCourierStatuses.includes(assignment.status));
 
   return (
     <PortalShell
@@ -182,9 +187,10 @@ export default function CourierPage() {
           description="Update pickup and delivery progress for assigned orders."
         >
           <CourierAssignmentsTable
-            assignments={assignments}
+            assignments={activeAssignments}
             actionOrderId={actionOrderId}
             onPickedUp={(orderId) => void handleCourierAction(orderId, "picked-up")}
+            onOnTheWay={(orderId) => void handleCourierAction(orderId, "on-the-way")}
             onDelivered={(orderId) => void handleCourierAction(orderId, "delivered")}
           />
         </PortalSection>

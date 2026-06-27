@@ -1,16 +1,19 @@
 package com.swiftdrop.logistics.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
+import com.swiftdrop.logistics.dto.CancelOrderRequest;
 import com.swiftdrop.logistics.dto.CustomerMerchantOptionResponse;
 import com.swiftdrop.logistics.dto.CustomerProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
@@ -44,6 +47,15 @@ public class CustomerPortalController {
         return ResponseEntity.ok(portalService.findCustomerOrders(user));
     }
 
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<OrderResponse> findOrder(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
+        return ResponseEntity.ok(portalService.findCustomerOrder(user, orderId));
+    }
+
     @GetMapping("/merchants")
     public ResponseEntity<List<CustomerMerchantOptionResponse>> findMerchants(HttpServletRequest request) {
         authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
@@ -57,5 +69,15 @@ public class CustomerPortalController {
     ) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
         return new ResponseEntity<>(portalService.createCustomerOrder(user, orderRequest), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            HttpServletRequest request,
+            @PathVariable UUID orderId,
+            @Valid @RequestBody CancelOrderRequest cancelRequest
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, CUSTOMER_ROLE);
+        return ResponseEntity.ok(portalService.cancelCustomerOrder(user, orderId, cancelRequest));
     }
 }

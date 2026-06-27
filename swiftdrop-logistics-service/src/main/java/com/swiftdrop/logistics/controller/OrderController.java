@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.OrderCreateRequest;
 import com.swiftdrop.logistics.dto.OrderResponse;
+import com.swiftdrop.logistics.dto.OrderStatusHistoryResponse;
 import com.swiftdrop.logistics.entity.OrderStatus;
 import com.swiftdrop.logistics.service.OrderService;
 
@@ -46,6 +47,11 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> findOrder(@PathVariable UUID id) {
         return ResponseEntity.ok(orderService.findOrder(id));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<OrderStatusHistoryResponse>> findOrderHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.findOrderHistory(id));
     }
 
     @PutMapping("/{id}/status")

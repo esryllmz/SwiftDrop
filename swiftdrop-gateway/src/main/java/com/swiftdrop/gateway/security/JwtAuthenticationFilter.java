@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter implements WebFilter, Ordered {
             new RouteAuthorizationRule("/api/v1/orders", ADMIN_ROLE),
             new RouteAuthorizationRule("/api/v1/drivers", ADMIN_ROLE),
             new RouteAuthorizationRule("/api/v1/merchants", ADMIN_ROLE),
+            new RouteAuthorizationRule("/api/v1/admin/orders", ADMIN_ROLE),
             new RouteAuthorizationRule("/api/v1/admin/applications", ADMIN_ROLE),
             new RouteAuthorizationRule("/api/v1/admin/system-monitoring", ADMIN_ROLE),
             new RouteAuthorizationRule("/api/v1/outbox-events", ADMIN_ROLE)

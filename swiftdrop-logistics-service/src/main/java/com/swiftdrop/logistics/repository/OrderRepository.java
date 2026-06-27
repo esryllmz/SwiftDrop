@@ -1,5 +1,6 @@
 package com.swiftdrop.logistics.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,4 +79,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     long countByDriver_IdAndStatus(UUID driverId, OrderStatus status);
 
     long countByDriver_IdAndStatusNot(UUID driverId, OrderStatus status);
+
+    long countByDriver_IdAndStatusIn(UUID driverId, Collection<OrderStatus> statuses);
 }

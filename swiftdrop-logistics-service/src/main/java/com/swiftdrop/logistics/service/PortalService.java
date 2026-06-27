@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.swiftdrop.logistics.dto.CourierProfileResponse;
+import com.swiftdrop.logistics.dto.CancelOrderRequest;
 import com.swiftdrop.logistics.dto.CreateCustomerOrderRequest;
 import com.swiftdrop.logistics.dto.CustomerMerchantOptionResponse;
 import com.swiftdrop.logistics.dto.CustomerProfileResponse;
@@ -30,6 +31,13 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PortalService {
+
+    private static final List<OrderStatus> ACTIVE_COURIER_STATUSES = List.of(
+            OrderStatus.DRIVER_ASSIGNED,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.PICKED_UP,
+            OrderStatus.ON_THE_WAY
+    );
 
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
@@ -58,6 +66,11 @@ public class PortalService {
     }
 
     @Transactional(readOnly = true)
+    public OrderResponse findCustomerOrder(AuthenticatedUser user, UUID orderId) {
+        return orderService.findCustomerOrder(user.userId(), orderId);
+    }
+
+    @Transactional(readOnly = true)
     public List<CustomerMerchantOptionResponse> findCustomerMerchantOptions() {
         return merchantRepository.findCustomerMerchantOptions().stream()
                 .map(this::toCustomerMerchantOption)
@@ -67,6 +80,11 @@ public class PortalService {
     @Transactional
     public OrderResponse createCustomerOrder(AuthenticatedUser user, CreateCustomerOrderRequest request) {
         return orderService.createCustomerOrder(user.userId(), request);
+    }
+
+    @Transactional
+    public OrderResponse cancelCustomerOrder(AuthenticatedUser user, UUID orderId, CancelOrderRequest request) {
+        return orderService.cancelCustomerOrder(user.userId(), orderId, request);
     }
 
     @Transactional(readOnly = true)
@@ -96,6 +114,12 @@ public class PortalService {
         return orderService.findMerchantOrders(merchant.getId());
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse findMerchantOrder(AuthenticatedUser user, UUID orderId) {
+        Merchant merchant = findMerchant(user.userId());
+        return orderService.findMerchantOrder(merchant.getId(), orderId);
+    }
+
     @Transactional
     public OrderResponse markMerchantOrderPreparing(AuthenticatedUser user, UUID orderId) {
         Merchant merchant = findMerchant(user.userId());
@@ -108,6 +132,12 @@ public class PortalService {
         return orderService.markMerchantOrderReadyForPickup(merchant.getId(), orderId);
     }
 
+    @Transactional
+    public OrderResponse cancelMerchantOrder(AuthenticatedUser user, UUID orderId, CancelOrderRequest request) {
+        Merchant merchant = findMerchant(user.userId());
+        return orderService.cancelMerchantOrder(merchant.getId(), orderId, request);
+    }
+
     @Transactional(readOnly = true)
     public CourierProfileResponse getCourierProfile(AuthenticatedUser user) {
         Driver driver = findDriver(user.userId());
@@ -118,6 +148,12 @@ public class PortalService {
     public List<OrderResponse> findCourierAssignments(AuthenticatedUser user) {
         Driver driver = findDriver(user.userId());
         return orderService.findDriverAssignments(driver.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse findCourierAssignment(AuthenticatedUser user, UUID orderId) {
+        Driver driver = findDriver(user.userId());
+        return orderService.findDriverAssignment(driver.getId(), orderId);
     }
 
     @Transactional
@@ -133,7 +169,7 @@ public class PortalService {
         }
 
         if (requestedStatus == DriverStatus.OFFLINE
-                && orderRepository.countByDriver_IdAndStatusNot(driver.getId(), OrderStatus.DELIVERED) > 0) {
+                && orderRepository.countByDriver_IdAndStatusIn(driver.getId(), ACTIVE_COURIER_STATUSES) > 0) {
             throw new InvalidOrderTransitionException("Courier has active assignments and cannot go offline.");
         }
 
@@ -147,6 +183,12 @@ public class PortalService {
     public OrderResponse markCourierOrderPickedUp(AuthenticatedUser user, UUID orderId) {
         Driver driver = findDriver(user.userId());
         return orderService.markCourierOrderPickedUp(driver.getId(), orderId);
+    }
+
+    @Transactional
+    public OrderResponse markCourierOrderOnTheWay(AuthenticatedUser user, UUID orderId) {
+        Driver driver = findDriver(user.userId());
+        return orderService.markCourierOrderOnTheWay(driver.getId(), orderId);
     }
 
     @Transactional
@@ -182,7 +224,7 @@ public class PortalService {
 
     private CourierProfileResponse toCourierProfile(AuthenticatedUser user, Driver driver) {
         UUID driverId = driver.getId();
-        long totalAssignments = orderRepository.countByDriver_Id(driverId);
+        long activeAssignments = orderRepository.countByDriver_IdAndStatusIn(driverId, ACTIVE_COURIER_STATUSES);
         long deliveredOrders = orderRepository.countByDriver_IdAndStatus(driverId, OrderStatus.DELIVERED);
 
         return new CourierProfileResponse(
@@ -192,7 +234,7 @@ public class PortalService {
                 driverId,
                 driver.getFullName(),
                 driver.getStatus(),
-                totalAssignments - deliveredOrders,
+                activeAssignments,
                 deliveredOrders
         );
     }

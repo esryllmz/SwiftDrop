@@ -1,6 +1,5 @@
 package com.swiftdrop.logistics.entity;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,56 +23,40 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "order_status_history")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Order {
+public class OrderStatusHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "customer_id", nullable = false)
-    private UUID customerId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id", nullable = false)
-    private Merchant merchant;
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "driver_id")
-    private Driver driver;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private OrderStatus fromStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private OrderStatus status;
+    private OrderStatus toStatus;
 
-    @Column(name = "total_amount", nullable = false)
-    private BigDecimal totalAmount;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private OrderActorType actorType;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Version
-    @Column(nullable = false)
-    private Long version;
-
-    private LocalDateTime cancelledAt;
-
-    private String cancelledByActorType;
-
-    private UUID cancelledByActorId;
+    private UUID actorId;
 
     @Column(length = 500)
-    private String cancellationReason;
+    private String reason;
 
-    private LocalDateTime pickedUpAt;
-
-    private LocalDateTime onTheWayAt;
-
-    private LocalDateTime deliveredAt;
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

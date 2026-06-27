@@ -29,6 +29,7 @@ class JwtAuthenticationFilterTest {
 
     private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
     private static final String ADMIN_MONITORING_PATH = "/api/v1/admin/system-monitoring";
+    private static final String ADMIN_ORDER_CANCEL_PATH = "/api/v1/admin/orders/00000000-0000-0000-0000-000000000002/cancel";
 
     private JwtAuthenticationFilter filter;
     private WebFilterChain chain;
@@ -104,6 +105,25 @@ class JwtAuthenticationFilterTest {
     @Test
     void adminMonitoringAllowsRolePrefixedAdminToken() {
         ServerWebExchange exchange = exchange(ADMIN_MONITORING_PATH, tokenFor("ROLE_ADMIN"));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any(ServerWebExchange.class));
+    }
+
+    @Test
+    void adminOrderCancelRejectsCustomerToken() {
+        ServerWebExchange exchange = exchange(ADMIN_ORDER_CANCEL_PATH, tokenFor("CUSTOMER"));
+
+        filter.filter(exchange, chain).block();
+
+        assertStatus(exchange, HttpStatus.FORBIDDEN);
+        verify(chain, never()).filter(any(ServerWebExchange.class));
+    }
+
+    @Test
+    void adminOrderCancelAllowsAdminToken() {
+        ServerWebExchange exchange = exchange(ADMIN_ORDER_CANCEL_PATH, tokenFor("ADMIN"));
 
         filter.filter(exchange, chain).block();
 

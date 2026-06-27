@@ -44,6 +44,15 @@ public class CourierPortalController {
         return ResponseEntity.ok(portalService.findCourierAssignments(user));
     }
 
+    @GetMapping("/assignments/{orderId}")
+    public ResponseEntity<OrderResponse> findAssignment(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
+        return ResponseEntity.ok(portalService.findCourierAssignment(user, orderId));
+    }
+
     @PostMapping("/availability")
     public ResponseEntity<CourierProfileResponse> updateAvailability(
             HttpServletRequest request,
@@ -60,6 +69,15 @@ public class CourierPortalController {
     ) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
         return ResponseEntity.ok(portalService.markCourierOrderPickedUp(user, orderId));
+    }
+
+    @PostMapping("/assignments/{orderId}/on-the-way")
+    public ResponseEntity<OrderResponse> markOrderOnTheWay(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, DRIVER_ROLE);
+        return ResponseEntity.ok(portalService.markCourierOrderOnTheWay(user, orderId));
     }
 
     @PostMapping("/orders/{orderId}/delivered")

@@ -24,6 +24,8 @@ import { normalizeApiError } from "@/lib/api";
 import { formatCurrencyTRY, formatDateTime, formatDisplayId, formatStatusLabel } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
 import {
+  cancelCustomerOrder,
+  cancelMerchantOrder,
   getCourierAssignmentDetail,
   getCourierAssignments,
   getCourierProfile,
@@ -34,6 +36,7 @@ import {
   getMerchantOrders,
   getMerchantProfile,
   markCourierOrderDelivered,
+  markCourierOrderOnTheWay,
   markCourierOrderPickedUp,
   markMerchantOrderPreparing,
   markMerchantOrderReadyForPickup,
@@ -73,6 +76,8 @@ const activeCourierStatuses: OrderStatus[] = [
 export function CustomerOrdersPage() {
   const { accessToken, user } = useAuth();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
+  const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
   const { loading, error, reload } = usePortalLoad(async () => {
     const nextOrders = await getCustomerOrders(accessToken);
@@ -91,6 +96,12 @@ export function CustomerOrdersPage() {
     }
     return orders;
   }, [filter, orders]);
+  const handleCancel = useCancelOrderAction(
+    accessToken,
+    "customer",
+    setActionOrderId,
+    reload,
+  );
 
   return (
     <PortalShell
@@ -109,23 +120,75 @@ export function CustomerOrdersPage() {
           orders={filteredOrders}
           emptyMessage="No orders found."
           columns={["order", "merchant", "driver", "status", "amount", "created", "actions"]}
-          renderActions={(order) => <DetailLink href={`/customer/orders/${order.id}`} label="Details" />}
+          renderActions={(order) => (
+            <span className="flex flex-wrap items-center gap-2">
+              {["PLACED", "DRIVER_ASSIGNED"].includes(order.status) ? (
+                <Button
+                  className="min-h-9 px-3 py-1.5 text-xs"
+                  disabled={actionOrderId === order.id}
+                  onClick={() => setCancelOrder(order)}
+                >
+                  Cancel order
+                </Button>
+              ) : null}
+              <DetailLink href={`/customer/orders/${order.id}`} label="Details" />
+            </span>
+          )}
         />
       </PortalSection>
+      <CancelOrderModal
+        order={cancelOrder}
+        loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
+        onClose={() => setCancelOrder(null)}
+        onSubmit={async (reason) => {
+          if (!cancelOrder) {
+            return;
+          }
+          await handleCancel(cancelOrder.id, reason);
+          setCancelOrder(null);
+        }}
+      />
     </PortalShell>
   );
 }
 
 export function CustomerOrderDetailPage({ orderId }: { orderId: string }) {
+  const { accessToken } = useAuth();
+  const [actionOrderId, setActionOrderId] = useState<string | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleCancel = useCancelOrderAction(accessToken, "customer", setActionOrderId, () => setRefreshKey((value) => value + 1));
+
   return (
-    <OrderDetailPage
-      portalType="customer"
-      title="Order Detail"
-      subtitle="Review the order summary and current delivery progress."
-      loadOrder={(token) => getCustomerOrderDetail(token, orderId)}
-      backHref="/customer/orders"
-      actionRenderer={() => null}
-    />
+    <>
+      <OrderDetailPage
+        key={refreshKey}
+        portalType="customer"
+        title="Order Detail"
+        subtitle="Review the order summary and current delivery progress."
+        loadOrder={(token) => getCustomerOrderDetail(token, orderId)}
+        backHref="/customer/orders"
+        actionRenderer={(order) => (
+          ["PLACED", "DRIVER_ASSIGNED"].includes(order.status) ? (
+            <Button className="w-fit" disabled={actionOrderId === order.id} onClick={() => setCancelOrder(order)}>
+              Cancel order
+            </Button>
+          ) : null
+        )}
+      />
+      <CancelOrderModal
+        order={cancelOrder}
+        loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
+        onClose={() => setCancelOrder(null)}
+        onSubmit={async (reason) => {
+          if (!cancelOrder) {
+            return;
+          }
+          await handleCancel(cancelOrder.id, reason);
+          setCancelOrder(null);
+        }}
+      />
+    </>
   );
 }
 
@@ -179,12 +242,14 @@ export function MerchantOrdersPage() {
   const { accessToken, user } = useAuth();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
   const [filter, setFilter] = useState<"new" | "preparing" | "ready" | "courier" | "completed" | "cancelled">("new");
   const { loading, error, reload } = usePortalLoad(async () => {
     setOrders(await getMerchantOrders(accessToken));
   }, accessToken, "Merchant orders could not be loaded.");
   const filteredOrders = useMemo(() => filterMerchantOrders(orders, filter), [filter, orders]);
   const handleAction = useMerchantOrderAction(accessToken, setActionOrderId, reload);
+  const handleCancel = useCancelOrderAction(accessToken, "merchant", setActionOrderId, reload);
 
   return (
     <PortalShell
@@ -205,8 +270,21 @@ export function MerchantOrdersPage() {
           detailHrefFor={(order) => `/merchant/orders/${order.id}`}
           onPreparing={(id) => void handleAction(id, "preparing")}
           onReadyForPickup={(id) => void handleAction(id, "ready-for-pickup")}
+          onCancel={setCancelOrder}
         />
       </PortalSection>
+      <CancelOrderModal
+        order={cancelOrder}
+        loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
+        onClose={() => setCancelOrder(null)}
+        onSubmit={async (reason) => {
+          if (!cancelOrder) {
+            return;
+          }
+          await handleCancel(cancelOrder.id, reason);
+          setCancelOrder(null);
+        }}
+      />
     </PortalShell>
   );
 }
@@ -214,26 +292,43 @@ export function MerchantOrdersPage() {
 export function MerchantOrderDetailPage({ orderId }: { orderId: string }) {
   const { accessToken } = useAuth();
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const handleAction = useMerchantOrderAction(accessToken, setActionOrderId, () => setRefreshKey((value) => value + 1));
+  const handleCancel = useCancelOrderAction(accessToken, "merchant", setActionOrderId, () => setRefreshKey((value) => value + 1));
 
   return (
-    <OrderDetailPage
-      key={refreshKey}
-      portalType="merchant"
-      title="Order Detail"
-      subtitle="Review order details and available merchant action."
-      loadOrder={(token) => getMerchantOrderDetail(token, orderId)}
-      backHref="/merchant/orders"
-      actionRenderer={(order) => (
-        <MerchantOrdersTable
-          orders={[order]}
-          actionOrderId={actionOrderId}
-          onPreparing={(id) => void handleAction(id, "preparing")}
-          onReadyForPickup={(id) => void handleAction(id, "ready-for-pickup")}
-        />
-      )}
-    />
+    <>
+      <OrderDetailPage
+        key={refreshKey}
+        portalType="merchant"
+        title="Order Detail"
+        subtitle="Review order details and available merchant action."
+        loadOrder={(token) => getMerchantOrderDetail(token, orderId)}
+        backHref="/merchant/orders"
+        actionRenderer={(order) => (
+          <MerchantOrdersTable
+            orders={[order]}
+            actionOrderId={actionOrderId}
+            onPreparing={(id) => void handleAction(id, "preparing")}
+            onReadyForPickup={(id) => void handleAction(id, "ready-for-pickup")}
+            onCancel={setCancelOrder}
+          />
+        )}
+      />
+      <CancelOrderModal
+        order={cancelOrder}
+        loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
+        onClose={() => setCancelOrder(null)}
+        onSubmit={async (reason) => {
+          if (!cancelOrder) {
+            return;
+          }
+          await handleCancel(cancelOrder.id, reason);
+          setCancelOrder(null);
+        }}
+      />
+    </>
   );
 }
 
@@ -351,6 +446,7 @@ export function CourierAssignmentsPage() {
           actionOrderId={actionOrderId}
           detailHrefFor={(order) => `/courier/assignments/${order.id}`}
           onPickedUp={(id) => void handleAction(id, "picked-up")}
+          onOnTheWay={(id) => void handleAction(id, "on-the-way")}
           onDelivered={(id) => void handleAction(id, "delivered")}
         />
       </PortalSection>
@@ -377,6 +473,7 @@ export function CourierAssignmentDetailPage({ orderId }: { orderId: string }) {
           assignments={[order]}
           actionOrderId={actionOrderId}
           onPickedUp={(id) => void handleAction(id, "picked-up")}
+          onOnTheWay={(id) => void handleAction(id, "on-the-way")}
           onDelivered={(id) => void handleAction(id, "delivered")}
         />
       )}
@@ -389,7 +486,7 @@ export function CourierHistoryPage() {
   const [assignments, setAssignments] = useState<OrderResponse[]>([]);
   const { loading, error, reload } = usePortalLoad(async () => {
     const nextAssignments = await getCourierAssignments(accessToken);
-    setAssignments(nextAssignments.filter((assignment) => assignment.status === "DELIVERED"));
+    setAssignments(nextAssignments.filter((assignment) => assignment.status === "DELIVERED" || assignment.status === "CANCELLED"));
   }, accessToken, "Courier history could not be loaded.");
 
   return (
@@ -504,6 +601,9 @@ function OrderDetailPage({
           </PortalSection>
           <PortalSection title="Progress" description="Timeline is derived from the current order status.">
             <OrderProgress status={order.status} />
+          </PortalSection>
+          <PortalSection title="Status History" description="Chronological lifecycle events for this order.">
+            <StatusHistory history={Array.isArray(order.history) ? order.history : []} />
           </PortalSection>
           {actionRenderer(order)}
         </div>
@@ -631,12 +731,40 @@ function useMerchantOrderAction(
   };
 }
 
+function useCancelOrderAction(
+  accessToken: string | null,
+  portalType: "customer" | "merchant",
+  setActionOrderId: (orderId: string | null) => void,
+  reload: () => void | Promise<void>,
+) {
+  return async (orderId: string, reason: string) => {
+    if (!accessToken) {
+      return;
+    }
+
+    setActionOrderId(orderId);
+    try {
+      if (portalType === "customer") {
+        await cancelCustomerOrder(accessToken, orderId, reason);
+      } else {
+        await cancelMerchantOrder(accessToken, orderId, reason);
+      }
+      showSuccessToast("Order cancelled.");
+      await reload();
+    } catch (err) {
+      showErrorToast(normalizeApiError(err, "Order cancellation failed."));
+    } finally {
+      setActionOrderId(null);
+    }
+  };
+}
+
 function useCourierOrderAction(
   accessToken: string | null,
   setActionOrderId: (orderId: string | null) => void,
   reload: () => void | Promise<void>,
 ) {
-  return async (orderId: string, action: "picked-up" | "delivered") => {
+  return async (orderId: string, action: "picked-up" | "on-the-way" | "delivered") => {
     if (!accessToken) {
       return;
     }
@@ -646,6 +774,9 @@ function useCourierOrderAction(
       if (action === "picked-up") {
         await markCourierOrderPickedUp(accessToken, orderId);
         showSuccessToast("Order marked as picked up.");
+      } else if (action === "on-the-way") {
+        await markCourierOrderOnTheWay(accessToken, orderId);
+        showSuccessToast("Order marked on the way.");
       } else {
         await markCourierOrderDelivered(accessToken, orderId);
         showSuccessToast("Order marked as delivered.");
@@ -751,6 +882,99 @@ function OrderProgress({ status }: { status: OrderStatus }) {
           {formatOrderStatus(step)}
         </div>
       ))}
+    </div>
+  );
+}
+
+function StatusHistory({ history }: { history: NonNullable<OrderResponse["history"]> }) {
+  if (history.length === 0) {
+    return <EmptyState message="Status history is not available yet." />;
+  }
+
+  return (
+    <div className="grid gap-2">
+      {history.map((item) => (
+        <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <StatusBadge status={item.toStatus} label={formatOrderStatus(item.toStatus)} />
+            <span className="text-xs text-slate-500">{formatDateTimeOrNA(item.createdAt)}</span>
+          </div>
+          <div className="mt-2 text-xs text-slate-500">
+            Actor: <span className="font-medium text-slate-700">{formatStatusLabel(item.actorType)}</span>
+            {item.fromStatus ? (
+              <span> from {formatOrderStatus(item.fromStatus)}</span>
+            ) : null}
+          </div>
+          {item.reason ? (
+            <p className="mt-2 rounded-md bg-white px-2 py-1 text-sm text-slate-700">{item.reason}</p>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CancelOrderModal({
+  order,
+  loading,
+  onClose,
+  onSubmit,
+}: {
+  order: OrderResponse | null;
+  loading: boolean;
+  onClose: () => void;
+  onSubmit: (reason: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState("");
+  const trimmedReason = reason.trim();
+  const reasonValid = trimmedReason.length >= 5 && trimmedReason.length <= 500;
+
+  useEffect(() => {
+    if (order) {
+      const timer = window.setTimeout(() => setReason(""), 0);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [order]);
+
+  if (!order) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+      <section className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-950">Cancel order</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Provide a cancellation reason before cancelling {formatDisplayId(order.id, "Order")}.
+          </p>
+        </div>
+        <label className="mt-4 block">
+          <span className="text-sm font-medium text-slate-700">Reason</span>
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            disabled={loading}
+            rows={4}
+            maxLength={500}
+            className="mt-1 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
+          />
+        </label>
+        <div className="mt-1 text-xs text-slate-500">{trimmedReason.length}/500 characters</div>
+        <div className="mt-5 flex justify-end gap-2">
+          <SecondaryButton type="button" disabled={loading} onClick={onClose}>
+            Close
+          </SecondaryButton>
+          <Button
+            type="button"
+            disabled={loading || !reasonValid}
+            onClick={() => void onSubmit(trimmedReason)}
+          >
+            {loading ? "Cancelling..." : "Cancel order"}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

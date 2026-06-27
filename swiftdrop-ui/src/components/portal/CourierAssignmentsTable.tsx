@@ -7,12 +7,14 @@ export function CourierAssignmentsTable({
   assignments,
   actionOrderId,
   onPickedUp,
+  onOnTheWay,
   onDelivered,
   detailHrefFor,
 }: {
   assignments: OrderResponse[];
   actionOrderId: string | null;
   onPickedUp: (orderId: string) => void;
+  onOnTheWay: (orderId: string) => void;
   onDelivered: (orderId: string) => void;
   detailHrefFor?: (order: OrderResponse) => string;
 }) {
@@ -27,6 +29,7 @@ export function CourierAssignmentsTable({
           loading={actionOrderId === order.id}
           disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
           onPickedUp={onPickedUp}
+          onOnTheWay={onOnTheWay}
           onDelivered={onDelivered}
           detailHref={detailHrefFor?.(order)}
         />
@@ -40,6 +43,7 @@ function CourierAssignmentAction({
   loading,
   disabled,
   onPickedUp,
+  onOnTheWay,
   onDelivered,
   detailHref,
 }: {
@@ -47,10 +51,11 @@ function CourierAssignmentAction({
   loading: boolean;
   disabled: boolean;
   onPickedUp: (orderId: string) => void;
+  onOnTheWay: (orderId: string) => void;
   onDelivered: (orderId: string) => void;
   detailHref?: string;
 }) {
-  const action = renderCourierAction(order, loading, disabled, onPickedUp, onDelivered);
+  const action = renderCourierAction(order, loading, disabled, onPickedUp, onOnTheWay, onDelivered);
 
   return (
     <span className="flex flex-wrap items-center gap-2">
@@ -69,9 +74,10 @@ function renderCourierAction(
   loading: boolean,
   disabled: boolean,
   onPickedUp: (orderId: string) => void,
+  onOnTheWay: (orderId: string) => void,
   onDelivered: (orderId: string) => void,
 ) {
-  if (order.status === "READY_FOR_PICKUP" || order.status === "DRIVER_ASSIGNED") {
+  if (order.status === "READY_FOR_PICKUP") {
     return (
       <PortalActionButton
         label="Pick up order"
@@ -83,9 +89,21 @@ function renderCourierAction(
     );
   }
 
-  if (order.status === "PICKED_UP" || order.status === "ON_THE_WAY") {
+  if (order.status === "PICKED_UP") {
     return (
-        <PortalActionButton
+      <PortalActionButton
+        label="Mark on the way"
+        tone="primary"
+        loading={loading}
+        disabled={disabled}
+        onClick={() => onOnTheWay(order.id)}
+      />
+    );
+  }
+
+  if (order.status === "ON_THE_WAY") {
+    return (
+      <PortalActionButton
         label="Mark delivered"
         tone="success"
         loading={loading}

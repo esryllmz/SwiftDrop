@@ -7,9 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.swiftdrop.logistics.dto.CancelOrderRequest;
 import com.swiftdrop.logistics.dto.MerchantProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
 import com.swiftdrop.logistics.security.AuthenticatedUser;
@@ -17,6 +19,7 @@ import com.swiftdrop.logistics.security.AuthenticatedUserResolver;
 import com.swiftdrop.logistics.service.PortalService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -41,6 +44,15 @@ public class MerchantPortalController {
         return ResponseEntity.ok(portalService.findMerchantOrders(user));
     }
 
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<OrderResponse> findOrder(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, MERCHANT_ROLE);
+        return ResponseEntity.ok(portalService.findMerchantOrder(user, orderId));
+    }
+
     @PostMapping("/orders/{orderId}/preparing")
     public ResponseEntity<OrderResponse> markOrderPreparing(
             HttpServletRequest request,
@@ -57,5 +69,15 @@ public class MerchantPortalController {
     ) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, MERCHANT_ROLE);
         return ResponseEntity.ok(portalService.markMerchantOrderReadyForPickup(user, orderId));
+    }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            HttpServletRequest request,
+            @PathVariable UUID orderId,
+            @Valid @RequestBody CancelOrderRequest cancelRequest
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, MERCHANT_ROLE);
+        return ResponseEntity.ok(portalService.cancelMerchantOrder(user, orderId, cancelRequest));
     }
 }

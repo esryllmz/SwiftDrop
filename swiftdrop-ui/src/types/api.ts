@@ -65,6 +65,25 @@ export type OrderResponse = {
   status: OrderStatus;
   totalAmount: number;
   createdAt: string;
+  version?: number | null;
+  cancelledAt?: string | null;
+  cancelledByActorType?: string | null;
+  cancelledByActorId?: string | null;
+  cancellationReason?: string | null;
+  pickedUpAt?: string | null;
+  onTheWayAt?: string | null;
+  deliveredAt?: string | null;
+  history?: OrderStatusHistoryResponse[];
+};
+
+export type OrderStatusHistoryResponse = {
+  id: string;
+  fromStatus?: OrderStatus | null;
+  toStatus: OrderStatus;
+  actorType: "CUSTOMER" | "MERCHANT" | "COURIER" | "ADMIN" | "SYSTEM";
+  actorId?: string | null;
+  reason?: string | null;
+  createdAt: string;
 };
 
 export type CustomerProfileResponse = {

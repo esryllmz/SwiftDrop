@@ -8,12 +8,14 @@ export function MerchantOrdersTable({
   actionOrderId,
   onPreparing,
   onReadyForPickup,
+  onCancel,
   detailHrefFor,
 }: {
   orders: OrderResponse[];
   actionOrderId: string | null;
   onPreparing: (orderId: string) => void;
   onReadyForPickup: (orderId: string) => void;
+  onCancel?: (order: OrderResponse) => void;
   detailHrefFor?: (order: OrderResponse) => string;
 }) {
   return (
@@ -28,6 +30,7 @@ export function MerchantOrdersTable({
           disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
           onPreparing={onPreparing}
           onReadyForPickup={onReadyForPickup}
+          onCancel={onCancel}
           detailHref={detailHrefFor?.(order)}
         />
       )}
@@ -41,6 +44,7 @@ function MerchantOrderAction({
   disabled,
   onPreparing,
   onReadyForPickup,
+  onCancel,
   detailHref,
 }: {
   order: OrderResponse;
@@ -48,13 +52,24 @@ function MerchantOrderAction({
   disabled: boolean;
   onPreparing: (orderId: string) => void;
   onReadyForPickup: (orderId: string) => void;
+  onCancel?: (order: OrderResponse) => void;
   detailHref?: string;
 }) {
   const action = renderMerchantAction(order, loading, disabled, onPreparing, onReadyForPickup);
+  const canCancel = ["PLACED", "DRIVER_ASSIGNED", "PREPARING"].includes(order.status);
 
   return (
     <span className="flex flex-wrap items-center gap-2">
       {action}
+      {canCancel && onCancel ? (
+        <PortalActionButton
+          label="Cancel order"
+          tone="warning"
+          loading={loading}
+          disabled={disabled}
+          onClick={() => onCancel(order)}
+        />
+      ) : null}
       {detailHref ? (
         <Link className="text-xs font-medium text-slate-600 underline-offset-2 hover:text-slate-950 hover:underline" href={detailHref}>
           Details
@@ -86,7 +101,7 @@ function renderMerchantAction(
   if (order.status === "PREPARING") {
     return (
       <PortalActionButton
-        label="Ready for pickup"
+        label="Mark ready for pickup"
         tone="primary"
         loading={loading}
         disabled={disabled}
