@@ -181,6 +181,52 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void seededAdminLoginWithStaffPortalSucceeds() {
+        User admin = User.builder()
+                .id(USER_ID)
+                .email("admin@swiftdrop.com")
+                .password("encoded-admin-password")
+                .role(Role.ADMIN)
+                .enabled(true)
+                .passwordChangeRequired(false)
+                .build();
+        when(userRepository.findByEmailIgnoreCase("admin@swiftdrop.com")).thenReturn(Optional.of(admin));
+        when(passwordEncoder.matches("Admin123!", "encoded-admin-password")).thenReturn(true);
+        final List<RefreshToken> noActiveTokens = List.of();
+        when(refreshTokenRepository.findAllByUser_IdAndRevokedFalse(USER_ID)).thenReturn(noActiveTokens);
+        when(refreshTokenRepository.saveAll(noActiveTokens)).thenReturn(noActiveTokens);
+        when(jwtService.generateToken(USER_ID, "admin@swiftdrop.com", "ADMIN", false))
+                .thenReturn("admin-access-token");
+        when(refreshTokenRepository.save(any(RefreshToken.class)))
+                .thenAnswer(invocation -> requiredArgument(invocation, 0, RefreshToken.class));
+
+        AuthResult result = service.login(new LoginRequest("admin@swiftdrop.com", "Admin123!", "STAFF"));
+
+        assertThat(result.response().accessToken()).isEqualTo("admin-access-token");
+        assertThat(result.response().role()).isEqualTo(Role.ADMIN);
+        assertThat(result.response().passwordChangeRequired()).isFalse();
+    }
+
+    @Test
+    void adminLoginWithCustomerPortalIsRejected() {
+        User admin = User.builder()
+                .id(USER_ID)
+                .email("admin@swiftdrop.com")
+                .password("encoded-admin-password")
+                .role(Role.ADMIN)
+                .enabled(true)
+                .passwordChangeRequired(false)
+                .build();
+        when(userRepository.findByEmailIgnoreCase("admin@swiftdrop.com")).thenReturn(Optional.of(admin));
+        when(passwordEncoder.matches("Admin123!", "encoded-admin-password")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("admin@swiftdrop.com", "Admin123!", "CUSTOMER")))
+                .isInstanceOf(AuthenticationFailedException.class);
+
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
     void loginDoesNotTrimPassword() {
         User merchant = provisionedMerchant("encoded-temporary-password");
         when(userRepository.findByEmailIgnoreCase("merchant@swiftdrop.com")).thenReturn(Optional.of(merchant));

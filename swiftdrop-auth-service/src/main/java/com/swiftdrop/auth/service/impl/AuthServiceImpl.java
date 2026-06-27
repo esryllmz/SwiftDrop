@@ -126,6 +126,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthenticationFailedException("Email veya sifre hatali.");
         }
 
+        validateLoginPortal(request.portal(), user);
         revokeActiveTokens(user);
         return createAuthResult(user);
     }
@@ -466,6 +467,23 @@ public class AuthServiceImpl implements AuthService {
             case "STAFF" -> Role.ADMIN;
             default -> throw new IllegalArgumentException("Invalid password reset portal");
         };
+    }
+
+    private void validateLoginPortal(String portal, User user) {
+        if (portal == null || portal.isBlank()) {
+            return;
+        }
+
+        Role requestedRole;
+        try {
+            requestedRole = resolvePortalRole(portal);
+        } catch (IllegalArgumentException ex) {
+            throw new AuthenticationFailedException("Email veya sifre hatali.");
+        }
+
+        if (user.getRole() != requestedRole) {
+            throw new AuthenticationFailedException("Email veya sifre hatali.");
+        }
     }
 
     private String generateRawResetToken() {

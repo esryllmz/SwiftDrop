@@ -7,6 +7,11 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "Sifre alani bos birakilamaz.")
-        String password
+        String password,
+
+        String portal
 ) {
+    public LoginRequest(String email, String password) {
+        this(email, password, null);
+    }
 }

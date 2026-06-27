@@ -66,9 +66,13 @@ application:
     temporary-password-length: ${PROVISIONING_TEMP_PASSWORD_LENGTH:12}
   seed:
     admin:
-      enabled: ${SEED_ADMIN_ENABLED:true}
-      email: ${SEED_ADMIN_EMAIL:admin@swiftdrop.com}
-      password: ${SEED_ADMIN_PASSWORD:Admin123!}
+      enabled: ${ADMIN_SEED_ENABLED:${SEED_ADMIN_ENABLED:true}}
+      email: ${ADMIN_SEED_EMAIL:${SEED_ADMIN_EMAIL:admin@swiftdrop.com}}
+      password: ${ADMIN_SEED_PASSWORD:${SEED_ADMIN_PASSWORD:Admin123!}}
+      reset-existing-password: ${ADMIN_SEED_RESET_EXISTING_PASSWORD:false}
+      force-enabled: ${ADMIN_SEED_FORCE_ENABLED:true}
+      force-role-admin: ${ADMIN_SEED_FORCE_ROLE_ADMIN:true}
+      force-password-change: ${ADMIN_SEED_FORCE_PASSWORD_CHANGE:false}
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
