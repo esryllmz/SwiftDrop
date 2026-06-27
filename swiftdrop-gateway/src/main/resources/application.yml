@@ -43,9 +43,20 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 application:
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  monitoring:
+    timeout-ms: ${MONITORING_TIMEOUT_MS:1500}
+    auth-service-url: ${AUTH_SERVICE_URI:http://localhost:8081}
+    logistics-service-url: ${LOGISTICS_SERVICE_URI:http://localhost:8082}
+    notification-service-url: ${NOTIFICATION_SERVICE_URI:http://localhost:8083}
+    internal-api-key: ${INTERNAL_API_KEY:local-internal-api-key}
+    outbox:
+      pending-warning-threshold: ${MONITORING_OUTBOX_PENDING_WARNING_THRESHOLD:10}
+      oldest-age-warning-seconds: ${MONITORING_OUTBOX_AGE_WARNING_SECONDS:60}
+    kafka:
+      lag-warning-threshold: ${MONITORING_KAFKA_LAG_WARNING_THRESHOLD:10}

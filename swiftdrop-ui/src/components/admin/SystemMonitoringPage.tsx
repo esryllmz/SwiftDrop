@@ -13,11 +13,14 @@ import { getJson } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import {
   normalizeSystemMonitoringResponse,
+  type HealthComponent,
   type HealthStatus,
   type SystemMonitoringResponse,
 } from "@/lib/system-monitoring";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function SystemMonitoringPage() {
+  const { accessToken } = useAuth();
   const [data, setData] = useState<SystemMonitoringResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,10 +37,14 @@ export function SystemMonitoringPage() {
     setError(null);
     setRefreshing(true);
     try {
-      const raw = await getJson<unknown>("/api/health", { signal });
+      const raw = await getJson<unknown>(
+        "/api/v1/admin/system-monitoring",
+        { signal },
+        accessToken,
+      );
       const normalized = normalizeSystemMonitoringResponse(raw);
       setData(normalized);
-      setLastSuccessfulRefresh(normalized.checkedAt ?? new Date().toISOString());
+      setLastSuccessfulRefresh(normalized.checkedAt);
     } catch (err) {
       if (signal?.aborted) {
         return;
@@ -54,7 +61,7 @@ export function SystemMonitoringPage() {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,6 +74,8 @@ export function SystemMonitoringPage() {
 
   const services = data?.services ?? [];
   const infrastructure = data?.infrastructure ?? [];
+  const healthyCount = [...services, ...infrastructure].filter((entry) => entry.status === "UP").length;
+  const unavailableCount = [...services, ...infrastructure].filter((entry) => entry.status === "DOWN").length;
   const hasHealthData = services.length > 0 || infrastructure.length > 0;
 
   return (
@@ -100,7 +109,7 @@ export function SystemMonitoringPage() {
 
       {!loading && data ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <AdminMetricCard
               label="Overall status"
               value={<AdminStatusBadge status={data.overallStatus} />}
@@ -110,10 +119,26 @@ export function SystemMonitoringPage() {
             />
             <AdminMetricCard
               label="Last checked"
-              value={formatDateTime(lastSuccessfulRefresh)}
-              hint="Last successful refresh"
+              value={formatDateTime(lastSuccessfulRefresh ?? data.checkedAt)}
+              hint="Backend checkedAt timestamp"
               tone="blue"
               icon="T"
+              compact
+            />
+            <AdminMetricCard
+              label="Healthy components"
+              value={formatCount(healthyCount)}
+              hint="Services and infrastructure reporting Healthy"
+              tone="emerald"
+              icon="H"
+              compact
+            />
+            <AdminMetricCard
+              label="Unavailable components"
+              value={formatCount(unavailableCount)}
+              hint="Services and infrastructure reporting Unavailable"
+              tone={unavailableCount > 0 ? "red" : "slate"}
+              icon="!"
               compact
             />
           </div>
@@ -129,25 +154,7 @@ export function SystemMonitoringPage() {
             >
               <div className="grid gap-4 md:grid-cols-2">
                 {services.map((service) => (
-                  <AdminMetricCard
-                    key={service.name}
-                    label={service.name}
-                    value={<AdminStatusBadge status={service.status} />}
-                    hint={
-                      <>
-                        <div>{service.details || "No additional details are available."}</div>
-                        <div className="mt-1">
-                          Response time:{" "}
-                          {service.responseTimeMs === null || service.responseTimeMs === undefined
-                            ? "Not available"
-                            : `${service.responseTimeMs} ms`}
-                        </div>
-                      </>
-                    }
-                    tone={healthTone(service.status)}
-                    icon={service.name.slice(0, 1).toUpperCase()}
-                    compact
-                  />
+                  <ComponentCard key={service.key} component={service} />
                 ))}
               </div>
             </AdminSectionCard>
@@ -160,20 +167,55 @@ export function SystemMonitoringPage() {
             {infrastructure.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {infrastructure.map((component) => (
-                  <AdminMetricCard
-                    key={component.name}
-                    label={component.name}
-                    value={<AdminStatusBadge status={component.status} />}
-                    hint={component.details || "No additional details are available."}
-                    tone={healthTone(component.status)}
-                    icon={component.name.slice(0, 1).toUpperCase()}
-                    compact
-                  />
+                  <ComponentCard key={component.key} component={component} />
                 ))}
               </div>
             ) : (
               <EmptyState message="Infrastructure health data is not available." />
             )}
+          </AdminSectionCard>
+
+          <AdminSectionCard
+            title="Operational metrics"
+            description="Outbox, notification and consumer telemetry from internal service monitoring."
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              <AdminMetricCard
+                label="Pending outbox events"
+                value={formatMetric(data.metrics.outboxPendingCount)}
+                tone={metricTone(data.metrics.outboxPendingCount)}
+                icon="P"
+                compact
+              />
+              <AdminMetricCard
+                label="Failed outbox events"
+                value={formatMetric(data.metrics.outboxFailedCount)}
+                tone={metricTone(data.metrics.outboxFailedCount)}
+                icon="F"
+                compact
+              />
+              <AdminMetricCard
+                label="Oldest pending event"
+                value={formatAge(data.metrics.oldestPendingOutboxAgeSeconds)}
+                tone={metricTone(data.metrics.oldestPendingOutboxAgeSeconds)}
+                icon="A"
+                compact
+              />
+              <AdminMetricCard
+                label="Processed notifications"
+                value={formatMetric(data.metrics.notificationProcessedCount)}
+                tone="blue"
+                icon="N"
+                compact
+              />
+              <AdminMetricCard
+                label="Consumer lag"
+                value={formatMetric(data.metrics.consumerLag)}
+                tone={metricTone(data.metrics.consumerLag)}
+                icon="L"
+                compact
+              />
+            </div>
           </AdminSectionCard>
         </>
       ) : null}
@@ -203,4 +245,55 @@ function healthTone(status: HealthStatus) {
   if (status === "DOWN") return "red" as const;
   if (status === "DEGRADED") return "amber" as const;
   return "slate" as const;
+}
+
+function ComponentCard({ component }: { component: HealthComponent }) {
+  return (
+    <AdminMetricCard
+      label={component.name}
+      value={<AdminStatusBadge status={component.status} />}
+      hint={
+        <>
+          <div>{component.details || "No additional details are available."}</div>
+          <div className="mt-1">Response time: {formatResponseTime(component.responseTimeMs)}</div>
+        </>
+      }
+      tone={healthTone(component.status)}
+      icon={component.name.slice(0, 1).toUpperCase()}
+      compact
+    />
+  );
+}
+
+function formatResponseTime(value: number | null) {
+  return value === null ? "Not available" : `${value} ms`;
+}
+
+function formatMetric(value: number | null) {
+  return value === null ? "Not available" : formatCount(value);
+}
+
+function formatCount(value: number) {
+  return new Intl.NumberFormat().format(value);
+}
+
+function formatAge(value: number | null) {
+  if (value === null) {
+    return "Not available";
+  }
+  if (value < 60) {
+    return "< 60 sec";
+  }
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  if (hours > 0) {
+    return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`;
+  }
+  return `${minutes} min`;
+}
+
+function metricTone(value: number | null) {
+  if (value === null) return "slate" as const;
+  if (value > 0) return "amber" as const;
+  return "emerald" as const;
 }

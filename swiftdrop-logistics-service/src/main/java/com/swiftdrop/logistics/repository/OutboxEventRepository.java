@@ -1,6 +1,8 @@
 package com.swiftdrop.logistics.repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,9 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     List<OutboxEvent> findPendingForPublishForUpdateSkipLocked(@Param("limit") int limit);
 
     long countByStatus(OutboxStatus status);
+
+    @Query("select min(event.createdAt) from OutboxEvent event where event.status = :status")
+    Optional<LocalDateTime> findOldestCreatedAtByStatus(@Param("status") OutboxStatus status);
 
     List<OutboxEvent> findAllByOrderByCreatedAtDesc(Pageable pageable);
 

@@ -168,6 +168,7 @@ services:
       PROCESSED_EVENT_TTL_HOURS: ${PROCESSED_EVENT_TTL_HOURS:-24}
       KAFKA_RETRY_MAX_ATTEMPTS: ${KAFKA_RETRY_MAX_ATTEMPTS:-3}
       KAFKA_RETRY_BACKOFF_MS: ${KAFKA_RETRY_BACKOFF_MS:-1000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -186,11 +187,18 @@ services:
     environment:
       AUTH_SERVICE_URI: http://swiftdrop-auth-service:8081
       LOGISTICS_SERVICE_URI: http://swiftdrop-logistics-service:8082
+      NOTIFICATION_SERVICE_URI: http://swiftdrop-notification-service:8083
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3001}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key}
+      MONITORING_TIMEOUT_MS: ${MONITORING_TIMEOUT_MS:-1500}
+      MONITORING_OUTBOX_PENDING_WARNING_THRESHOLD: ${MONITORING_OUTBOX_PENDING_WARNING_THRESHOLD:-10}
+      MONITORING_OUTBOX_AGE_WARNING_SECONDS: ${MONITORING_OUTBOX_AGE_WARNING_SECONDS:-60}
+      MONITORING_KAFKA_LAG_WARNING_THRESHOLD: ${MONITORING_KAFKA_LAG_WARNING_THRESHOLD:-10}
     depends_on:
       - swiftdrop-auth-service
       - swiftdrop-logistics-service
+      - swiftdrop-notification-service
     networks:
       - swiftdrop-network
 

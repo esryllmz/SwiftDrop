@@ -34,9 +34,13 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: never
 
 application:
+  internal:
+    api-key: ${INTERNAL_API_KEY:local-internal-api-key}
+  monitoring:
+    timeout-ms: ${MONITORING_TIMEOUT_MS:1500}
   seed:
     enabled: ${SEED_DATA_ENABLED:false}
   auth-service:

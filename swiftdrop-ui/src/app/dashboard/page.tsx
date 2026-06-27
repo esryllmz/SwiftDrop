@@ -199,14 +199,18 @@ export default function DashboardPage() {
     setHealthLoading(true);
     setHealthError(null);
     try {
-      const raw = await getJson<unknown>("/api/health");
+      const raw = await getJson<unknown>(
+        "/api/v1/admin/system-monitoring",
+        undefined,
+        accessToken,
+      );
       setHealth(normalizeSystemMonitoringResponse(raw).services);
     } catch (err) {
       setHealthError(err instanceof Error ? err.message : "Health request failed");
     } finally {
       setHealthLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   const loadFirstMerchant = useCallback(async () => {
     setMerchantLoading(true);

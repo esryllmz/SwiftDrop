@@ -36,6 +36,10 @@ spring:
         "[spring.json.use.type.headers]": false
 
 application:
+  internal:
+    api-key: ${INTERNAL_API_KEY:local-internal-api-key}
+  monitoring:
+    timeout-ms: ${MONITORING_TIMEOUT_MS:1500}
   idempotency:
     processed-event-ttl: ${PROCESSED_EVENT_TTL_HOURS:24}
   kafka:
@@ -54,4 +58,4 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: never

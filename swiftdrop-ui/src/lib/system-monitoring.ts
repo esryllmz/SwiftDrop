@@ -1,23 +1,30 @@
 export type HealthStatus = "UP" | "DOWN" | "DEGRADED" | "UNKNOWN";
 
-export interface ServiceHealth {
+export interface HealthComponent {
+  key: string;
   name: string;
   status: HealthStatus;
-  details?: string | null;
-  responseTimeMs?: number | null;
+  responseTimeMs: number | null;
+  details: string | null;
 }
 
-export interface InfrastructureHealth {
-  name: string;
-  status: HealthStatus;
-  details?: string | null;
+export type ServiceHealth = HealthComponent;
+export type InfrastructureHealth = HealthComponent;
+
+export interface MonitoringMetrics {
+  outboxPendingCount: number | null;
+  outboxFailedCount: number | null;
+  oldestPendingOutboxAgeSeconds: number | null;
+  notificationProcessedCount: number | null;
+  consumerLag: number | null;
 }
 
 export interface SystemMonitoringResponse {
   overallStatus: HealthStatus;
   checkedAt: string | null;
-  services: ServiceHealth[];
-  infrastructure: InfrastructureHealth[];
+  services: HealthComponent[];
+  infrastructure: HealthComponent[];
+  metrics: MonitoringMetrics;
 }
 
 export function normalizeSystemMonitoringResponse(
@@ -60,6 +67,7 @@ function buildResponse(value: Record<string, unknown>): SystemMonitoringResponse
     checkedAt: normalizeDate(value.checkedAt ?? value.timestamp),
     services,
     infrastructure,
+    metrics: normalizeMetrics(value.metrics),
   };
 }
 
@@ -81,7 +89,7 @@ export function normalizeHealthStatus(value: unknown): HealthStatus {
     : "UNKNOWN";
 }
 
-function normalizeService(value: unknown): ServiceHealth | null {
+function normalizeService(value: unknown): HealthComponent | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -92,6 +100,7 @@ function normalizeService(value: unknown): ServiceHealth | null {
   }
 
   return {
+    key: normalizeKey(value.key, name),
     name,
     status: normalizeHealthStatus(value.status),
     details: normalizeDetails(value.details ?? value.error ?? value.url),
@@ -99,7 +108,7 @@ function normalizeService(value: unknown): ServiceHealth | null {
   };
 }
 
-function normalizeInfrastructure(value: unknown): InfrastructureHealth | null {
+function normalizeInfrastructure(value: unknown): HealthComponent | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -110,14 +119,16 @@ function normalizeInfrastructure(value: unknown): InfrastructureHealth | null {
   }
 
   return {
+    key: normalizeKey(value.key, name),
     name,
     status: normalizeHealthStatus(value.status),
+    responseTimeMs: normalizeNumber(value.responseTimeMs ?? value.responseTime),
     details: normalizeDetails(value.details ?? value.error),
   };
 }
 
 function deriveOverallStatus(
-  entries: Array<ServiceHealth | InfrastructureHealth>,
+  entries: HealthComponent[],
 ): HealthStatus {
   if (entries.length === 0) {
     return "UNKNOWN";
@@ -129,6 +140,25 @@ function deriveOverallStatus(
     return "DEGRADED";
   }
   return "UP";
+}
+
+function normalizeMetrics(value: unknown): MonitoringMetrics {
+  const metrics = isRecord(value) ? value : {};
+
+  return {
+    outboxPendingCount: normalizeNumber(metrics.outboxPendingCount),
+    outboxFailedCount: normalizeNumber(metrics.outboxFailedCount),
+    oldestPendingOutboxAgeSeconds: normalizeNumber(metrics.oldestPendingOutboxAgeSeconds),
+    notificationProcessedCount: normalizeNumber(metrics.notificationProcessedCount),
+    consumerLag: normalizeNumber(metrics.consumerLag),
+  };
+}
+
+function normalizeKey(value: unknown, fallbackName: string) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return fallbackName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 function isErrorPayload(value: Record<string, unknown>) {
@@ -166,7 +196,7 @@ function normalizeDetails(value: unknown): string | null {
 }
 
 function normalizeNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 function normalizeDate(value: unknown): string | null {
