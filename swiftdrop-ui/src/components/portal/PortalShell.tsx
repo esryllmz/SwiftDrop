@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type React from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { UserIdentity } from "@/components/layout/UserIdentity";
 
 type PortalType = "customer" | "merchant" | "courier";
+type PortalNavItem = {
+  href: string;
+  label: string;
+  description: string;
+};
 
 type PortalShellProps = {
   portalType: PortalType;
@@ -18,31 +23,47 @@ type PortalShellProps = {
 
 const portalConfig: Record<PortalType, {
   label: string;
-  marker: string;
   homeHref: string;
   accent: string;
   active: string;
+  navItems: PortalNavItem[];
 }> = {
   customer: {
     label: "Customer Portal",
-    marker: "CU",
     homeHref: "/customer",
     accent: "bg-blue-600",
     active: "border-blue-200 bg-blue-50 text-blue-700",
+    navItems: [
+      { href: "/customer", label: "Dashboard", description: "Portal overview" },
+      { href: "/customer/orders", label: "Orders", description: "Order history" },
+      { href: "/customer/addresses", label: "Addresses", description: "Delivery addresses" },
+      { href: "/customer/profile", label: "Profile", description: "Account details" },
+    ],
   },
   merchant: {
     label: "Merchant Portal",
-    marker: "ME",
     homeHref: "/merchant",
     accent: "bg-violet-600",
     active: "border-violet-200 bg-violet-50 text-violet-700",
+    navItems: [
+      { href: "/merchant", label: "Dashboard", description: "Store overview" },
+      { href: "/merchant/orders", label: "Orders", description: "Order workflow" },
+      { href: "/merchant/store", label: "Store", description: "Store profile" },
+      { href: "/merchant/analytics", label: "Analytics", description: "Order metrics" },
+      { href: "/merchant/profile", label: "Profile", description: "Account details" },
+    ],
   },
   courier: {
     label: "Courier Portal",
-    marker: "CO",
     homeHref: "/courier",
     accent: "bg-emerald-600",
     active: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    navItems: [
+      { href: "/courier", label: "Dashboard", description: "Courier overview" },
+      { href: "/courier/assignments", label: "Assignments", description: "Active delivery work" },
+      { href: "/courier/history", label: "History", description: "Completed deliveries" },
+      { href: "/courier/profile", label: "Profile", description: "Account details" },
+    ],
   },
 };
 
@@ -54,6 +75,7 @@ export function PortalShell({
   children,
 }: PortalShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { logout } = useAuth();
   const config = portalConfig[portalType];
 
@@ -71,20 +93,30 @@ export function PortalShell({
         </Link>
 
         <nav className="flex gap-1 overflow-x-auto px-3 py-4 lg:flex-1 lg:flex-col lg:overflow-y-auto">
-          <Link
-            href={config.homeHref}
-            className={`min-w-[180px] rounded-lg border px-3 py-2.5 transition lg:min-w-0 ${config.active}`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-current bg-white text-[11px] font-semibold">
-                {config.marker}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">Dashboard</span>
-                <span className="block truncate text-xs text-slate-500">Portal overview</span>
-              </span>
-            </div>
-          </Link>
+          {config.navItems.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`min-w-[180px] rounded-lg border px-3 py-2.5 transition lg:min-w-0 ${
+                  active
+                    ? config.active
+                    : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-current bg-white text-[11px] font-semibold">
+                    {item.label.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{item.label}</span>
+                    <span className="block truncate text-xs text-slate-500">{item.description}</span>
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="grid gap-0.5 border-t border-slate-100 px-3 py-3">
