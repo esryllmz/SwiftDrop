@@ -3,10 +3,10 @@ package com.swiftdrop.auth.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
-        @NotBlank(message = "Email alani bos birakilamaz.")
+        @NotBlank(message = "Email is required.")
         String email,
 
-        @NotBlank(message = "Sifre alani bos birakilamaz.")
+        @NotBlank(message = "Password is required.")
         String password,
 
         String portal

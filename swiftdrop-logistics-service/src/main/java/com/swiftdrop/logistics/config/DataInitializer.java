@@ -93,7 +93,7 @@ public class DataInitializer implements CommandLineRunner {
         Driver driver = Driver.builder()
                 .id(NEAR_DRIVER_ID)
                 .userId(UUID.randomUUID())
-                .fullName("Ahmet Yilmaz (Yakin Kurye)")
+                .fullName("Demo Courier Near")
                 .status(DriverStatus.AVAILABLE)
                 .build();
         Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved near driver must not be null");
@@ -104,7 +104,7 @@ public class DataInitializer implements CommandLineRunner {
         Driver driver = Driver.builder()
                 .id(FAR_DRIVER_ID)
                 .userId(UUID.randomUUID())
-                .fullName("Mehmet Demir (Uzak Kurye)")
+                .fullName("Demo Courier Far")
                 .status(DriverStatus.AVAILABLE)
                 .build();
         Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved far driver must not be null");

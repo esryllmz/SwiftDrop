@@ -18,11 +18,27 @@ Start the infrastructure from the repository root:
 docker compose up -d
 ```
 
-Services:
+Host-exposed services:
 
+- API Gateway: `http://localhost:8080`
+- Kafka UI: `http://localhost:8090`
+- Mailpit UI: `http://localhost:8025`
+
+By default, only the frontend and API Gateway should be exposed to the host. Internal services communicate over the Docker network. Debug ports can be enabled with an optional compose override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+```
+
+Debug override ports:
+
+- Auth Service: `localhost:8081`
+- Logistics Service: `localhost:8082`
+- Notification Service: `localhost:8083`
 - Postgres: `localhost:5439`
 - Redis: `localhost:6379`
 - Kafka: `localhost:9092`
+- Mailpit SMTP: `localhost:1025`
 
 Postgres databases are created by `init-scripts/init.sql`:
 
@@ -86,7 +102,7 @@ Seed data is loaded automatically when the logistics service starts:
 
 ## Notification Service
 
-The notification service runs on port `8083`, consumes Kafka `order-events`, and sends OneSignal web push notifications.
+The notification service consumes Kafka `order-events` and sends OneSignal web push notifications when production credentials are enabled.
 
 ```bash
 cd swiftdrop-notification-service
@@ -100,3 +116,11 @@ Configure OneSignal credentials with environment variables:
 ONESIGNAL_APP_ID=...
 ONESIGNAL_API_KEY=...
 ```
+
+OneSignal is implemented as a pluggable production notification provider and disabled by default in local development through mock mode. Real push delivery requires client subscription registration and a user-to-OneSignal subscription/player identifier mapping.
+
+## Demo Technical Notes
+
+SwiftDrop demonstrates Spring Boot 3 / Java 21 services, Spring Cloud Gateway, JWT authentication, role-based access control, Transactional Outbox, Kafka-driven notifications, Redis and database idempotency, optimistic locking with `@Version`, order status transition policy, status history tracking, secure password reset with hashed tokens, Mailpit local email sandboxing, aggregated admin monitoring, Docker Compose local infrastructure, Next.js role-based portals, MapStruct DTO mapping, and PostgreSQL persistence.
+
+Planned production hardening includes Flyway baseline migrations, Redis-backed rate limiting, audit logging, CI pipeline, Playwright E2E tests, production OneSignal subscription mapping, and deployment/staging profiles.

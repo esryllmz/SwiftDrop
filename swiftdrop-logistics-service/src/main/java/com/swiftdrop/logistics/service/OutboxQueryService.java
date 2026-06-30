@@ -42,7 +42,7 @@ public class OutboxQueryService {
     public OutboxEventResponse findEvent(UUID id) {
         final UUID eventId = Objects.requireNonNull(id, "outbox event id must not be null");
         OutboxEvent event = outboxEventRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Outbox event bulunamadi."));
+                .orElseThrow(() -> new ResourceNotFoundException("Outbox event was not found."));
 
         return toResponse(event);
     }

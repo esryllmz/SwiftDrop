@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ProvisionUserRequest(
-        @NotBlank(message = "Email alani bos birakilamaz.")
+        @NotBlank(message = "Email is required.")
         String email,
 
-        @NotNull(message = "Role alani bos birakilamaz.")
+        @NotNull(message = "Role is required.")
         Role role
 ) {
 }

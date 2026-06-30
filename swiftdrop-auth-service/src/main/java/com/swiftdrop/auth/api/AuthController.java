@@ -119,7 +119,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
-                .body(Map.of("message", "Cikis islemi basarili."));
+                .body(Map.of("message", "Logout completed successfully."));
     }
 
     private ResponseEntity<AuthResponse> respondWithRefreshCookie(AuthResult result) {
@@ -132,12 +132,12 @@ public class AuthController {
 
     private String extractBearerToken(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            throw new AuthenticationFailedException("Authorization header bulunamadi.");
+            throw new AuthenticationFailedException("Authorization header is required.");
         }
 
         String prefix = "Bearer ";
         if (!authorizationHeader.startsWith(prefix) || authorizationHeader.length() <= prefix.length()) {
-            throw new AuthenticationFailedException("Authorization header Bearer token formatinda olmalidir.");
+            throw new AuthenticationFailedException("Authorization header must use the Bearer token format.");
         }
 
         return authorizationHeader.substring(prefix.length()).trim();

@@ -30,18 +30,18 @@ public class JwtService {
     @PostConstruct
     void validateSecretKey() {
         if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException("JWT secret key bos olamaz.");
+            throw new IllegalStateException("JWT secret key is required.");
         }
 
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secretKey);
         } catch (IllegalArgumentException ex) {
-            throw new IllegalStateException("JWT secret key Base64 formatinda olmalidir.", ex);
+            throw new IllegalStateException("JWT secret key must be Base64 encoded.", ex);
         }
 
         if (keyBytes.length < 32) {
-            throw new IllegalStateException("JWT secret key HMAC-SHA icin en az 256 bit olmalidir.");
+            throw new IllegalStateException("JWT secret key must be at least 256 bits for HMAC-SHA.");
         }
     }
 

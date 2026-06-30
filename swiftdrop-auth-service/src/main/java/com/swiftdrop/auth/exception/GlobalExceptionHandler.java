@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Failed",
-                "Girdiginiz bilgileri kontrol ediniz.",
+                "Please check the information you entered.",
                 details
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingRequestCookieException.class)
     public ResponseEntity<ErrorResponse> handleMissingCookie(MissingRequestCookieException ex) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid Refresh Token", "Refresh token cookie bulunamadi.", null);
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid Refresh Token", "Refresh token cookie is required.", null);
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -89,7 +89,7 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Internal Server Error",
-                "Beklenmeyen bir hata olustu.",
+                "An unexpected error occurred.",
                 null
         );
     }

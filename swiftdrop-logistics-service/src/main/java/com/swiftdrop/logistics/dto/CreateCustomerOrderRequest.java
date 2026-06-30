@@ -7,11 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record CreateCustomerOrderRequest(
-        @NotNull(message = "Restoran ID bos olamaz.")
+        @NotNull(message = "Merchant ID is required.")
         UUID merchantId,
 
-        @NotNull(message = "Tutar bos olamaz.")
-        @Positive(message = "Tutar pozitif bir deger olmalidir.")
+        @NotNull(message = "Amount is required.")
+        @Positive(message = "Amount must be positive.")
         BigDecimal totalAmount
 ) {
 }

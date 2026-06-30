@@ -81,7 +81,7 @@ public class OutboxPublisher {
         JsonNode envelope = objectMapper.readTree(event.getPayload());
         JsonNode payloadNode = envelope.get("payload");
         if (payloadNode == null || payloadNode.isNull()) {
-            throw new IllegalStateException("Outbox payload alani bos.");
+            throw new IllegalStateException("Outbox payload is required.");
         }
         return objectMapper.treeToValue(payloadNode, OrderKafkaEvent.class);
     }

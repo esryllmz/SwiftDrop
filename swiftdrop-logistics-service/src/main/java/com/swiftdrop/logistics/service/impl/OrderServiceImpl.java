@@ -76,7 +76,7 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderResponse createOrder(UUID customerId, UUID merchantId, BigDecimal totalAmount) {
         Merchant merchant = merchantRepository.findById(merchantId)
-                .orElseThrow(() -> new IllegalArgumentException("Restoran bulunamadi."));
+                .orElseThrow(() -> new IllegalArgumentException("Merchant was not found."));
 
         Order order = Order.builder()
                 .customerId(customerId)
@@ -91,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
         saveOrderEvent("ORDER_PLACED", savedOrder, new OrderKafkaEvent(
                 savedOrder.getId(),
                 OrderStatus.PLACED.name(),
-                "Siparisiniz basariyla alindi, kurye araniyor.",
+                "Your order was placed successfully. Looking for a courier.",
                 savedOrder.getCustomerId()
         ));
 
@@ -194,7 +194,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order was not found."));
 
         OrderStatus status = OrderStatus.valueOf(newStatus);
         return updateOrderLifecycleStatus(
@@ -386,7 +386,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public OrderResponse findOrder(UUID orderId) {
         Order order = orderRepository.findByIdForDashboard(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order was not found."));
 
         return toResponse(order);
     }
@@ -437,7 +437,7 @@ public class OrderServiceImpl implements OrderService {
 
     private Order findOrderForAction(UUID orderId) {
         return orderRepository.findByIdForDashboard(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Siparis bulunamadi."));
+                .orElseThrow(() -> new ResourceNotFoundException("Order was not found."));
     }
 
     private void ensureMerchantOwnsOrder(Order order, UUID merchantId) {
