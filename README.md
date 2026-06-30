@@ -138,6 +138,10 @@ SwiftDrop demonstrates Spring Boot 3 / Java 21 services, Spring Cloud Gateway, J
 
 Planned production hardening includes Flyway baseline migrations, Redis-backed rate limiting, audit logging, CI pipeline, Playwright E2E tests, production OneSignal subscription mapping, and deployment/staging profiles.
 
+## Development Workspace Notes
+
+Maven-generated sources under `target/generated-sources` are build output, not source of truth. If VS Code reports Java problems inside `target/**`, run `mvn clean compile` or `mvn clean test` for the affected service and reload the Java language server. The workspace excludes `target/**` from file search and Java resource filters.
+
 Geo-based nearest courier assignment is planned as a future enhancement. It requires customer addresses, merchant pickup locations, courier live location tracking, and distance calculation.
 
 Future courier assignment hardening:

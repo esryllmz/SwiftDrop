@@ -4,7 +4,9 @@
     "java.project.resourceFilters": [
         "node_modules",
         ".git",
-        "target"
+        "target",
+        "*/target",
+        "**/target"
     ],
     "files.exclude": {
         "**/target": true
