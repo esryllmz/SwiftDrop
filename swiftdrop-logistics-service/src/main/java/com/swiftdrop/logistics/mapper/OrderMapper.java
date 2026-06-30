@@ -11,6 +11,7 @@ public interface OrderMapper {
 
     @Mapping(target = "merchantName", source = "merchant.name")
     @Mapping(target = "driverName", source = "driver.fullName")
+    @Mapping(target = "driverEmail", source = "driver.email")
     @Mapping(target = "history", expression = "java(java.util.List.of())")
     OrderResponse toResponse(Order order);
 }

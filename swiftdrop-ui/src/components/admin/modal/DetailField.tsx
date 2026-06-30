@@ -11,7 +11,7 @@ export function DetailField({
   label,
   value,
   mono = false,
-  emptyText = "-",
+  emptyText = "Not available",
 }: DetailFieldProps) {
   const hasValue = value !== undefined && value !== null && value !== "";
 

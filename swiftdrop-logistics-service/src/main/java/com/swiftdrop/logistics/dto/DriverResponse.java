@@ -8,6 +8,7 @@ public record DriverResponse(
         UUID id,
         UUID userId,
         String fullName,
+        String email,
         DriverStatus status
 ) {
 }

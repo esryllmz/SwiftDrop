@@ -12,6 +12,7 @@ public record OrderResponse(
         UUID customerId,
         String merchantName,
         String driverName,
+        String driverEmail,
         OrderStatus status,
         BigDecimal totalAmount,
         LocalDateTime createdAt,

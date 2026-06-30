@@ -307,6 +307,7 @@ public class ApplicationService {
         Driver driver = Driver.builder()
                 .userId(provisionedUserId)
                 .fullName(application.getFullName())
+                .email(application.getContactEmail())
                 .status(DriverStatus.OFFLINE)
                 .build();
         final Driver savedDriver = Objects.requireNonNull(

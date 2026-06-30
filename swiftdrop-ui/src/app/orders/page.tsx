@@ -5,10 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AdminButton,
   AdminModal,
-  AdvancedDetails,
   DetailField,
   DetailGrid,
-  JsonPreview,
   ModalFooter,
   ModalSection,
 } from "@/components/admin/modal";
@@ -42,6 +40,7 @@ const fallbackMerchantId = "11111111-1111-1111-1111-111111111111";
 const statuses = [
   "All",
   "PLACED",
+  "AWAITING_ASSIGNMENT",
   "PREPARING",
   "DRIVER_ASSIGNED",
   "ON_THE_WAY",
@@ -73,8 +72,13 @@ export default function OrdersPage() {
     setError(null);
     try {
       const query =
-        selectedStatus === "All" ? "" : `?status=${selectedStatus}`;
-      setOrders(await getJson<OrderResponse[]>(`/api/v1/orders${query}`, undefined, accessToken));
+        selectedStatus === "All" || selectedStatus === "AWAITING_ASSIGNMENT"
+          ? ""
+          : `?status=${selectedStatus}`;
+      const response = await getJson<OrderResponse[]>(`/api/v1/orders${query}`, undefined, accessToken);
+      setOrders(selectedStatus === "AWAITING_ASSIGNMENT"
+        ? response.filter((order) => !order.driverName)
+        : response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Orders request failed");
     } finally {
@@ -196,7 +200,11 @@ export default function OrdersPage() {
                 <AdminFilterPills
                   items={statuses}
                   selected={selectedStatus}
-                  getLabel={(status) => status === "All" ? "All orders" : formatOrderStatus(status)}
+                  getLabel={(status) => {
+                    if (status === "All") return "All orders";
+                    if (status === "AWAITING_ASSIGNMENT") return "Awaiting assignment";
+                    return formatOrderStatus(status);
+                  }}
                   onSelect={setSelectedStatus}
                 />
               </div>
@@ -222,8 +230,8 @@ export default function OrdersPage() {
                   <>
                     <AdminTableCell title={formatDisplayId(order.id, "Order")}><AdminIdChip value={order.id} prefix="Order" /></AdminTableCell>
                     <AdminTableCell>Customer account</AdminTableCell>
-                    <AdminTableCell>{order.merchantName ?? "-"}</AdminTableCell>
-                    <AdminTableCell>{order.driverName ?? "-"}</AdminTableCell>
+                    <AdminTableCell>{displayValue(order.merchantName)}</AdminTableCell>
+                    <AdminTableCell>{order.driverName ?? "Awaiting courier assignment"}</AdminTableCell>
                     <AdminTableCell>
                       <AdminStatusBadge status={order.status} label={formatOrderStatus(order.status)} />
                     </AdminTableCell>
@@ -322,6 +330,11 @@ export default function OrdersPage() {
           {selectedOrder ? (
             <>
               <DetailGrid>
+                <DetailField label="Order ID" value={maskTechnicalId(selectedOrder.id)} mono />
+                <DetailField label="Customer" value={maskTechnicalId(selectedOrder.customerId)} mono />
+                <DetailField label="Merchant" value={selectedOrder.merchantName} />
+                <DetailField label="Courier" value={selectedOrder.driverName ?? "Awaiting courier assignment"} />
+                <DetailField label="Courier email" value={selectedOrder.driverEmail} />
                 <DetailField
                   label="Status"
                   value={
@@ -332,21 +345,26 @@ export default function OrdersPage() {
                   }
                 />
                 <DetailField label="Amount" value={formatMoney(Number(selectedOrder.totalAmount))} />
-                <DetailField label="Merchant" value={selectedOrder.merchantName} />
-                <DetailField label="Courier" value={selectedOrder.driverName ?? "Unassigned"} />
-                <DetailField label="Created At" value={formatDateTime(selectedOrder.createdAt)} />
+                <DetailField label="Created at" value={formatDateTime(selectedOrder.createdAt)} />
+                <DetailField label="Updated at" value={selectedOrder.version ? `Version ${selectedOrder.version}` : null} />
+                <DetailField label="Cancellation reason" value={selectedOrder.cancellationReason} />
+                <DetailField label="Picked up at" value={formatOptionalDateTime(selectedOrder.pickedUpAt)} />
+                <DetailField label="On the way at" value={formatOptionalDateTime(selectedOrder.onTheWayAt)} />
+                <DetailField label="Delivered at" value={formatOptionalDateTime(selectedOrder.deliveredAt)} />
+                <DetailField label="Cancelled at" value={formatOptionalDateTime(selectedOrder.cancelledAt)} />
               </DetailGrid>
-              <AdvancedDetails title="Advanced details">
-                <DetailGrid>
-                  <DetailField label="Order ID" value={maskTechnicalId(selectedOrder.id)} mono />
-                  <DetailField label="Customer ID" value={maskTechnicalId(selectedOrder.customerId)} mono />
-                </DetailGrid>
-                <JsonPreview value={selectedOrder} />
-              </AdvancedDetails>
             </>
           ) : null}
         </div>
       </AdminModal>
     </div>
   );
+}
+
+function displayValue(value?: string | null) {
+  return value && value.trim() ? value : "Not available";
+}
+
+function formatOptionalDateTime(value?: string | null) {
+  return value ? formatDateTime(value) : "Not available";
 }

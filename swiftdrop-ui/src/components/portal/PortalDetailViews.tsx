@@ -659,7 +659,7 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
         <PortalSection
           title="Account Summary"
           description="Read-only details from the current account and portal profile."
-          action={<DetailLink href="/change-password" label="Change Password" />}
+          action={<DetailLink href={`/${portalType}/profile/change-password`} label="Change Password" />}
         >
           {render(state.data)}
         </PortalSection>

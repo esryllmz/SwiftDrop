@@ -1,6 +1,7 @@
 package com.swiftdrop.logistics.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,8 @@ public interface CourierApplicationRepository extends JpaRepository<CourierAppli
     List<CourierApplication> findAllByOrderByCreatedAtDesc();
 
     List<CourierApplication> findByStatusOrderByCreatedAtDesc(ApplicationStatus status);
+
+    Optional<CourierApplication> findByProvisionedUserId(UUID provisionedUserId);
 
     boolean existsByContactEmailAndStatusIn(String contactEmail, List<ApplicationStatus> statuses);
 

@@ -15,6 +15,7 @@ export const ADMIN_ROUTES = [
   "/users-approvals",
   "/settings",
   "/profile",
+  "/change-password",
 ];
 export const PORTAL_ROUTES = ["/customer", "/merchant", "/courier"];
 

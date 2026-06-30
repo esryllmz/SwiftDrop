@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { Button, Card, ErrorState } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -10,9 +10,19 @@ import { normalizeApiError } from "@/lib/api";
 import { hasOuterWhitespace } from "@/lib/normalize";
 import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import type { UserRole } from "@/types/api";
 
 export default function ChangePasswordPage() {
+  return (
+    <Suspense fallback={<ChangePasswordShell />}>
+      <ChangePasswordForm />
+    </Suspense>
+  );
+}
+
+function ChangePasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -26,11 +36,7 @@ export default function ChangePasswordPage() {
     }
   }, [auth.isLoading, auth.user, router]);
 
-  useEffect(() => {
-    if (!auth.isLoading && auth.user && !auth.user.passwordChangeRequired) {
-      router.replace(resolveRoleRedirect(auth.user.role));
-    }
-  }, [auth.isLoading, auth.user, router]);
+  const returnTo = resolveSafeReturnTo(searchParams.get("returnTo"), auth.user?.role);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +53,7 @@ export default function ChangePasswordPage() {
     try {
       const response = await auth.changePassword(currentPassword, newPassword);
       showSuccessToast(response.message ?? "Password changed successfully.");
-      router.replace(resolveRoleRedirect(response.role));
+      router.replace(returnTo ?? resolveRoleRedirect(response.role));
     } catch (err) {
       const message = normalizeApiError(err, "Password change failed.");
       setError(message);
@@ -64,7 +70,9 @@ export default function ChangePasswordPage() {
         <Card>
           <h1 className="text-2xl font-semibold text-slate-950">Set a new password</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Your temporary password must be changed before continuing.
+            {auth.user?.passwordChangeRequired
+              ? "Your temporary password must be changed before continuing."
+              : "Update the password for your signed-in SwiftDrop account."}
           </p>
 
           <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
@@ -120,6 +128,20 @@ export default function ChangePasswordPage() {
   );
 }
 
+function ChangePasswordShell() {
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <PublicHeader />
+      <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center px-4 py-6">
+        <Card>
+          <h1 className="text-2xl font-semibold text-slate-950">Set a new password</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Loading account context.</p>
+        </Card>
+      </section>
+    </main>
+  );
+}
+
 function validatePasswordForm(newPassword: string, confirmPassword: string) {
   if (newPassword !== confirmPassword) {
     return "New password and confirmation do not match.";
@@ -131,6 +153,14 @@ function validatePasswordForm(newPassword: string, confirmPassword: string) {
     return "New password must include at least 8 characters, uppercase, lowercase, and number.";
   }
   return null;
+}
+
+function resolveSafeReturnTo(value: string | null, role?: UserRole) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return role ? resolveRoleRedirect(role) : null;
+  }
+
+  return value;
 }
 
 function PublicHeader() {

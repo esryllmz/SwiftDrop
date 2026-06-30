@@ -35,6 +35,9 @@ public class Driver {
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
+    @Column(length = 160)
+    private String email;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private DriverStatus status;

@@ -408,6 +408,7 @@ public class OrderServiceImpl implements OrderService {
                 order.getCustomerId(),
                 merchant != null ? merchant.getName() : null,
                 driver != null ? driver.getFullName() : null,
+                driver != null ? driver.getEmail() : null,
                 order.getStatus(),
                 order.getTotalAmount(),
                 order.getCreatedAt(),

@@ -70,9 +70,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoading, user, logout } = useAuth();
 
   const isCurrentPublicRoute = isPublicRoute(pathname);
-  const isAdminRoute = isRouteMatch(pathname, ADMIN_ROUTES);
   const portalRouteRole = resolvePortalRouteRole(pathname);
   const isChangePasswordRoute = pathname === "/change-password";
+  const isAdminRoute = !isChangePasswordRoute && isRouteMatch(pathname, ADMIN_ROUTES);
 
   useEffect(() => {
     if (!isLoading && isAdminRoute && !user) {

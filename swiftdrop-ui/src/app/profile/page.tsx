@@ -30,7 +30,19 @@ export default function ProfilePage() {
         icon="PR"
         title="Profile"
         description="Account and access details."
-        action={user ? <AdminStatusBadge status={user.role} /> : undefined}
+        action={
+          user ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/profile/change-password"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Change Password
+              </Link>
+              <AdminStatusBadge status={user.role} />
+            </div>
+          ) : undefined
+        }
       />
 
       {!user ? <EmptyState message="No authenticated user context is available." /> : null}

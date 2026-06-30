@@ -62,6 +62,7 @@ export type OrderResponse = {
   merchantName?: string;
   driverId?: string;
   driverName?: string;
+  driverEmail?: string | null;
   status: OrderStatus;
   totalAmount: number;
   createdAt: string;
@@ -134,6 +135,7 @@ export type DriverResponse = {
   id: string;
   userId: string;
   fullName: string;
+  email?: string | null;
   status: DriverStatus;
 };
 

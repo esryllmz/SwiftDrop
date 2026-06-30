@@ -7,7 +7,6 @@ import {
   AdvancedDetails,
   DetailField,
   DetailGrid,
-  JsonPreview,
   ModalFooter,
 } from "@/components/admin/modal";
 import {
@@ -89,7 +88,7 @@ export default function DriversPage() {
         </div>
         <AdminInfoBanner title="Assignment Readiness" tone="emerald">
           <p>
-            Courier assignment uses availability and proximity rules.
+            Courier assignment uses availability and proximity rules. A courier must be available to receive assignments.
           </p>
         </AdminInfoBanner>
       </div>
@@ -121,7 +120,7 @@ export default function DriversPage() {
         ) : null}
         {drivers.length > 0 ? (
           <AdminDataTable
-            columns={["Courier", "Full Name", "Status", "Actions"]}
+            columns={["Courier", "Full Name", "Email", "Status", "Actions"]}
             rows={drivers}
             emptyMessage="No couriers found."
             getRowKey={(driver) => driver.id}
@@ -136,6 +135,7 @@ export default function DriversPage() {
                     {driver.fullName}
                   </span>
                 </AdminTableCell>
+                <AdminTableCell>{driver.email ?? "Not available"}</AdminTableCell>
                 <AdminTableCell><AdminStatusBadge status={driver.status} /></AdminTableCell>
                 <AdminTableCell>
                   <AdminViewAction
@@ -180,6 +180,7 @@ export default function DriversPage() {
             <DetailGrid>
               <DetailField label="Status" value={<AdminStatusBadge status={selectedDriver.status} />} />
               <DetailField label="Full Name" value={selectedDriver.fullName} />
+              <DetailField label="Courier email" value={selectedDriver.email} />
               <DetailField
                 label="Assignment Availability"
                 value={assignmentAvailability(selectedDriver.status)}
@@ -190,7 +191,6 @@ export default function DriversPage() {
                 <DetailField label="Courier ID" value={maskTechnicalId(selectedDriver.id)} mono />
                 <DetailField label="User ID" value={maskTechnicalId(selectedDriver.userId)} mono />
               </DetailGrid>
-              <JsonPreview value={selectedDriver} />
             </AdvancedDetails>
           </div>
         ) : (

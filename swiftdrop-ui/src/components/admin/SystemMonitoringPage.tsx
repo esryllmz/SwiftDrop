@@ -9,7 +9,7 @@ import {
   AdminSectionCard,
   AdminStatusBadge,
 } from "@/components/admin/ui";
-import { getJson } from "@/lib/api";
+import { getJson, normalizeApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import {
   normalizeSystemMonitoringResponse,
@@ -20,7 +20,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function SystemMonitoringPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<SystemMonitoringResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,6 +29,17 @@ export function SystemMonitoringPage() {
   const inFlightRef = useRef(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!accessToken) {
+      setLoading(false);
+      setRefreshing(false);
+      setError("Please sign in again.");
+      return;
+    }
+
     if (inFlightRef.current) {
       return;
     }
@@ -49,11 +60,7 @@ export function SystemMonitoringPage() {
       if (signal?.aborted) {
         return;
       }
-      setError(
-        err instanceof Error && err.message
-          ? `Unable to load system health data. ${err.message}`
-          : "Unable to load system health data.",
-      );
+      setError(normalizeApiError(err, "Unable to load system health data."));
     } finally {
       inFlightRef.current = false;
       if (!signal?.aborted) {
@@ -61,16 +68,20 @@ export function SystemMonitoringPage() {
         setRefreshing(false);
       }
     }
-  }, [accessToken]);
+  }, [accessToken, authLoading]);
 
   useEffect(() => {
     const controller = new AbortController();
+    if (authLoading) {
+      return () => controller.abort();
+    }
+
     const timer = window.setTimeout(() => void load(controller.signal), 0);
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [load]);
+  }, [authLoading, load]);
 
   const services = data?.services ?? [];
   const infrastructure = data?.infrastructure ?? [];

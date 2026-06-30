@@ -37,8 +37,16 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         final Merchant burgerLab = findOrCreateMerchant();
-        final Driver nearDriver = findOrCreateDriver(NEAR_DRIVER_ID, this::saveNearDriver);
-        final Driver farDriver = findOrCreateDriver(FAR_DRIVER_ID, this::saveFarDriver);
+        final Driver nearDriver = findOrCreateDriver(
+                NEAR_DRIVER_ID,
+                "demo.courier.near@swiftdrop.local",
+                this::saveNearDriver
+        );
+        final Driver farDriver = findOrCreateDriver(
+                FAR_DRIVER_ID,
+                "demo.courier.far@swiftdrop.local",
+                this::saveFarDriver
+        );
 
         var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
         final String nearDriverMember = Objects.requireNonNull(
@@ -69,10 +77,15 @@ public class DataInitializer implements CommandLineRunner {
         return saveBurgerLabMerchant();
     }
 
-    private Driver findOrCreateDriver(UUID driverId, java.util.function.Supplier<Driver> creator) {
+    private Driver findOrCreateDriver(UUID driverId, String email, java.util.function.Supplier<Driver> creator) {
         final Optional<Driver> existingDriver = driverRepository.findById(driverId);
         if (existingDriver.isPresent()) {
-            return Objects.requireNonNull(existingDriver.get(), "seed driver must not be null");
+            Driver driver = Objects.requireNonNull(existingDriver.get(), "seed driver must not be null");
+            if (driver.getEmail() == null || driver.getEmail().isBlank()) {
+                driver.setEmail(email);
+                return Objects.requireNonNull(driverRepository.save(driver), "updated seed driver must not be null");
+            }
+            return driver;
         }
         return Objects.requireNonNull(creator.get(), "created seed driver must not be null");
     }
@@ -94,6 +107,7 @@ public class DataInitializer implements CommandLineRunner {
                 .id(NEAR_DRIVER_ID)
                 .userId(UUID.randomUUID())
                 .fullName("Demo Courier Near")
+                .email("demo.courier.near@swiftdrop.local")
                 .status(DriverStatus.AVAILABLE)
                 .build();
         Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved near driver must not be null");
@@ -105,6 +119,7 @@ public class DataInitializer implements CommandLineRunner {
                 .id(FAR_DRIVER_ID)
                 .userId(UUID.randomUUID())
                 .fullName("Demo Courier Far")
+                .email("demo.courier.far@swiftdrop.local")
                 .status(DriverStatus.AVAILABLE)
                 .build();
         Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved far driver must not be null");

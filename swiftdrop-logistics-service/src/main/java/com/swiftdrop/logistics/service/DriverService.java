@@ -34,6 +34,7 @@ public class DriverService {
                 driver.getId(),
                 driver.getUserId(),
                 driver.getFullName(),
+                driver.getEmail(),
                 driver.getStatus()
         );
     }
