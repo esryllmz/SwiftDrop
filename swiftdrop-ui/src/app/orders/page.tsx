@@ -34,7 +34,7 @@ import { formatDateTime, formatDisplayId, formatMoney, maskTechnicalId } from "@
 import { formatOrderStatus } from "@/lib/order-status";
 import type { MerchantResponse, OrderResponse } from "@/types/api";
 
-const fallbackCustomerId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const fallbackCustomerId = "44444444-4444-4444-4444-444444444444";
 const fallbackMerchantId = "11111111-1111-1111-1111-111111111111";
 
 const statuses = [
@@ -62,6 +62,7 @@ export default function OrdersPage() {
   const [createResult, setCreateResult] = useState<OrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -144,6 +145,26 @@ export default function OrdersPage() {
       setDetailError(err instanceof Error ? err.message : "Order detail failed");
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function assignDemoCourier(orderId: string) {
+    setAssigningOrderId(orderId);
+    setError(null);
+    try {
+      const updatedOrder = await postJson<OrderResponse>(
+        `/api/v1/admin/orders/${orderId}/assign-demo-courier`,
+        undefined,
+        undefined,
+        accessToken,
+      );
+      setOrders((current) => current.map((order) => order.id === updatedOrder.id ? updatedOrder : order));
+      setSelectedOrder((current) => current?.id === updatedOrder.id ? updatedOrder : current);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo courier assignment failed.");
+    } finally {
+      setAssigningOrderId(null);
     }
   }
 
@@ -238,10 +259,22 @@ export default function OrdersPage() {
                     <AdminTableCell>{formatMoney(Number(order.totalAmount))}</AdminTableCell>
                     <AdminTableCell>{formatDateTime(order.createdAt)}</AdminTableCell>
                     <AdminTableCell>
-                      <AdminViewAction
-                        disabled={detailLoading}
-                        onClick={() => void viewOrder(order.id)}
-                      />
+                      <span className="flex flex-wrap gap-2">
+                        {canAssignDemoCourier(order) ? (
+                          <AdminButton
+                            type="button"
+                            variant="secondary"
+                            disabled={assigningOrderId === order.id}
+                            onClick={() => void assignDemoCourier(order.id)}
+                          >
+                            {assigningOrderId === order.id ? "Assigning..." : "Assign demo courier"}
+                          </AdminButton>
+                        ) : null}
+                        <AdminViewAction
+                          disabled={detailLoading}
+                          onClick={() => void viewOrder(order.id)}
+                        />
+                      </span>
                     </AdminTableCell>
                   </>
                 )}
@@ -284,7 +317,7 @@ export default function OrdersPage() {
           }}
         >
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-            Creates an order using the current demo IDs.
+            Creates an order using the fixed demo customer and merchant. Use Assign demo courier if the order is not assigned automatically.
           </div>
           {createError ? <ErrorState message={createError} /> : null}
           <ModalSection>
@@ -353,6 +386,16 @@ export default function OrdersPage() {
                 <DetailField label="Delivered at" value={formatOptionalDateTime(selectedOrder.deliveredAt)} />
                 <DetailField label="Cancelled at" value={formatOptionalDateTime(selectedOrder.cancelledAt)} />
               </DetailGrid>
+              {canAssignDemoCourier(selectedOrder) ? (
+                <AdminButton
+                  type="button"
+                  variant="secondary"
+                  disabled={assigningOrderId === selectedOrder.id}
+                  onClick={() => void assignDemoCourier(selectedOrder.id)}
+                >
+                  {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign demo courier"}
+                </AdminButton>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -367,4 +410,8 @@ function displayValue(value?: string | null) {
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Not available";
+}
+
+function canAssignDemoCourier(order: OrderResponse) {
+  return order.status === "PLACED" && !order.driverName;
 }

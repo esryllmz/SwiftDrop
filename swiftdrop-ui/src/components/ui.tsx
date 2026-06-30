@@ -127,11 +127,3 @@ export function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
-
-export function JsonBlock({ value }: { value: unknown }) {
-  return (
-    <pre className="max-h-80 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-      {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}

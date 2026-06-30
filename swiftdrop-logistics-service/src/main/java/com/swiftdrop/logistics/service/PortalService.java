@@ -38,6 +38,7 @@ public class PortalService {
             OrderStatus.PICKED_UP,
             OrderStatus.ON_THE_WAY
     );
+    private static final UUID DEMO_MERCHANT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
@@ -74,6 +75,10 @@ public class PortalService {
     public List<CustomerMerchantOptionResponse> findCustomerMerchantOptions() {
         return merchantRepository.findCustomerMerchantOptions().stream()
                 .map(this::toCustomerMerchantOption)
+                .sorted((left, right) -> Boolean.compare(
+                        !DEMO_MERCHANT_ID.equals(left.id()),
+                        !DEMO_MERCHANT_ID.equals(right.id())
+                ))
                 .toList();
     }
 

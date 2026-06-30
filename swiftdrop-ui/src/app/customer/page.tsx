@@ -32,6 +32,7 @@ const activeCustomerStatuses: OrderStatus[] = [
   "PICKED_UP",
   "ON_THE_WAY",
 ];
+const demoMerchantId = "11111111-1111-1111-1111-111111111111";
 
 export default function CustomerPage() {
   const { accessToken, user } = useAuth();
@@ -61,7 +62,7 @@ export default function CustomerPage() {
       setSelectedMerchantId((current) =>
         nextMerchants.some((merchant) => merchant.id === current)
           ? current
-          : nextMerchants[0]?.id ?? "",
+          : getDefaultMerchantId(nextMerchants),
       );
     } catch (err) {
       setMerchants([]);
@@ -111,7 +112,7 @@ export default function CustomerPage() {
     setModalOpen(false);
     setCreateError(null);
     setTotalAmount("");
-    setSelectedMerchantId(merchants[0]?.id ?? "");
+    setSelectedMerchantId(getDefaultMerchantId(merchants));
   }, [creating, merchants]);
 
   const handleCreateOrder = async (event: FormEvent<HTMLFormElement>) => {
@@ -140,7 +141,7 @@ export default function CustomerPage() {
       });
       showSuccessToast("Order created successfully.");
       setModalOpen(false);
-      setSelectedMerchantId(merchants[0]?.id ?? "");
+      setSelectedMerchantId(getDefaultMerchantId(merchants));
       setTotalAmount("");
       await load();
     } catch (err) {
@@ -307,4 +308,8 @@ export default function CustomerPage() {
       ) : null}
     </PortalShell>
   );
+}
+
+function getDefaultMerchantId(merchants: CustomerMerchantOption[]) {
+  return merchants.find((merchant) => merchant.id === demoMerchantId)?.id ?? merchants[0]?.id ?? "";
 }

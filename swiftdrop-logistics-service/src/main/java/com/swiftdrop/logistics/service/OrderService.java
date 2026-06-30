@@ -33,6 +33,8 @@ public interface OrderService {
 
     OrderResponse cancelAdminOrder(UUID adminUserId, UUID orderId, CancelOrderRequest request);
 
+    OrderResponse assignDemoCourier(UUID adminUserId, UUID orderId);
+
     List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId);
 
     List<OrderResponse> findCustomerOrders(UUID customerId);

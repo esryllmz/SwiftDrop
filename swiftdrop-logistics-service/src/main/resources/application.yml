@@ -43,6 +43,8 @@ application:
     timeout-ms: ${MONITORING_TIMEOUT_MS:1500}
   seed:
     enabled: ${SEED_DATA_ENABLED:false}
+  demo:
+    courier-id: ${DEMO_COURIER_ID:22222222-2222-2222-2222-222222222222}
   auth-service:
     base-url: ${AUTH_SERVICE_BASE_URL:http://localhost:8081}
     internal-api-key: ${INTERNAL_API_KEY:local-internal-api-key}

@@ -45,6 +45,17 @@ Postgres databases are created by `init-scripts/init.sql`:
 - `swiftdrop_auth_db`
 - `swiftdrop_logistics_db`
 
+## Local Demo Credentials
+
+Docker Compose seeds deterministic local demo accounts by default:
+
+- Admin: `admin@swiftdrop.com` / `Admin123!`
+- Customer: `customer@swiftdrop.demo` / `Demo123!`
+- Merchant: `merchant@swiftdrop.demo` / `Demo123!`
+- Courier: `courier@swiftdrop.demo` / `Demo123!`
+
+These credentials are intended for local portfolio/demo runs only. Disable them with `DEMO_SEED_ENABLED=false` and `SEED_DATA_ENABLED=false` when running a non-demo profile.
+
 ## Auth Service
 
 The auth service is a Spring Boot Maven project under `swiftdrop-auth-service`.
@@ -94,11 +105,13 @@ Order endpoints:
 - `PUT /api/v1/orders/{id}/status?status=DELIVERED`
 - `POST /api/v1/drivers/location`
 
-Seed data is loaded automatically when the logistics service starts:
+Demo seed data is loaded automatically by Docker Compose when the logistics service starts:
 
-- Merchant: `11111111-1111-1111-1111-111111111111`
-- Near driver: `22222222-2222-2222-2222-222222222222`
-- Far driver: `33333333-3333-3333-3333-333333333333`
+- Merchant: `11111111-1111-1111-1111-111111111111` (`merchant@swiftdrop.demo`)
+- Demo courier: `22222222-2222-2222-2222-222222222222` (`courier@swiftdrop.demo`)
+- Backup demo courier: `33333333-3333-3333-3333-333333333333`
+
+The current MVP uses available courier assignment for demo clarity. Admin users can assign an unassigned placed order to the fixed demo courier from the Orders page. This makes the Courier portal flow deterministic for pickup, on-the-way, and delivered actions.
 
 ## Notification Service
 
@@ -124,3 +137,16 @@ OneSignal is implemented as a pluggable production notification provider and dis
 SwiftDrop demonstrates Spring Boot 3 / Java 21 services, Spring Cloud Gateway, JWT authentication, role-based access control, Transactional Outbox, Kafka-driven notifications, Redis and database idempotency, optimistic locking with `@Version`, order status transition policy, status history tracking, secure password reset with hashed tokens, Mailpit local email sandboxing, aggregated admin monitoring, Docker Compose local infrastructure, Next.js role-based portals, MapStruct DTO mapping, and PostgreSQL persistence.
 
 Planned production hardening includes Flyway baseline migrations, Redis-backed rate limiting, audit logging, CI pipeline, Playwright E2E tests, production OneSignal subscription mapping, and deployment/staging profiles.
+
+Geo-based nearest courier assignment is planned as a future enhancement. It requires customer addresses, merchant pickup locations, courier live location tracking, and distance calculation.
+
+Future courier assignment hardening:
+
+- pickup deadline
+- delivery deadline
+- assignment expiration
+- admin reassignment
+- delayed order state
+- courier no-show event
+
+In production, an order can have multiple courier assignments over time. If a courier does not pick up or deliver within SLA, the assignment should expire and the order should be reassigned by the system or an admin.

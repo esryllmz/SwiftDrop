@@ -58,7 +58,7 @@ const settingsGroups: Array<{ title: string; items: SettingsItem[] }> = [
     items: [
       { label: "Gateway URL", value: "http://localhost:8080", mono: true },
       { label: "Kafka Console URL", value: "http://localhost:8090", mono: true },
-      { label: "Frontend Origin", value: "http://localhost:3001", mono: true },
+      { label: "Frontend Origin", value: "http://localhost:3000", mono: true },
     ],
   },
   {

@@ -65,6 +65,10 @@ application:
   provisioning:
     temporary-password-length: ${PROVISIONING_TEMP_PASSWORD_LENGTH:12}
   seed:
+    demo:
+      enabled: ${DEMO_SEED_ENABLED:false}
+      password: ${DEMO_SEED_PASSWORD:Demo123!}
+      reset-existing-password: ${DEMO_SEED_RESET_EXISTING_PASSWORD:false}
     admin:
       enabled: ${ADMIN_SEED_ENABLED:${SEED_ADMIN_ENABLED:true}}
       email: ${ADMIN_SEED_EMAIL:${SEED_ADMIN_EMAIL:admin@swiftdrop.com}}

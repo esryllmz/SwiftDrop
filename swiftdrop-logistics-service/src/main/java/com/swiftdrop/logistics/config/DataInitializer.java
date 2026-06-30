@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.swiftdrop.logistics.entity.Driver;
@@ -29,21 +30,28 @@ public class DataInitializer implements CommandLineRunner {
     private static final UUID BURGER_LAB_ID = uuid("11111111-1111-1111-1111-111111111111");
     private static final UUID NEAR_DRIVER_ID = uuid("22222222-2222-2222-2222-222222222222");
     private static final UUID FAR_DRIVER_ID = uuid("33333333-3333-3333-3333-333333333333");
+    private static final UUID DEMO_MERCHANT_USER_ID = uuid("55555555-5555-5555-5555-555555555555");
+    private static final UUID DEMO_COURIER_USER_ID = uuid("66666666-6666-6666-6666-666666666666");
 
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
     private final StringRedisTemplate redisTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
         final Merchant burgerLab = findOrCreateMerchant();
         final Driver nearDriver = findOrCreateDriver(
                 NEAR_DRIVER_ID,
-                "demo.courier.near@swiftdrop.local",
+                DEMO_COURIER_USER_ID,
+                "Demo Courier",
+                "courier@swiftdrop.demo",
                 this::saveNearDriver
         );
         final Driver farDriver = findOrCreateDriver(
                 FAR_DRIVER_ID,
+                uuid("77777777-7777-7777-7777-777777777777"),
+                "Backup Demo Courier",
                 "demo.courier.far@swiftdrop.local",
                 this::saveFarDriver
         );
@@ -72,17 +80,52 @@ public class DataInitializer implements CommandLineRunner {
     private Merchant findOrCreateMerchant() {
         final Optional<Merchant> existingMerchant = merchantRepository.findById(BURGER_LAB_ID);
         if (existingMerchant.isPresent()) {
-            return Objects.requireNonNull(existingMerchant.get(), "seed merchant must not be null");
+            Merchant merchant = Objects.requireNonNull(existingMerchant.get(), "seed merchant must not be null");
+            boolean changed = false;
+            if (!Objects.equals(merchant.getUserId(), DEMO_MERCHANT_USER_ID)) {
+                merchant.setUserId(DEMO_MERCHANT_USER_ID);
+                changed = true;
+            }
+            if (!Objects.equals(merchant.getName(), "SwiftDrop Demo Merchant")) {
+                merchant.setName("SwiftDrop Demo Merchant");
+                changed = true;
+            }
+            if (changed) {
+                return Objects.requireNonNull(merchantRepository.save(merchant), "updated seed merchant must not be null");
+            }
+            return merchant;
         }
         return saveBurgerLabMerchant();
     }
 
-    private Driver findOrCreateDriver(UUID driverId, String email, java.util.function.Supplier<Driver> creator) {
+    private Driver findOrCreateDriver(
+            UUID driverId,
+            UUID userId,
+            String fullName,
+            String email,
+            java.util.function.Supplier<Driver> creator
+    ) {
         final Optional<Driver> existingDriver = driverRepository.findById(driverId);
         if (existingDriver.isPresent()) {
             Driver driver = Objects.requireNonNull(existingDriver.get(), "seed driver must not be null");
+            boolean changed = false;
+            if (!Objects.equals(driver.getUserId(), userId)) {
+                driver.setUserId(userId);
+                changed = true;
+            }
+            if (!Objects.equals(driver.getFullName(), fullName)) {
+                driver.setFullName(fullName);
+                changed = true;
+            }
             if (driver.getEmail() == null || driver.getEmail().isBlank()) {
                 driver.setEmail(email);
+                changed = true;
+            }
+            if (driver.getStatus() != DriverStatus.AVAILABLE) {
+                driver.setStatus(DriverStatus.AVAILABLE);
+                changed = true;
+            }
+            if (changed) {
                 return Objects.requireNonNull(driverRepository.save(driver), "updated seed driver must not be null");
             }
             return driver;
@@ -93,36 +136,54 @@ public class DataInitializer implements CommandLineRunner {
     private Merchant saveBurgerLabMerchant() {
         Merchant merchant = Merchant.builder()
                 .id(BURGER_LAB_ID)
-                .userId(UUID.randomUUID())
-                .name("Burger Lab Kadikoy")
+                .userId(DEMO_MERCHANT_USER_ID)
+                .name("SwiftDrop Demo Merchant")
                 .latitude(41.0200)
                 .longitude(29.0250)
                 .build();
-        Merchant savedMerchant = Objects.requireNonNull(merchantRepository.save(merchant), "saved merchant must not be null");
-        return savedMerchant;
+        jdbcTemplate.update(
+                "INSERT INTO merchants (id, user_id, name, latitude, longitude) VALUES (?, ?, ?, ?, ?)",
+                merchant.getId(),
+                merchant.getUserId(),
+                merchant.getName(),
+                merchant.getLatitude(),
+                merchant.getLongitude()
+        );
+        return merchant;
     }
 
     private Driver saveNearDriver() {
         Driver driver = Driver.builder()
                 .id(NEAR_DRIVER_ID)
-                .userId(UUID.randomUUID())
-                .fullName("Demo Courier Near")
-                .email("demo.courier.near@swiftdrop.local")
+                .userId(DEMO_COURIER_USER_ID)
+                .fullName("Demo Courier")
+                .email("courier@swiftdrop.demo")
                 .status(DriverStatus.AVAILABLE)
                 .build();
-        Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved near driver must not be null");
-        return savedDriver;
+        insertDriver(driver);
+        return driver;
     }
 
     private Driver saveFarDriver() {
         Driver driver = Driver.builder()
                 .id(FAR_DRIVER_ID)
-                .userId(UUID.randomUUID())
-                .fullName("Demo Courier Far")
+                .userId(uuid("77777777-7777-7777-7777-777777777777"))
+                .fullName("Backup Demo Courier")
                 .email("demo.courier.far@swiftdrop.local")
                 .status(DriverStatus.AVAILABLE)
                 .build();
-        Driver savedDriver = Objects.requireNonNull(driverRepository.save(driver), "saved far driver must not be null");
-        return savedDriver;
+        insertDriver(driver);
+        return driver;
+    }
+
+    private void insertDriver(Driver driver) {
+        jdbcTemplate.update(
+                "INSERT INTO drivers (id, user_id, full_name, email, status) VALUES (?, ?, ?, ?, ?)",
+                driver.getId(),
+                driver.getUserId(),
+                driver.getFullName(),
+                driver.getEmail(),
+                driver.getStatus().name()
+        );
     }
 }

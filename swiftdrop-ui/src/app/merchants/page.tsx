@@ -7,7 +7,6 @@ import {
   AdvancedDetails,
   DetailField,
   DetailGrid,
-  JsonPreview,
   ModalFooter,
 } from "@/components/admin/modal";
 import {
@@ -95,7 +94,7 @@ export default function MerchantsPage() {
         </div>
         <AdminInfoBanner title="Delivery Location" tone="violet">
           <p>
-            Merchant location is used for nearby driver assignment.
+            Merchant location is stored for future pickup and assignment enhancements.
           </p>
         </AdminInfoBanner>
       </div>
@@ -190,7 +189,7 @@ export default function MerchantsPage() {
         {selectedMerchant ? (
           <div className="grid gap-4">
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-              Merchant location is used for driver proximity matching.
+              Merchant location is stored for future pickup and assignment enhancements.
             </div>
             <DetailGrid>
               <DetailField label="Name" value={selectedMerchant.name} />
@@ -202,7 +201,6 @@ export default function MerchantsPage() {
                 <DetailField label="Merchant ID" value={maskTechnicalId(selectedMerchant.id)} mono />
                 <DetailField label="User ID" value={maskTechnicalId(selectedMerchant.userId)} mono />
               </DetailGrid>
-              <JsonPreview value={selectedMerchant} />
             </AdvancedDetails>
           </div>
         ) : (

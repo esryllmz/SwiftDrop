@@ -7,7 +7,6 @@ import {
   AdvancedDetails,
   DetailField,
   DetailGrid,
-  JsonPreview,
   ModalFooter,
 } from "@/components/admin/modal";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -112,7 +111,7 @@ export function EventStreamPage() {
         </div>
         <AdminInfoBanner title="Transactional Outbox" tone="slate">
           <p>
-            Event details and payload are available in the detail modal.
+            Event metadata and delivery status are available in the detail modal.
           </p>
         </AdminInfoBanner>
       </div>
@@ -216,7 +215,7 @@ export function EventStreamPage() {
                 <DetailField label="Version" value={String(selectedEvent.version)} />
                 <DetailField label="Last Error" value={selectedEvent.lastError} />
               </DetailGrid>
-              <AdvancedDetails title="Advanced details">
+              <AdvancedDetails title="Technical identifiers">
                 <DetailGrid>
                   <DetailField label="Event ID" value={maskTechnicalId(selectedEvent.id)} mono />
                   <DetailField label="Aggregate ID" value={maskTechnicalId(selectedEvent.aggregateId)} mono />
@@ -224,9 +223,7 @@ export function EventStreamPage() {
                   <DetailField label="Correlation ID" value={maskTechnicalId(selectedEvent.correlationId)} mono />
                 </DetailGrid>
               </AdvancedDetails>
-              <AdvancedDetails title="Payload">
-                <JsonPreview value={selectedEvent.payload} />
-              </AdvancedDetails>
+              <PayloadDetails value={selectedEvent.payload} />
             </>
           ) : null}
         </div>
@@ -269,4 +266,69 @@ function eventTypeBadgeClass(eventType: string) {
   }
 
   return statusBadgeClass(eventType);
+}
+
+function PayloadDetails({ value }: { value: string }) {
+  const envelope = parsePayloadEnvelope(value);
+
+  return (
+    <AdvancedDetails title="Event payload summary">
+      <DetailGrid>
+        <DetailField label="Payload Event ID" value={formatOptionalId(envelope.eventId)} mono />
+        <DetailField label="Payload Event Type" value={envelope.eventType} />
+        <DetailField label="Occurred At" value={formatDateTime(envelope.occurredAt)} />
+        <DetailField label="Correlation ID" value={formatOptionalId(envelope.correlationId)} mono />
+        <DetailField label="Order ID" value={formatOptionalId(envelope.orderId)} mono />
+        <DetailField label="Previous Status" value={envelope.previousStatus} />
+        <DetailField label="New Status" value={envelope.newStatus ?? envelope.status} />
+        <DetailField label="Actor Type" value={envelope.actorType} />
+        <DetailField label="Target User" value={formatOptionalId(envelope.targetUserId)} mono />
+        <DetailField label="Message" value={envelope.message} />
+        <DetailField label="Reason" value={envelope.reason} />
+      </DetailGrid>
+    </AdvancedDetails>
+  );
+}
+
+function parsePayloadEnvelope(value: string) {
+  const parsed = safeParseObject(value);
+  const payload = safeRecord(parsed.payload);
+
+  return {
+    eventId: nullableString(parsed.eventId),
+    eventType: nullableString(parsed.eventType),
+    occurredAt: nullableString(parsed.occurredAt),
+    correlationId: nullableString(parsed.correlationId),
+    orderId: nullableString(payload.orderId),
+    status: nullableString(payload.status),
+    message: nullableString(payload.message),
+    targetUserId: nullableString(payload.targetUserId),
+    previousStatus: nullableString(payload.previousStatus),
+    newStatus: nullableString(payload.newStatus),
+    actorType: nullableString(payload.actorType),
+    reason: nullableString(payload.reason),
+  };
+}
+
+function safeParseObject(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value);
+    return safeRecord(parsed);
+  } catch {
+    return {};
+  }
+}
+
+function safeRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function nullableString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function formatOptionalId(value: string | null) {
+  return value ? maskTechnicalId(value) : null;
 }

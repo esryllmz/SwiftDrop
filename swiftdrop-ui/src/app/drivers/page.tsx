@@ -88,7 +88,7 @@ export default function DriversPage() {
         </div>
         <AdminInfoBanner title="Assignment Readiness" tone="emerald">
           <p>
-            Courier assignment uses availability and proximity rules. A courier must be available to receive assignments.
+            Demo assignment uses courier availability. A courier must be available to receive assignments.
           </p>
         </AdminInfoBanner>
       </div>

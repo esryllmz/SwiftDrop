@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
@@ -34,6 +35,7 @@ import com.swiftdrop.logistics.entity.OrderActorType;
 import com.swiftdrop.logistics.entity.OrderStatus;
 import com.swiftdrop.logistics.entity.OrderStatusHistory;
 import com.swiftdrop.logistics.exception.ForbiddenPortalAccessException;
+import com.swiftdrop.logistics.exception.InvalidOrderTransitionException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
@@ -61,6 +63,9 @@ public class OrderServiceImpl implements OrderService {
     private final OutboxService outboxService;
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redissonClient;
+
+    @Value("${application.demo.courier-id}")
+    private UUID demoCourierId;
 
     @Override
     @Transactional
@@ -101,6 +106,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void assignDriverWorkflow(Order order) {
+        if (assignDriverIfAvailable(order, demoCourierId)) {
+            return;
+        }
+
         Merchant merchant = order.getMerchant();
         Point merchantLocation = new Point(merchant.getLongitude(), merchant.getLatitude());
         Distance searchRadius = new Distance(5, Metrics.KILOMETERS);
@@ -138,42 +147,7 @@ public class OrderServiceImpl implements OrderService {
 
             try {
                 if (driverLock.tryLock(0, 3, TimeUnit.SECONDS)) {
-                    Driver driver = driverRepository.findById(driverId).orElse(null);
-
-                    if (driver != null && driver.getStatus() == DriverStatus.AVAILABLE) {
-                        driver.setStatus(DriverStatus.BUSY);
-                        Driver busyDriver = Objects.requireNonNull(
-                                driverRepository.save(driver),
-                                "busy driver must not be null"
-                        );
-
-                        order.setDriver(busyDriver);
-                        OrderStatus previousStatus = order.getStatus();
-                        transitionPolicy.assertTransition(previousStatus, OrderStatus.DRIVER_ASSIGNED, OrderActorType.SYSTEM);
-                        order.setStatus(OrderStatus.DRIVER_ASSIGNED);
-                        Order assignedOrder = Objects.requireNonNull(
-                                orderRepository.save(order),
-                                "assigned order must not be null"
-                        );
-                        saveHistory(
-                                assignedOrder,
-                                previousStatus,
-                                OrderStatus.DRIVER_ASSIGNED,
-                                OrderActorType.SYSTEM,
-                                null,
-                                null
-                        );
-
-                        log.info("Order {} assigned to driver {}", assignedOrder.getId(), busyDriver.getFullName());
-                        saveLifecycleEvent(
-                                "ORDER_DRIVER_ASSIGNED",
-                                assignedOrder,
-                                previousStatus,
-                                OrderStatus.DRIVER_ASSIGNED,
-                                OrderActorType.SYSTEM,
-                                null,
-                                "Your order was accepted by a courier."
-                        );
+                    if (assignDriverIfAvailable(order, driverId)) {
                         return;
                     }
                 }
@@ -188,6 +162,48 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
         }
+    }
+
+    private boolean assignDriverIfAvailable(Order order, UUID driverId) {
+        Driver driver = driverRepository.findById(driverId).orElse(null);
+        if (driver == null || driver.getStatus() != DriverStatus.AVAILABLE) {
+            return false;
+        }
+
+        driver.setStatus(DriverStatus.BUSY);
+        Driver busyDriver = Objects.requireNonNull(
+                driverRepository.save(driver),
+                "busy driver must not be null"
+        );
+
+        order.setDriver(busyDriver);
+        OrderStatus previousStatus = order.getStatus();
+        transitionPolicy.assertTransition(previousStatus, OrderStatus.DRIVER_ASSIGNED, OrderActorType.SYSTEM);
+        order.setStatus(OrderStatus.DRIVER_ASSIGNED);
+        Order assignedOrder = Objects.requireNonNull(
+                orderRepository.save(order),
+                "assigned order must not be null"
+        );
+        saveHistory(
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.SYSTEM,
+                null,
+                null
+        );
+
+        log.info("Order {} assigned to driver {}", assignedOrder.getId(), busyDriver.getFullName());
+        saveLifecycleEvent(
+                "ORDER_DRIVER_ASSIGNED",
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.SYSTEM,
+                null,
+                "Your order was accepted by a courier."
+        );
+        return true;
     }
 
     @Override
@@ -324,6 +340,52 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse cancelAdminOrder(UUID adminUserId, UUID orderId, CancelOrderRequest request) {
         Order order = findOrderForAction(orderId);
         return cancelOrder(order, OrderActorType.ADMIN, adminUserId, request.reason());
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse assignDemoCourier(UUID adminUserId, UUID orderId) {
+        Order order = findOrderForAction(orderId);
+        if (order.getDriver() != null) {
+            return toResponse(order);
+        }
+
+        OrderStatus previousStatus = order.getStatus();
+        if (previousStatus != OrderStatus.PLACED) {
+            throw new InvalidOrderTransitionException("Demo courier can only be assigned to placed orders.");
+        }
+
+        Driver driver = driverRepository.findById(demoCourierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Demo courier profile was not found."));
+        if (driver.getStatus() == DriverStatus.OFFLINE) {
+            throw new InvalidOrderTransitionException("Demo courier must be available before assignment.");
+        }
+
+        driver.setStatus(DriverStatus.BUSY);
+        Driver busyDriver = Objects.requireNonNull(driverRepository.save(driver), "busy demo driver must not be null");
+        order.setDriver(busyDriver);
+        transitionPolicy.assertTransition(previousStatus, OrderStatus.DRIVER_ASSIGNED, OrderActorType.SYSTEM);
+        order.setStatus(OrderStatus.DRIVER_ASSIGNED);
+        Order assignedOrder = Objects.requireNonNull(orderRepository.save(order), "assigned order must not be null");
+        saveHistory(
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.ADMIN,
+                adminUserId,
+                "Assigned to demo courier."
+        );
+        saveLifecycleEvent(
+                "ORDER_DRIVER_ASSIGNED",
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.ADMIN,
+                "Assigned to demo courier.",
+                "Your order was assigned to the demo courier."
+        );
+
+        return toResponse(assignedOrder);
     }
 
     @Override

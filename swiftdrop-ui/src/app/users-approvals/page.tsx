@@ -7,7 +7,6 @@ import {
   AdvancedDetails,
   DetailField,
   DetailGrid,
-  JsonPreview,
   ModalFooter,
   ModalSection,
 } from "@/components/admin/modal";
@@ -598,7 +597,6 @@ function ApplicationDetailModal({
                 mono
               />
             </DetailGrid>
-            <JsonPreview value={selection.application} />
           </AdvancedDetails>
         </div>
       ) : null}

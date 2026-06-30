@@ -1,11 +1,11 @@
 export function formatDateTime(value?: string | null) {
   if (!value) {
-    return "-";
+    return "Not available";
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return "Not available";
   }
 
   return date.toLocaleString();
@@ -22,18 +22,6 @@ export function formatCurrencyTRY(value?: number | null) {
 
 export function formatMoney(value: number) {
   return formatCurrencyTRY(value);
-}
-
-export function prettyJson(value: unknown) {
-  if (typeof value === "string") {
-    try {
-      return JSON.stringify(JSON.parse(value), null, 2);
-    } catch {
-      return value;
-    }
-  }
-
-  return JSON.stringify(value, null, 2);
 }
 
 export function isUuidLike(value?: string | null) {

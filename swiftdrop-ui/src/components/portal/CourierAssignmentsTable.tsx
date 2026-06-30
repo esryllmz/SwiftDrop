@@ -21,7 +21,7 @@ export function CourierAssignmentsTable({
   return (
     <OrdersTable
       orders={assignments}
-      emptyMessage="No courier assignments found."
+      emptyMessage="No active assignments assigned to this courier. Create or assign a demo order from the Admin Orders page to see it here."
       columns={["order", "merchant", "status", "amount", "created", "actions"]}
       renderActions={(order) => (
         <CourierAssignmentAction

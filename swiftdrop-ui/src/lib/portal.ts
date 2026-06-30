@@ -171,6 +171,7 @@ function normalizeOrder(value: unknown): OrderResponse | null {
       customerId: record.customerId ? String(record.customerId) : "",
       merchantName: nullableString(record.merchantName),
       driverName: nullableString(record.driverName),
+      driverEmail: nullableString(record.driverEmail),
       status: record.status,
       totalAmount: Number(record.totalAmount ?? 0),
       createdAt: String(record.createdAt ?? ""),

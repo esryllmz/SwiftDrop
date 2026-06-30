@@ -38,4 +38,13 @@ public class AdminOrderController {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, ADMIN_ROLE);
         return ResponseEntity.ok(orderService.cancelAdminOrder(user.userId(), orderId, cancelRequest));
     }
+
+    @PostMapping("/{orderId}/assign-demo-courier")
+    public ResponseEntity<OrderResponse> assignDemoCourier(
+            HttpServletRequest request,
+            @PathVariable UUID orderId
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, ADMIN_ROLE);
+        return ResponseEntity.ok(orderService.assignDemoCourier(user.userId(), orderId));
+    }
 }
