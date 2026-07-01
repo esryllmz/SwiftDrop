@@ -54,7 +54,7 @@ public class Merchant {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "accepting_orders", nullable = false)
+    @Column(name = "accepting_orders", nullable = false, columnDefinition = "boolean not null default false")
     private boolean acceptingOrders;
 
     @Column(name = "average_preparation_minutes")

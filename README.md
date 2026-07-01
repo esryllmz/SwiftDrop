@@ -113,7 +113,18 @@ Demo seed data is loaded automatically by Docker Compose when the logistics serv
 - Demo courier: `22222222-2222-2222-2222-222222222222` (`courier@swiftdrop.demo`)
 - Backup demo courier: `33333333-3333-3333-3333-333333333333`
 
-The current MVP uses available courier assignment for demo clarity. Admin users can assign an unassigned placed order to the fixed demo courier from the Orders page. This makes the Courier portal flow deterministic for pickup, on-the-way, and delivered actions.
+SwiftDrop uses workload-aware available courier assignment. The system prefers couriers in the same
+service zone as the merchant and then chooses the courier with the lowest active workload; couriers
+must have a complete operational profile (phone, vehicle type, service zone) and be under their max
+active assignments to be considered. If no courier is available, the order remains pending and a
+scheduled retry job (`AssignmentRetryService`, every 30s by default) continues assignment attempts.
+Admin assignment (fixed demo courier, or any courier via the picker on the Orders page) exists only as
+an operational override, not the primary path.
+
+Customers, merchants, and couriers must complete their operational profiles before taking part in the
+delivery lifecycle: customers need a phone number and a default delivery address, merchants need
+contact/location details and must explicitly turn on accepting orders, and couriers need a phone,
+vehicle type, and service zone.
 
 ## Notification Service
 
@@ -144,7 +155,9 @@ Planned production hardening includes Flyway baseline migrations, Redis-backed r
 
 Maven-generated sources under `target/generated-sources` are build output, not source of truth. If VS Code reports Java problems inside `target/**`, run `mvn clean compile` or `mvn clean test` for the affected service and reload the Java language server. The workspace excludes `target/**` from file search and Java resource filters.
 
-Geo-based nearest courier assignment is planned as a future enhancement. It requires customer addresses, merchant pickup locations, courier live location tracking, and distance calculation.
+Geo-based nearest courier assignment is planned after customer addresses, merchant pickup locations,
+and courier live location tracking are backed by real GPS data — today's zone/workload model
+intentionally does not claim geo-nearest dispatch since there is no live location source.
 
 Future courier assignment hardening:
 

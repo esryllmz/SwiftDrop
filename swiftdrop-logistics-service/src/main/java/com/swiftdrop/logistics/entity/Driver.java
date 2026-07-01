@@ -56,7 +56,7 @@ public class Driver {
     private String serviceZone;
 
     @Builder.Default
-    @Column(name = "max_active_assignments", nullable = false)
+    @Column(name = "max_active_assignments", nullable = false, columnDefinition = "integer not null default 3")
     private int maxActiveAssignments = 3;
 
     @CreationTimestamp
