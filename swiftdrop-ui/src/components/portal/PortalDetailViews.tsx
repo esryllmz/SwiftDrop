@@ -17,6 +17,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  Field,
   LoadingState,
   SecondaryButton,
   StatusBadge,
@@ -28,9 +29,12 @@ import { getPortalTheme } from "@/lib/portal-theme";
 import {
   cancelCustomerOrder,
   cancelMerchantOrder,
+  createCustomerAddress,
+  deleteCustomerAddress,
   getCourierAssignmentDetail,
   getCourierAssignments,
   getCourierProfile,
+  getCustomerAddresses,
   getCustomerOrderDetail,
   getCustomerOrders,
   getCustomerProfile,
@@ -42,15 +46,23 @@ import {
   markCourierOrderPickedUp,
   markMerchantOrderPreparing,
   markMerchantOrderReadyForPickup,
+  setDefaultCustomerAddress,
+  updateCourierProfile,
+  updateCustomerAddress,
+  updateCustomerProfile,
+  updateMerchantProfile,
 } from "@/lib/portal";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import type {
+  AddressLabel,
   CourierProfileResponse,
+  CustomerAddressResponse,
   CustomerProfileResponse,
   MerchantProfileResponse,
   OrderResponse,
   OrderStatus,
   UserRole,
+  VehicleType,
 } from "@/types/api";
 
 type PortalKind = "customer" | "merchant" | "courier";
@@ -228,8 +240,50 @@ export function CustomerOrderDetailPage({ orderId }: { orderId: string }) {
   );
 }
 
+const ADDRESS_LABELS: AddressLabel[] = ["HOME", "WORK", "OTHER"];
+
 export function CustomerAddressesPage() {
-  const { user } = useAuth();
+  const { accessToken, user } = useAuth();
+  const [addresses, setAddresses] = useState<CustomerAddressResponse[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<CustomerAddressResponse | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const { loading, error, reload } = usePortalLoad(async () => {
+    setAddresses(await getCustomerAddresses(accessToken));
+  }, accessToken, "Delivery addresses could not be loaded.");
+
+  async function handleDelete(addressId: string) {
+    if (!accessToken || actionId) {
+      return;
+    }
+    setActionId(addressId);
+    try {
+      await deleteCustomerAddress(accessToken, addressId);
+      showSuccessToast("Address removed.");
+      await reload();
+    } catch (err) {
+      showErrorToast(normalizeApiError(err, "Could not remove address."));
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleSetDefault(addressId: string) {
+    if (!accessToken || actionId) {
+      return;
+    }
+    setActionId(addressId);
+    try {
+      await setDefaultCustomerAddress(accessToken, addressId);
+      showSuccessToast("Default address updated.");
+      await reload();
+    } catch (err) {
+      showErrorToast(normalizeApiError(err, "Could not set default address."));
+    } finally {
+      setActionId(null);
+    }
+  }
+
   return (
     <PortalShell
       portalType="customer"
@@ -237,39 +291,218 @@ export function CustomerAddressesPage() {
       title="Delivery addresses"
       subtitle="Manage where your orders should be delivered."
     >
+      <PageState loading={loading} error={error} onRetry={reload} />
       <PortalSection
         tone="customer"
-        title="Address management"
-        description="This shell is ready for the address management contract."
-        action={<span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">Coming soon</span>}
+        title="Your addresses"
+        description="Add, edit, or remove delivery addresses. One address must be set as default."
+        action={
+          <Button
+            className="border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+            onClick={() => {
+              setEditingAddress(null);
+              setFormOpen(true);
+            }}
+          >
+            Add address
+          </Button>
+        }
       >
-        <div className="grid gap-5 rounded-lg border border-dashed border-blue-200 bg-blue-50 p-6">
-          <div>
-            <h3 className="text-base font-semibold text-blue-950">Address management is planned for the next iteration.</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-900">
-              It will power delivery addresses and future geo-based courier assignment.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {["Add address", "Edit", "Delete"].map((label) => (
-              <button
-                key={label}
-                type="button"
-                disabled
-                className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-300"
-                title="Address management is planned for the next iteration."
+        {addresses.length === 0 ? (
+          <EmptyState message="No delivery addresses yet. Add one to start placing orders." />
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {addresses.map((address) => (
+              <div
+                key={address.id}
+                className={`rounded-lg border p-4 ${address.isDefault ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white"}`}
               >
-                {label}
-              </button>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold uppercase text-blue-700">{formatAddressLabel(address.label)}</span>
+                  {address.isDefault ? (
+                    <span className="rounded-md bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">Default</span>
+                  ) : null}
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-950">{address.recipientName}</div>
+                <div className="text-sm text-slate-700">{address.addressLine}</div>
+                <div className="text-sm text-slate-700">
+                  {address.district}, {address.city}
+                  {address.postalCode ? ` ${address.postalCode}` : ""}
+                </div>
+                {address.phone ? <div className="mt-1 text-xs text-slate-500">{address.phone}</div> : null}
+                {address.deliveryNotes ? <div className="mt-1 text-xs text-slate-500">Note: {address.deliveryNotes}</div> : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      setEditingAddress(address);
+                      setFormOpen(true);
+                    }}
+                  >
+                    Edit
+                  </SecondaryButton>
+                  {!address.isDefault ? (
+                    <SecondaryButton
+                      type="button"
+                      disabled={actionId === address.id}
+                      onClick={() => void handleSetDefault(address.id)}
+                    >
+                      Set default
+                    </SecondaryButton>
+                  ) : null}
+                  <Button
+                    className="min-h-9 border-rose-600 bg-rose-600 px-3 py-1.5 text-xs hover:bg-rose-700 focus:ring-rose-500"
+                    disabled={actionId === address.id}
+                    onClick={() => void handleDelete(address.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <DetailLink tone="customer" href="/customer" label="Back to dashboard" />
-            <DetailLink tone="customer" href="/customer/orders" label="View orders" />
-          </div>
+        )}
+        <div className="mt-5 flex flex-wrap gap-2">
+          <DetailLink tone="customer" href="/customer" label="Back to dashboard" />
+          <DetailLink tone="customer" href="/customer/orders" label="View orders" />
         </div>
       </PortalSection>
+      <CustomerAddressFormModal
+        key={editingAddress?.id ?? "new"}
+        open={formOpen}
+        address={editingAddress}
+        onClose={() => setFormOpen(false)}
+        onSaved={async () => {
+          setFormOpen(false);
+          await reload();
+        }}
+      />
     </PortalShell>
+  );
+}
+
+function formatAddressLabel(label: AddressLabel) {
+  if (label === "HOME") return "Home";
+  if (label === "WORK") return "Work";
+  return "Other";
+}
+
+function CustomerAddressFormModal({
+  open,
+  address,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  address: CustomerAddressResponse | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const { accessToken } = useAuth();
+  const [label, setLabel] = useState<AddressLabel>(address?.label ?? "HOME");
+  const [recipientName, setRecipientName] = useState(address?.recipientName ?? "");
+  const [phone, setPhone] = useState(address?.phone ?? "");
+  const [addressLine, setAddressLine] = useState(address?.addressLine ?? "");
+  const [district, setDistrict] = useState(address?.district ?? "");
+  const [city, setCity] = useState(address?.city ?? "");
+  const [postalCode, setPostalCode] = useState(address?.postalCode ?? "");
+  const [deliveryNotes, setDeliveryNotes] = useState(address?.deliveryNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!open) {
+    return null;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const request = {
+      label,
+      recipientName: recipientName.trim(),
+      phone: phone.trim() || undefined,
+      addressLine: addressLine.trim(),
+      district: district.trim(),
+      city: city.trim(),
+      postalCode: postalCode.trim() || undefined,
+      deliveryNotes: deliveryNotes.trim() || undefined,
+    };
+    try {
+      if (address) {
+        await updateCustomerAddress(accessToken, address.id, request);
+      } else {
+        await createCustomerAddress(accessToken, request);
+      }
+      showSuccessToast(address ? "Address updated." : "Address added.");
+      await onSaved();
+    } catch (err) {
+      const message = normalizeApiError(err, "Could not save address.");
+      setError(message);
+      showErrorToast(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm">
+      <section className="w-full max-w-lg overflow-hidden rounded-lg border border-blue-100 bg-white shadow-2xl shadow-slate-950/20">
+        <div className="border-b border-blue-100 bg-blue-50 px-5 py-4">
+          <div className="text-xs font-semibold uppercase text-blue-700">Delivery address</div>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">{address ? "Edit address" : "Add address"}</h2>
+        </div>
+        <form className="grid gap-4 p-5" onSubmit={handleSubmit}>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-800">Label</span>
+            <select
+              value={label}
+              onChange={(event) => setLabel(event.target.value as AddressLabel)}
+              className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            >
+              {ADDRESS_LABELS.map((value) => (
+                <option key={value} value={value}>{formatAddressLabel(value)}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Recipient name" value={recipientName} onChange={setRecipientName} placeholder="Full name" />
+            <Field label="Phone" value={phone} onChange={setPhone} placeholder="+90 555 000 00 00" />
+          </div>
+          <Field label="Address line" value={addressLine} onChange={setAddressLine} placeholder="Street, building, apartment" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="District" value={district} onChange={setDistrict} placeholder="District" />
+            <Field label="City" value={city} onChange={setCity} placeholder="City" />
+          </div>
+          <Field label="Postal code (optional)" value={postalCode} onChange={setPostalCode} placeholder="Postal code" />
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-800">Delivery notes (optional)</span>
+            <textarea
+              value={deliveryNotes}
+              onChange={(event) => setDeliveryNotes(event.target.value)}
+              rows={3}
+              maxLength={500}
+              className="mt-1 w-full resize-none rounded-lg border border-blue-200 px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              placeholder="e.g. Ring the bell twice"
+            />
+          </label>
+          {error ? <ErrorState message={error} /> : null}
+          <div className="flex justify-end gap-2">
+            <SecondaryButton type="button" onClick={onClose} disabled={saving}>Cancel</SecondaryButton>
+            <Button
+              type="submit"
+              className="border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+              disabled={saving || !recipientName.trim() || !addressLine.trim() || !district.trim() || !city.trim()}
+            >
+              {saving ? "Saving..." : "Save address"}
+            </Button>
+          </div>
+        </form>
+      </section>
+    </div>
   );
 }
 
@@ -280,7 +513,7 @@ export function CustomerProfilePage() {
       title="Profile"
       subtitle="Review your customer account details."
       loadProfile={getCustomerProfile}
-      render={(profile) => (
+      render={(profile, reload) => (
         <div className="grid gap-4">
           <DetailGrid
             tone="customer"
@@ -289,42 +522,82 @@ export function CustomerProfilePage() {
               ["Email", profile.email],
               ["Role", formatRole(profile.role)],
               ["Account Status", "Active"],
+              [
+                "Profile Status",
+                profile.profileComplete ? (
+                  <span key="status" className="text-emerald-700">Complete</span>
+                ) : (
+                  <span key="status" className="text-amber-700">Incomplete — add a phone number and delivery address</span>
+                ),
+              ],
               ["Total Orders", formatCount(profile.totalOrders)],
               ["Delivered Orders", formatCount(profile.deliveredOrders)],
             ]}
           />
-          <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-blue-950">Profile editing is planned for the next iteration.</h3>
-                <p className="mt-1 text-sm leading-6 text-blue-900">
-                  Email is read-only. Name and phone fields will become editable when the profile update endpoint is available.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled
-                className="w-fit rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-300"
-              >
-                Edit profile
-              </button>
-            </div>
-          </div>
+          <CustomerPhoneForm phone={profile.phone} onSaved={reload} />
         </div>
       )}
     />
   );
 }
 
+function CustomerPhoneForm({ phone, onSaved }: { phone?: string | null; onSaved: () => void }) {
+  const { accessToken } = useAuth();
+  const [value, setValue] = useState(phone ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || !value.trim()) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateCustomerProfile(accessToken, { phone: value.trim() });
+      showSuccessToast("Profile updated.");
+      onSaved();
+    } catch (err) {
+      showErrorToast(normalizeApiError(err, "Could not update profile."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="rounded-lg border border-blue-100 bg-blue-50 p-4" onSubmit={handleSubmit}>
+      <h3 className="text-sm font-semibold text-blue-950">Contact phone</h3>
+      <p className="mt-1 text-sm leading-6 text-blue-900">
+        Required before you can place an order. Email stays read-only.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <Field label="Phone" value={value} onChange={setValue} placeholder="+90 555 000 00 00" />
+        <Button
+          type="submit"
+          className="h-10 border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 sm:w-fit"
+          disabled={saving || !value.trim()}
+        >
+          {saving ? "Saving..." : "Save phone"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function MerchantOrdersPage() {
   const { accessToken, user } = useAuth();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [profileComplete, setProfileComplete] = useState(true);
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
   const [filter, setFilter] = useState<"new" | "preparing" | "ready" | "courier" | "completed" | "cancelled">("new");
   const [query, setQuery] = useState("");
   const { loading, error, reload } = usePortalLoad(async () => {
-    setOrders(await getMerchantOrders(accessToken));
+    const [nextOrders, profile] = await Promise.all([
+      getMerchantOrders(accessToken),
+      getMerchantProfile(accessToken),
+    ]);
+    setOrders(nextOrders);
+    setProfileComplete(profile.profileComplete);
   }, accessToken, "Merchant orders could not be loaded.");
   const filteredOrders = useMemo(() => {
     const byStatus = filterMerchantOrders(orders, filter);
@@ -341,6 +614,17 @@ export function MerchantOrdersPage() {
       subtitle="Prepare orders and mark them ready for courier pickup."
     >
       <PageState loading={loading} error={error} onRetry={reload} />
+      {!loading && !profileComplete ? (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <h3 className="text-sm font-semibold text-amber-900">Complete your store profile before processing orders.</h3>
+          <p className="mt-1 text-sm leading-6 text-amber-800">
+            Order actions are disabled until your store profile is complete.
+          </p>
+          <Link href="/merchant/store" className="mt-3 inline-flex w-fit rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">
+            Complete store profile
+          </Link>
+        </div>
+      ) : null}
       <PortalSection
         theme="merchant"
         title="Order Workflow"
@@ -358,6 +642,7 @@ export function MerchantOrdersPage() {
         <MerchantOrdersTable
           orders={filteredOrders}
           actionOrderId={actionOrderId}
+          actionsDisabled={!profileComplete}
           detailHrefFor={(order) => `/merchant/orders/${order.id}`}
           onPreparing={(id) => void handleAction(id, "preparing")}
           onReadyForPickup={(id) => void handleAction(id, "ready-for-pickup")}
@@ -430,32 +715,128 @@ export function MerchantStorePage() {
     <ProfilePage<MerchantProfileResponse>
       portalType="merchant"
       title="Store"
-      subtitle="Review the store profile available from the merchant backend."
+      subtitle="Review and complete your store's operational profile."
       loadProfile={getMerchantProfile}
-      render={(profile) => (
-        <DetailGrid
-          tone="merchant"
-          fields={[
-            ["Business Name", profile.businessName ?? profile.name ?? "Not available"],
-            ["Description", <PlannedBadge key="description" />],
-            ["Address", <PlannedBadge key="address" />],
-            ["Phone", <PlannedBadge key="phone" />],
-            ["Location", formatLocation(profile.latitude, profile.longitude)],
-            ["Accepting Orders", <PlannedBadge key="accepting-orders" />],
-            ["Average Preparation Time", <PlannedBadge key="average-preparation-time" />],
-            ["Edit Store", <PlannedBadge key="edit-store" label="Editing not available yet" />],
-          ]}
-        />
+      render={(profile, reload) => (
+        <div className="grid gap-4">
+          <DetailGrid
+            tone="merchant"
+            fields={[
+              ["Business Name", profile.businessName ?? profile.name ?? "Not available"],
+              ["Location", formatLocation(profile.latitude, profile.longitude)],
+              [
+                "Profile Status",
+                profile.profileComplete ? (
+                  <span key="status" className="text-emerald-700">Complete</span>
+                ) : (
+                  <span key="status" className="text-amber-700">Incomplete — fill in the form below</span>
+                ),
+              ],
+              [
+                "Accepting Orders",
+                profile.acceptingOrders ? (
+                  <span key="accepting" className="text-emerald-700">Yes</span>
+                ) : (
+                  <span key="accepting" className="text-slate-500">No</span>
+                ),
+              ],
+            ]}
+          />
+          <MerchantStoreForm profile={profile} onSaved={reload} />
+        </div>
       )}
     />
   );
 }
 
-function PlannedBadge({ label = "Not available yet" }: { label?: string }) {
+function MerchantStoreForm({ profile, onSaved }: { profile: MerchantProfileResponse; onSaved: () => void }) {
+  const { accessToken } = useAuth();
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [addressLine, setAddressLine] = useState(profile.addressLine ?? "");
+  const [district, setDistrict] = useState(profile.district ?? "");
+  const [city, setCity] = useState(profile.city ?? "");
+  const [description, setDescription] = useState(profile.description ?? "");
+  const [averagePreparationMinutes, setAveragePreparationMinutes] = useState(
+    profile.averagePreparationMinutes ? String(profile.averagePreparationMinutes) : "",
+  );
+  const [acceptingOrders, setAcceptingOrders] = useState(profile.acceptingOrders);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const parsedPrepTime = Number(averagePreparationMinutes);
+  const canSubmit =
+    phone.trim() && addressLine.trim() && district.trim() && city.trim()
+    && Number.isFinite(parsedPrepTime) && parsedPrepTime > 0;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || !canSubmit) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await updateMerchantProfile(accessToken, {
+        phone: phone.trim(),
+        addressLine: addressLine.trim(),
+        district: district.trim(),
+        city: city.trim(),
+        description: description.trim() || undefined,
+        acceptingOrders,
+        averagePreparationMinutes: parsedPrepTime,
+      });
+      showSuccessToast("Store profile updated.");
+      onSaved();
+    } catch (err) {
+      const message = normalizeApiError(err, "Could not update store profile.");
+      setError(message);
+      showErrorToast(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-      {label}
-    </span>
+    <form className="grid gap-4 rounded-lg border border-violet-100 bg-violet-50 p-4" onSubmit={handleSubmit}>
+      <h3 className="text-sm font-semibold text-violet-950">Store details</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Phone" value={phone} onChange={setPhone} placeholder="+90 555 000 00 00" />
+        <Field label="Average preparation time (minutes)" value={averagePreparationMinutes} onChange={setAveragePreparationMinutes} placeholder="20" />
+      </div>
+      <Field label="Address line" value={addressLine} onChange={setAddressLine} placeholder="Street, building" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="District" value={district} onChange={setDistrict} placeholder="District" />
+        <Field label="City" value={city} onChange={setCity} placeholder="City" />
+      </div>
+      <label className="block">
+        <span className="text-sm font-medium text-slate-700">Description (optional)</span>
+        <textarea
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          rows={3}
+          maxLength={500}
+          className="mt-1 w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+          placeholder="Tell customers about your store"
+        />
+      </label>
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={acceptingOrders}
+          onChange={(event) => setAcceptingOrders(event.target.checked)}
+          className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-500"
+        />
+        <span className="text-sm font-medium text-slate-700">Accepting new orders</span>
+      </label>
+      {error ? <ErrorState message={error} /> : null}
+      <Button
+        type="submit"
+        className="h-10 w-fit border-violet-600 bg-violet-600 hover:bg-violet-700 focus:ring-violet-500"
+        disabled={saving || !canSubmit}
+      >
+        {saving ? "Saving..." : "Save store profile"}
+      </Button>
+    </form>
   );
 }
 
@@ -662,23 +1043,111 @@ export function CourierProfilePage() {
     <ProfilePage<CourierProfileResponse>
       portalType="courier"
       title="Profile"
-      subtitle="Review your courier account and availability details."
+      subtitle="Review and complete your courier operational profile."
       loadProfile={getCourierProfile}
-      render={(profile) => (
-        <DetailGrid
-          tone="courier"
-          fields={[
-            ["Courier Name", profile.fullName],
-            ["Email", profile.email],
-            ["Phone", "Not available"],
-            ["Role", "Courier"],
-            ["Availability Status", formatStatusLabel(profile.status)],
-            ["Vehicle / Plate", "Not available"],
-            ["Current Location Status", "Not available"],
-          ]}
-        />
+      render={(profile, reload) => (
+        <div className="grid gap-4">
+          <DetailGrid
+            tone="courier"
+            fields={[
+              ["Courier Name", profile.fullName],
+              ["Email", profile.email],
+              ["Role", "Courier"],
+              ["Availability Status", formatStatusLabel(profile.status)],
+              [
+                "Profile Status",
+                profile.profileComplete ? (
+                  <span key="status" className="text-emerald-700">Complete</span>
+                ) : (
+                  <span key="status" className="text-amber-700">Incomplete — fill in the form below</span>
+                ),
+              ],
+            ]}
+          />
+          <CourierProfileForm profile={profile} onSaved={reload} />
+        </div>
       )}
     />
+  );
+}
+
+const VEHICLE_TYPES: VehicleType[] = ["MOTORBIKE", "CAR", "BICYCLE", "WALKING"];
+
+function formatVehicleType(vehicleType: VehicleType) {
+  if (vehicleType === "MOTORBIKE") return "Motorbike";
+  if (vehicleType === "CAR") return "Car";
+  if (vehicleType === "BICYCLE") return "Bicycle";
+  return "Walking";
+}
+
+function CourierProfileForm({ profile, onSaved }: { profile: CourierProfileResponse; onSaved: () => void }) {
+  const { accessToken } = useAuth();
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [vehicleType, setVehicleType] = useState<VehicleType>(profile.vehicleType ?? "MOTORBIKE");
+  const [serviceZone, setServiceZone] = useState(profile.serviceZone ?? "");
+  const [maxActiveAssignments, setMaxActiveAssignments] = useState(String(profile.maxActiveAssignments || 3));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const parsedMax = Number(maxActiveAssignments);
+  const canSubmit = phone.trim() && serviceZone.trim() && Number.isFinite(parsedMax) && parsedMax > 0;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || !canSubmit) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await updateCourierProfile(accessToken, {
+        phone: phone.trim(),
+        vehicleType,
+        serviceZone: serviceZone.trim(),
+        maxActiveAssignments: parsedMax,
+      });
+      showSuccessToast("Courier profile updated.");
+      onSaved();
+    } catch (err) {
+      const message = normalizeApiError(err, "Could not update courier profile.");
+      setError(message);
+      showErrorToast(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="grid gap-4 rounded-lg border border-emerald-100 bg-emerald-50 p-4" onSubmit={handleSubmit}>
+      <h3 className="text-sm font-semibold text-emerald-950">Courier details</h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Phone" value={phone} onChange={setPhone} placeholder="+90 555 000 00 00" />
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">Vehicle type</span>
+          <select
+            value={vehicleType}
+            onChange={(event) => setVehicleType(event.target.value as VehicleType)}
+            className="mt-1 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          >
+            {VEHICLE_TYPES.map((value) => (
+              <option key={value} value={value}>{formatVehicleType(value)}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Service zone (district)" value={serviceZone} onChange={setServiceZone} placeholder="District" />
+        <Field label="Max active assignments" value={maxActiveAssignments} onChange={setMaxActiveAssignments} placeholder="3" />
+      </div>
+      {error ? <ErrorState message={error} /> : null}
+      <Button
+        type="submit"
+        className="h-10 w-fit border-emerald-600 bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+        disabled={saving || !canSubmit}
+      >
+        {saving ? "Saving..." : "Save courier profile"}
+      </Button>
+    </form>
   );
 }
 
@@ -806,7 +1275,7 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
   title: string;
   subtitle: string;
   loadProfile: (token: string | null) => Promise<TProfile>;
-  render: (profile: TProfile) => React.ReactNode;
+  render: (profile: TProfile, reload: () => void) => React.ReactNode;
 }) {
   const { accessToken, user, logout } = useAuth();
   const router = useRouter();
@@ -846,7 +1315,7 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
           description="Read-only details from the current account and portal profile."
           action={portalType === "customer" ? undefined : <DetailLink tone={portalType} href={`/${portalType}/profile/change-password`} label="Change password" />}
         >
-          {render(state.data)}
+          {render(state.data, () => void reload())}
           {portalType === "customer" ? (
             <div className="mt-5 flex flex-wrap gap-2">
               <DetailLink tone="customer" href="/customer/profile/change-password" label="Change password" />

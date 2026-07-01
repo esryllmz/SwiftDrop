@@ -1,16 +1,61 @@
-import { getJson, postJson } from "@/lib/api";
+import { deleteJson, getJson, patchJson, postJson, putJson } from "@/lib/api";
 import type {
   CourierProfileResponse,
+  CreateCustomerAddressRequest,
   CreateCustomerOrderRequest,
+  CustomerAddressResponse,
   CustomerMerchantOption,
   CustomerProfileResponse,
+  DriverResponse,
   DriverStatus,
   MerchantProfileResponse,
   OrderResponse,
+  UpdateCourierProfileRequest,
+  UpdateCustomerAddressRequest,
+  UpdateCustomerProfileRequest,
+  UpdateMerchantProfileRequest,
 } from "@/types/api";
 
 export function getCustomerProfile(accessToken: string | null) {
   return getJson<CustomerProfileResponse>("/api/v1/customer/profile", undefined, accessToken);
+}
+
+export function updateCustomerProfile(accessToken: string, request: UpdateCustomerProfileRequest) {
+  return putJson<CustomerProfileResponse>("/api/v1/customer/profile", request, undefined, accessToken);
+}
+
+export function getCustomerAddresses(accessToken: string | null) {
+  return getJson<CustomerAddressResponse[]>("/api/v1/customer/addresses", undefined, accessToken);
+}
+
+export function createCustomerAddress(accessToken: string, request: CreateCustomerAddressRequest) {
+  return postJson<CustomerAddressResponse>("/api/v1/customer/addresses", request, undefined, accessToken);
+}
+
+export function updateCustomerAddress(
+  accessToken: string,
+  addressId: string,
+  request: UpdateCustomerAddressRequest,
+) {
+  return putJson<CustomerAddressResponse>(
+    `/api/v1/customer/addresses/${addressId}`,
+    request,
+    undefined,
+    accessToken,
+  );
+}
+
+export function deleteCustomerAddress(accessToken: string, addressId: string) {
+  return deleteJson<void>(`/api/v1/customer/addresses/${addressId}`, undefined, accessToken);
+}
+
+export function setDefaultCustomerAddress(accessToken: string, addressId: string) {
+  return patchJson<CustomerAddressResponse>(
+    `/api/v1/customer/addresses/${addressId}/default`,
+    undefined,
+    undefined,
+    accessToken,
+  );
 }
 
 export async function getCustomerOrders(accessToken: string | null) {
@@ -47,6 +92,10 @@ export function cancelCustomerOrder(accessToken: string, orderId: string, reason
 
 export function getMerchantProfile(accessToken: string | null) {
   return getJson<MerchantProfileResponse>("/api/v1/merchant/profile", undefined, accessToken);
+}
+
+export function updateMerchantProfile(accessToken: string, request: UpdateMerchantProfileRequest) {
+  return putJson<MerchantProfileResponse>("/api/v1/merchant/profile", request, undefined, accessToken);
 }
 
 export async function getMerchantOrders(accessToken: string | null) {
@@ -86,6 +135,10 @@ export function cancelMerchantOrder(accessToken: string, orderId: string, reason
 
 export function getCourierProfile(accessToken: string | null) {
   return getJson<CourierProfileResponse>("/api/v1/courier/profile", undefined, accessToken);
+}
+
+export function updateCourierProfile(accessToken: string, request: UpdateCourierProfileRequest) {
+  return putJson<CourierProfileResponse>("/api/v1/courier/profile", request, undefined, accessToken);
 }
 
 export async function getCourierAssignments(accessToken: string | null) {
@@ -133,6 +186,11 @@ export function markCourierOrderDelivered(accessToken: string, orderId: string) 
     undefined,
     accessToken,
   );
+}
+
+export function getAdminDrivers(accessToken: string | null, status?: DriverStatus) {
+  const query = status ? `?status=${status}` : "";
+  return getJson<DriverResponse[]>(`/api/v1/drivers${query}`, undefined, accessToken);
 }
 
 function normalizeOrders(value: unknown): OrderResponse[] {
@@ -183,6 +241,9 @@ function normalizeOrder(value: unknown): OrderResponse | null {
       pickedUpAt: nullableString(record.pickedUpAt),
       onTheWayAt: nullableString(record.onTheWayAt),
       deliveredAt: nullableString(record.deliveredAt),
+      deliveryAddressSummary: nullableString(record.deliveryAddressSummary),
+      deliveryDistrict: nullableString(record.deliveryDistrict),
+      deliveryCity: nullableString(record.deliveryCity),
       history: Array.isArray(record.history) ? record.history.flatMap(normalizeHistory) : [],
     } as OrderResponse;
 }

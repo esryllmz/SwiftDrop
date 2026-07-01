@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -144,6 +145,21 @@ export default function MerchantPage() {
           <PortalMetricCard theme="merchant" label="Active Orders" value={loading && !profile ? "-" : activeOrders} />
         </div>
 
+        {!loading && profile && !profile.profileComplete ? (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <h3 className="text-sm font-semibold text-amber-900">Complete your store profile before processing orders.</h3>
+            <p className="mt-1 text-sm leading-6 text-amber-800">
+              Add your phone, address, and average preparation time, then turn on accepting orders.
+            </p>
+            <Link
+              href="/merchant/store"
+              className="mt-3 inline-flex w-fit rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            >
+              Complete store profile
+            </Link>
+          </div>
+        ) : null}
+
         <PortalSection
           compact
           theme="merchant"
@@ -180,6 +196,7 @@ export default function MerchantPage() {
           <MerchantOrdersTable
             orders={orders}
             actionOrderId={actionOrderId}
+            actionsDisabled={!profile?.profileComplete}
             onPreparing={(orderId) => void handleMerchantAction(orderId, "preparing")}
             onReadyForPickup={(orderId) => void handleMerchantAction(orderId, "ready-for-pickup")}
           />

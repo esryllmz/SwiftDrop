@@ -60,6 +60,7 @@ export default function CustomerPage() {
   const [totalAmount, setTotalAmount] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [activeOrderIndex, setActiveOrderIndex] = useState(0);
 
   const loadMerchants = useCallback(async () => {
     if (!accessToken) {
@@ -115,6 +116,14 @@ export default function CustomerPage() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [load, loadMerchants]);
+
+  const openCreateOrderModal = useCallback(() => {
+    if (!profile?.profileComplete) {
+      showErrorToast("You need to complete your profile and add a delivery address before placing an order.");
+      return;
+    }
+    setModalOpen(true);
+  }, [profile]);
 
   const closeModal = useCallback(() => {
     if (creating) {
@@ -177,10 +186,14 @@ export default function CustomerPage() {
   const totalSpending = orders
     .filter((order) => order.status !== "CANCELLED")
     .reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0);
+  const activeOrdersList = orders
+    .filter((order) => activeCustomerStatuses.includes(order.status))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+  const activeOrderIndexClamped = activeOrdersList.length > 0
+    ? Math.min(activeOrderIndex, activeOrdersList.length - 1)
+    : 0;
   const activeOrder =
-    orders
-      .filter((order) => activeCustomerStatuses.includes(order.status))
-      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ??
+    activeOrdersList[activeOrderIndexClamped] ??
     orders
       .filter((order) => order.status === "CANCELLED")
       .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ??
@@ -194,6 +207,7 @@ export default function CustomerPage() {
     merchants.length === 0 ||
     !selectedMerchantId ||
     !totalAmountValid;
+  const profileComplete = Boolean(profile?.profileComplete);
 
   return (
     <PortalShell
@@ -220,13 +234,53 @@ export default function CustomerPage() {
           <PortalMetricCard compact theme="customer" label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
         </div>
 
+        {!loading && profile && !profile.profileComplete ? (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <h3 className="text-sm font-semibold text-amber-900">Complete your profile to start ordering</h3>
+            <p className="mt-1 text-sm leading-6 text-amber-800">
+              You need to complete your profile and add a delivery address before placing an order.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {!profile.phone ? <DetailLink href="/customer/profile" label="Add phone number" /> : null}
+              <DetailLink href="/customer/addresses" label="Add delivery address" />
+            </div>
+          </div>
+        ) : null}
+
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
           <PortalSection
             tone="customer"
             compact
             title="Current order"
             description="The most recent active delivery for this account."
-            action={activeOrder?.id ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
+            action={
+              <div className="flex items-center gap-2">
+                {activeOrdersList.length > 1 ? (
+                  <div className="flex items-center gap-1 text-xs text-blue-800">
+                    <button
+                      type="button"
+                      onClick={() => setActiveOrderIndex((index) => Math.max(0, index - 1))}
+                      disabled={activeOrderIndexClamped === 0}
+                      className="rounded-md border border-blue-200 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Previous active order"
+                    >
+                      ‹
+                    </button>
+                    <span>{activeOrderIndexClamped + 1} / {activeOrdersList.length}</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveOrderIndex((index) => Math.min(activeOrdersList.length - 1, index + 1))}
+                      disabled={activeOrderIndexClamped === activeOrdersList.length - 1}
+                      className="rounded-md border border-blue-200 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Next active order"
+                    >
+                      ›
+                    </button>
+                  </div>
+                ) : null}
+                {activeOrder?.id ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
+              </div>
+            }
           >
             {activeOrder ? (
               <div className="grid gap-3">
@@ -256,7 +310,13 @@ export default function CustomerPage() {
 
           <PortalSection compact tone="customer" title="Quick actions" description="Start or review your delivery flow.">
             <div className="grid gap-2">
-              <Button className="border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500" onClick={() => setModalOpen(true)}>Create order</Button>
+              <Button
+                className="border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                onClick={openCreateOrderModal}
+                title={profileComplete ? undefined : "Complete your profile and add a delivery address first."}
+              >
+                Create order
+              </Button>
               <DetailLink href="/customer/orders" label="View orders" />
               <DetailLink href="/customer/profile" label="Manage profile" />
             </div>

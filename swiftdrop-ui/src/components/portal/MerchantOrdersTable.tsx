@@ -12,6 +12,7 @@ export function MerchantOrdersTable({
   onCancel,
   detailHrefFor,
   theme = "merchant",
+  actionsDisabled = false,
 }: {
   orders: OrderResponse[];
   actionOrderId: string | null;
@@ -20,6 +21,7 @@ export function MerchantOrdersTable({
   onCancel?: (order: OrderResponse) => void;
   detailHrefFor?: (order: OrderResponse) => string;
   theme?: PortalThemeKey;
+  actionsDisabled?: boolean;
 }) {
   return (
     <OrdersTable
@@ -31,7 +33,7 @@ export function MerchantOrdersTable({
         <MerchantOrderAction
           order={order}
           loading={actionOrderId === order.id}
-          disabled={Boolean(actionOrderId && actionOrderId !== order.id)}
+          disabled={actionsDisabled || Boolean(actionOrderId && actionOrderId !== order.id)}
           onPreparing={onPreparing}
           onReadyForPickup={onReadyForPickup}
           onCancel={onCancel}
@@ -123,7 +125,9 @@ function renderMerchantAction(
   return (
     <span className="text-xs text-slate-400">
       {order.status === "READY_FOR_PICKUP"
-        ? "Waiting for courier pickup"
+        ? order.driverName
+          ? "Waiting for courier pickup"
+          : "Ready for pickup — courier assignment pending"
         : formatMerchantTerminalMessage(order.status)}
     </span>
   );

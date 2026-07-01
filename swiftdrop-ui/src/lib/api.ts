@@ -99,6 +99,40 @@ export function postJson<T>(
   }, accessToken);
 }
 
+export function putJson<T>(
+  path: string,
+  body?: unknown,
+  options?: ApiFetchOptions,
+  accessToken?: string | null,
+) {
+  return apiFetch<T>(path, {
+    ...options,
+    method: "PUT",
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }, accessToken);
+}
+
+export function patchJson<T>(
+  path: string,
+  body?: unknown,
+  options?: ApiFetchOptions,
+  accessToken?: string | null,
+) {
+  return apiFetch<T>(path, {
+    ...options,
+    method: "PATCH",
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }, accessToken);
+}
+
+export function deleteJson<T>(
+  path: string,
+  options?: ApiFetchOptions,
+  accessToken?: string | null,
+) {
+  return apiFetch<T>(path, { ...options, method: "DELETE" }, accessToken);
+}
+
 function safeJsonParse(text: string): unknown {
   try {
     return JSON.parse(text);

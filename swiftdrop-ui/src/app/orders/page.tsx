@@ -32,7 +32,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getJson, postJson } from "@/lib/api";
 import { formatDateTime, formatDisplayId, formatMoney, maskTechnicalId } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
-import type { MerchantResponse, OrderResponse } from "@/types/api";
+import { getAdminDrivers } from "@/lib/portal";
+import type { DriverResponse, MerchantResponse, OrderResponse } from "@/types/api";
 
 const fallbackCustomerId = "44444444-4444-4444-4444-444444444444";
 const fallbackMerchantId = "11111111-1111-1111-1111-111111111111";
@@ -64,6 +65,7 @@ export default function OrdersPage() {
   const [creating, setCreating] = useState(false);
   const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
   const [courierIdInput, setCourierIdInput] = useState("");
+  const [drivers, setDrivers] = useState<DriverResponse[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -89,9 +91,12 @@ export default function OrdersPage() {
   }, [accessToken, selectedStatus]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
+    const timer = window.setTimeout(() => {
+      void load();
+      void getAdminDrivers(accessToken).then(setDrivers).catch(() => setDrivers([]));
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [load, accessToken]);
 
   async function createOrder() {
     setCreating(true);
@@ -279,7 +284,17 @@ export default function OrdersPage() {
                     <AdminTableCell title={formatDisplayId(order.id, "Order")}><AdminIdChip value={order.id} prefix="Order" /></AdminTableCell>
                     <AdminTableCell>Customer account</AdminTableCell>
                     <AdminTableCell>{displayValue(order.merchantName)}</AdminTableCell>
-                    <AdminTableCell>{order.driverName ?? "Awaiting courier assignment"}</AdminTableCell>
+                    <AdminTableCell>
+                      {order.driverName ?? (
+                        needsCourierAssignment(order) ? (
+                          <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            Needs courier assignment
+                          </span>
+                        ) : (
+                          "Awaiting courier assignment"
+                        )
+                      )}
+                    </AdminTableCell>
                     <AdminTableCell>
                       <AdminStatusBadge status={order.status} label={formatOrderStatus(order.status)} />
                     </AdminTableCell>
@@ -424,16 +439,26 @@ export default function OrdersPage() {
                     {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign demo courier"}
                   </AdminButton>
                   <div className="flex flex-wrap items-end gap-2">
-                    <Field
-                      label="Courier ID"
-                      value={courierIdInput}
-                      onChange={setCourierIdInput}
-                      placeholder="Courier UUID"
-                    />
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">Courier</span>
+                      <select
+                        value={courierIdInput}
+                        onChange={(event) => setCourierIdInput(event.target.value)}
+                        className="mt-1 min-w-[16rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20"
+                      >
+                        <option value="">Select a courier...</option>
+                        {drivers.map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.fullName} — {driver.email ?? "no email"}
+                            {driver.serviceZone ? ` — ${driver.serviceZone}` : ""} ({driver.activeAssignmentCount} active)
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <AdminButton
                       type="button"
                       variant="secondary"
-                      disabled={assigningOrderId === selectedOrder.id}
+                      disabled={assigningOrderId === selectedOrder.id || !courierIdInput}
                       onClick={() => void assignCourier(selectedOrder.id, courierIdInput)}
                     >
                       {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign to courier"}
@@ -459,4 +484,10 @@ function formatOptionalDateTime(value?: string | null) {
 
 function canAssignDemoCourier(order: OrderResponse) {
   return order.status === "PLACED" && !order.driverName;
+}
+
+const assignableStatuses = ["PLACED", "PREPARING", "READY_FOR_PICKUP"];
+
+function needsCourierAssignment(order: OrderResponse) {
+  return assignableStatuses.includes(order.status) && !order.driverName;
 }

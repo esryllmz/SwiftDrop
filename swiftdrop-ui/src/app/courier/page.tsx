@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -184,6 +185,21 @@ export default function CourierPage() {
           <PortalMetricCard theme="courier" label="Assigned Orders" value={loading && !profile ? "-" : assignedOrders} />
           <PortalMetricCard theme="courier" label="Delivered Orders" value={loading && !profile ? "-" : deliveredOrders} />
         </div>
+
+        {!loading && profile && !profile.profileComplete ? (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <h3 className="text-sm font-semibold text-amber-900">Complete your courier profile before receiving assignments.</h3>
+            <p className="mt-1 text-sm leading-6 text-amber-800">
+              Add your phone, vehicle type, and service zone so the dispatch engine can consider you for new orders.
+            </p>
+            <Link
+              href="/courier/profile"
+              className="mt-3 inline-flex w-fit rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            >
+              Complete courier profile
+            </Link>
+          </div>
+        ) : null}
 
         <PortalSection
           theme="courier"

@@ -74,6 +74,9 @@ export type OrderResponse = {
   pickedUpAt?: string | null;
   onTheWayAt?: string | null;
   deliveredAt?: string | null;
+  deliveryAddressSummary?: string | null;
+  deliveryDistrict?: string | null;
+  deliveryCity?: string | null;
   history?: OrderStatusHistoryResponse[];
 };
 
@@ -91,10 +94,46 @@ export type CustomerProfileResponse = {
   userId: string;
   email: string;
   role: UserRole;
+  phone?: string | null;
+  profileComplete: boolean;
   totalOrders: number;
   activeOrders: number;
   deliveredOrders: number;
 };
+
+export type UpdateCustomerProfileRequest = {
+  phone: string;
+};
+
+export type AddressLabel = "HOME" | "WORK" | "OTHER";
+
+export type CustomerAddressResponse = {
+  id: string;
+  label: AddressLabel;
+  recipientName: string;
+  phone?: string | null;
+  addressLine: string;
+  district: string;
+  city: string;
+  postalCode?: string | null;
+  deliveryNotes?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateCustomerAddressRequest = {
+  label: AddressLabel;
+  recipientName: string;
+  phone?: string;
+  addressLine: string;
+  district: string;
+  city: string;
+  postalCode?: string;
+  deliveryNotes?: string;
+};
+
+export type UpdateCustomerAddressRequest = CreateCustomerAddressRequest;
 
 export type CustomerMerchantOption = {
   id: string;
@@ -111,8 +150,26 @@ export type MerchantProfileResponse = {
   name?: string | null;
   latitude: number;
   longitude: number;
+  phone?: string | null;
+  addressLine?: string | null;
+  district?: string | null;
+  city?: string | null;
+  description?: string | null;
+  acceptingOrders: boolean;
+  averagePreparationMinutes?: number | null;
+  profileComplete: boolean;
   totalOrders: number;
   activeOrders: number;
+};
+
+export type UpdateMerchantProfileRequest = {
+  phone: string;
+  addressLine: string;
+  district: string;
+  city: string;
+  description?: string;
+  acceptingOrders: boolean;
+  averagePreparationMinutes: number;
 };
 
 export type CourierProfileResponse = {
@@ -122,13 +179,26 @@ export type CourierProfileResponse = {
   driverId: string;
   fullName: string;
   status: DriverStatus;
+  phone?: string | null;
+  vehicleType?: VehicleType | null;
+  serviceZone?: string | null;
+  maxActiveAssignments: number;
+  profileComplete: boolean;
   assignedOrders: number;
   deliveredOrders: number;
+};
+
+export type UpdateCourierProfileRequest = {
+  phone: string;
+  vehicleType: VehicleType;
+  serviceZone: string;
+  maxActiveAssignments: number;
 };
 
 export type CreateCustomerOrderRequest = {
   merchantId: string;
   totalAmount: number;
+  deliveryAddressId?: string;
 };
 
 export type DriverResponse = {
@@ -137,6 +207,8 @@ export type DriverResponse = {
   fullName: string;
   email?: string | null;
   status: DriverStatus;
+  serviceZone?: string | null;
+  activeAssignmentCount: number;
 };
 
 export type MerchantResponse = {
