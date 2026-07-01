@@ -104,10 +104,19 @@ function renderOrderCell(order: OrderResponse, column: string) {
     return <span>Customer account</span>;
   }
   if (column === "merchant") {
-    return order.merchantName ?? "Merchant";
+    return order.merchantName ?? "Not available";
   }
   if (column === "driver") {
-    return order.driverName ?? <span className="text-slate-400">Unassigned</span>;
+    if (order.driverName || order.driverEmail) {
+      return (
+        <span className="grid gap-0.5">
+          <span>{order.driverName ?? "Not available"}</span>
+          {order.driverEmail ? <span className="text-xs text-slate-500">{order.driverEmail}</span> : null}
+        </span>
+      );
+    }
+
+    return <span className="text-slate-500">Awaiting courier assignment</span>;
   }
   if (column === "status") {
     return <StatusBadge status={order.status} label={formatOrderStatus(order.status)} />;

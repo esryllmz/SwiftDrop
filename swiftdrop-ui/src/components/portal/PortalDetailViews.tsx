@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -79,23 +80,42 @@ export function CustomerOrdersPage() {
   const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
+  const [query, setQuery] = useState("");
   const { loading, error, reload } = usePortalLoad(async () => {
     const nextOrders = await getCustomerOrders(accessToken);
     setOrders(nextOrders);
   }, accessToken, "Customer orders could not be loaded.");
 
   const filteredOrders = useMemo(() => {
-    if (filter === "active") {
-      return orders.filter((order) => activeCustomerStatuses.includes(order.status));
+    const byStatus = orders.filter((order) => {
+      if (filter === "active") {
+        return activeCustomerStatuses.includes(order.status);
+      }
+      if (filter === "delivered") {
+        return order.status === "DELIVERED";
+      }
+      if (filter === "cancelled") {
+        return order.status === "CANCELLED";
+      }
+      return true;
+    });
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return byStatus;
     }
-    if (filter === "delivered") {
-      return orders.filter((order) => order.status === "DELIVERED");
-    }
-    if (filter === "cancelled") {
-      return orders.filter((order) => order.status === "CANCELLED");
-    }
-    return orders;
-  }, [filter, orders]);
+    return byStatus.filter((order) =>
+      [
+        order.id,
+        formatDisplayId(order.id, "Order"),
+        order.merchantName,
+        order.driverName,
+        order.driverEmail,
+        formatOrderStatus(order.status),
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedQuery)),
+    );
+  }, [filter, orders, query]);
   const handleCancel = useCancelOrderAction(
     accessToken,
     "customer",
@@ -112,13 +132,22 @@ export function CustomerOrdersPage() {
     >
       <PageState loading={loading} error={error} onRetry={reload} />
       <PortalSection
-        title="Order List"
-        description="Client-side filters are computed from the available order data."
+        title="Order list"
+        description="Filter and review orders returned by the customer orders endpoint."
         action={<FilterTabs value={filter} onChange={setFilter} options={["all", "active", "delivered", "cancelled"]} />}
       >
+        <label className="mb-4 block max-w-md">
+          <span className="text-sm font-medium text-slate-700">Search orders</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by order, merchant, courier, or status"
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          />
+        </label>
         <OrdersTable
           orders={filteredOrders}
-          emptyMessage="No orders found."
+          emptyMessage="No orders match the current filters."
           columns={["order", "merchant", "driver", "status", "amount", "created", "actions"]}
           renderActions={(order) => (
             <span className="flex flex-wrap items-center gap-2">
@@ -202,13 +231,22 @@ export function CustomerAddressesPage() {
       subtitle="Manage delivery address information for future order flows."
     >
       <PortalSection
-        title="Address Management"
-        description="Address storage is not exposed by the current backend contract."
+        title="Address management"
+        description="This capability is planned and is not exposed by the current backend contract."
         action={<span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">Coming soon</span>}
       >
-        <div className="grid gap-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6">
-          <EmptyState message="Address management is not available yet." />
-          <Button disabled className="w-fit">Add Address</Button>
+        <div className="grid gap-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6">
+          <div>
+            <h3 className="text-base font-semibold text-slate-950">Addresses</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Address management is planned for a future version. Geo-based courier assignment will use customer addresses,
+              merchant pickup locations and courier live location tracking.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <DetailLink href="/customer" label="Back to dashboard" />
+            <DetailLink href="/customer/orders" label="View orders" />
+          </div>
         </div>
       </PortalSection>
     </PortalShell>
@@ -225,7 +263,7 @@ export function CustomerProfilePage() {
       render={(profile) => (
         <DetailGrid
           fields={[
-            ["Customer Name", "Not available"],
+            ["Name or email", profile.email],
             ["Email", profile.email],
             ["Role", formatRole(profile.role)],
             ["Account Status", "Active"],
@@ -583,29 +621,56 @@ function OrderDetailPage({
         <div className="grid gap-5">
           <PortalSection
             title={formatDisplayId(order.id, portalType === "courier" ? "Assignment" : "Order")}
-            description="Information shown here comes from the current portal order data."
+            description="Summary from the current order data."
             action={<DetailLink href={backHref} label="Back to list" />}
           >
             <DetailGrid
               fields={[
-                ["Status", formatOrderStatus(order.status)],
-                ["Merchant", order.merchantName ?? "Not available"],
-                ["Courier", order.driverName ?? "Not available"],
+                ["Current status", <StatusBadge key="status" status={order.status} label={formatOrderStatus(order.status)} />],
                 ["Total Amount", formatCurrencyTRY(order.totalAmount)],
                 ["Created Time", formatDateTimeOrNA(order.createdAt)],
-                ["Updated Time", "Not available"],
-                ["Delivery Address", "Not available"],
-                ["Notes", "Not available"],
               ]}
             />
           </PortalSection>
-          <PortalSection title="Progress" description="Timeline is derived from the current order status.">
-            <OrderProgress status={order.status} />
+          <PortalSection title="Timeline" description="Status history when available, otherwise a current-status fallback.">
+            <OrderTimeline order={order} />
           </PortalSection>
-          <PortalSection title="Status History" description="Chronological lifecycle events for this order.">
-            <StatusHistory history={Array.isArray(order.history) ? order.history : []} />
+          <div className="grid gap-5 md:grid-cols-2">
+            <PortalSection title="Merchant" description="Pickup information returned by the backend.">
+              <DetailGrid
+                fields={[
+                  ["Name", order.merchantName ?? "Not available"],
+                  ["Pickup details", "Pickup details are not available yet"],
+                ]}
+              />
+            </PortalSection>
+            <PortalSection title="Courier" description="Assignment information returned by the backend.">
+              {order.driverName || order.driverEmail ? (
+                <DetailGrid
+                  fields={[
+                    ["Name", order.driverName ?? "Not available"],
+                    ["Email", order.driverEmail ?? "Not available"],
+                  ]}
+                />
+              ) : (
+                <EmptyState message="Awaiting courier assignment." />
+              )}
+            </PortalSection>
+          </div>
+          {order.cancellationReason ? (
+            <PortalSection title="Cancellation" description="Cancellation details for this order.">
+              <DetailGrid
+                fields={[
+                  ["Reason", order.cancellationReason],
+                  ["Cancelled at", formatDateTimeOrNA(order.cancelledAt)],
+                  ["Cancelled by", formatStatusLabel(order.cancelledByActorType ?? undefined)],
+                ]}
+              />
+            </PortalSection>
+          ) : null}
+          <PortalSection title="Actions" description="Available actions depend on the current order status.">
+            {actionRenderer(order) ?? <EmptyState message="No actions are available for this status." />}
           </PortalSection>
-          {actionRenderer(order)}
         </div>
       ) : null}
     </PortalShell>
@@ -625,7 +690,8 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
   loadProfile: (token: string | null) => Promise<TProfile>;
   render: (profile: TProfile) => React.ReactNode;
 }) {
-  const { accessToken, user } = useAuth();
+  const { accessToken, user, logout } = useAuth();
+  const router = useRouter();
   const [state, setState] = useState<LoadState<TProfile>>({ loading: true, error: null, data: null });
   const reload = useCallback(async () => {
     if (!accessToken) {
@@ -659,9 +725,18 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
         <PortalSection
           title="Account Summary"
           description="Read-only details from the current account and portal profile."
-          action={<DetailLink href={`/${portalType}/profile/change-password`} label="Change Password" />}
+          action={portalType === "customer" ? undefined : <DetailLink href={`/${portalType}/profile/change-password`} label="Change password" />}
         >
           {render(state.data)}
+          {portalType === "customer" ? (
+            <div className="mt-5 flex flex-wrap gap-2">
+              <DetailLink href="/customer/profile/change-password" label="Change password" />
+              <DetailLink href="/customer" label="Back to dashboard" />
+              <SecondaryButton type="button" onClick={() => void logout().finally(() => router.replace("/"))}>
+                Logout
+              </SecondaryButton>
+            </div>
+          ) : null}
         </PortalSection>
       ) : null}
     </PortalShell>
@@ -860,56 +935,72 @@ function DetailLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-function OrderProgress({ status }: { status: OrderStatus }) {
-  const steps: OrderStatus[] = ["PLACED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
-  const currentIndex = steps.indexOf(status);
+function OrderTimeline({ order }: { order: OrderResponse }) {
+  const history = Array.isArray(order.history) ? order.history : [];
+  const steps: OrderStatus[] =
+    order.status === "CANCELLED"
+      ? ["PLACED", "CANCELLED"]
+      : ["PLACED", "DRIVER_ASSIGNED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
+  const currentIndex = steps.indexOf(order.status);
 
-  if (status === "CANCELLED") {
-    return <StatusBadge status="CANCELLED" label="Cancelled" />;
+  if (history.length > 0) {
+    return (
+      <div className="grid gap-3">
+        {history.map((item) => (
+          <TimelineItem
+            key={item.id}
+            status={item.toStatus}
+            timestamp={item.createdAt}
+            actor={formatStatusLabel(item.actorType)}
+            reason={item.reason}
+            completed
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {steps.map((step, index) => (
-        <div
-          key={step}
-          className={`rounded-lg border px-3 py-2 text-xs font-medium ${
-            currentIndex >= index
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-slate-200 bg-slate-50 text-slate-500"
-          }`}
-        >
-          {formatOrderStatus(step)}
-        </div>
-      ))}
+    <div className="grid gap-3">
+      {steps.map((step, index) => {
+        const completed = order.status === "CANCELLED" ? step === "PLACED" || step === "CANCELLED" : currentIndex >= index;
+        return (
+          <TimelineItem
+            key={step}
+            status={step}
+            timestamp={completed && step === order.status ? order.createdAt : null}
+            actor={completed ? "System" : undefined}
+            completed={completed}
+          />
+        );
+      })}
     </div>
   );
 }
 
-function StatusHistory({ history }: { history: NonNullable<OrderResponse["history"]> }) {
-  if (history.length === 0) {
-    return <EmptyState message="Status history is not available yet." />;
-  }
-
+function TimelineItem({
+  status,
+  timestamp,
+  actor,
+  reason,
+  completed,
+}: {
+  status: OrderStatus;
+  timestamp?: string | null;
+  actor?: string;
+  reason?: string | null;
+  completed: boolean;
+}) {
   return (
-    <div className="grid gap-2">
-      {history.map((item) => (
-        <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <StatusBadge status={item.toStatus} label={formatOrderStatus(item.toStatus)} />
-            <span className="text-xs text-slate-500">{formatDateTimeOrNA(item.createdAt)}</span>
-          </div>
-          <div className="mt-2 text-xs text-slate-500">
-            Actor: <span className="font-medium text-slate-700">{formatStatusLabel(item.actorType)}</span>
-            {item.fromStatus ? (
-              <span> from {formatOrderStatus(item.fromStatus)}</span>
-            ) : null}
-          </div>
-          {item.reason ? (
-            <p className="mt-2 rounded-md bg-white px-2 py-1 text-sm text-slate-700">{item.reason}</p>
-          ) : null}
-        </div>
-      ))}
+    <div className={`rounded-lg border p-3 ${completed ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-slate-50"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <StatusBadge status={status} label={formatOrderStatus(status)} />
+        <span className="text-xs text-slate-500">{timestamp ? formatDateTime(timestamp) : "Not available"}</span>
+      </div>
+      <div className="mt-2 text-xs text-slate-500">
+        Actor: <span className="font-medium text-slate-700">{actor ?? "Not available"}</span>
+      </div>
+      {reason ? <p className="mt-2 rounded-md bg-white px-2 py-1 text-sm text-slate-700">{reason}</p> : null}
     </div>
   );
 }

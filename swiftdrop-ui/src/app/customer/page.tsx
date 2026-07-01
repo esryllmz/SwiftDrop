@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -10,6 +11,8 @@ import {
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Button, ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
+import { formatCurrencyTRY, formatDateTime, formatDisplayId } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import {
   createCustomerOrder,
   getCustomerMerchants,
@@ -155,13 +158,21 @@ export default function CustomerPage() {
 
   const parsedTotalAmount = Number(totalAmount);
   const totalAmountValid = Number.isFinite(parsedTotalAmount) && parsedTotalAmount > 0;
-  const totalOrders = profile?.totalOrders ?? orders.length;
   const activeOrders =
     profile?.activeOrders ??
     orders.filter((order) => activeCustomerStatuses.includes(order.status)).length;
   const deliveredOrders =
     profile?.deliveredOrders ??
     orders.filter((order) => order.status === "DELIVERED").length;
+  const cancelledOrders = orders.filter((order) => order.status === "CANCELLED").length;
+  const totalSpending = orders
+    .filter((order) => order.status !== "CANCELLED")
+    .reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0);
+  const activeOrder =
+    orders
+      .filter((order) => activeCustomerStatuses.includes(order.status))
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ??
+    null;
   const merchantSelectDisabled =
     creating || merchantsLoading || Boolean(merchantsError) || merchants.length === 0;
   const createDisabled =
@@ -175,8 +186,8 @@ export default function CustomerPage() {
     <PortalShell
       portalType="customer"
       email={profile?.email ?? user?.email ?? ""}
-      title="Dashboard"
-      subtitle="Track your SwiftDrop orders and create demo orders."
+      title="Welcome back"
+      subtitle="Track your deliveries and manage your orders."
     >
       <div className="grid gap-5">
         {loading ? <LoadingState /> : null}
@@ -189,16 +200,48 @@ export default function CustomerPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <PortalMetricCard label="Total Orders" value={loading && !profile ? "-" : totalOrders} />
-          <PortalMetricCard label="Active Orders" value={loading && !profile ? "-" : activeOrders} />
-          <PortalMetricCard label="Delivered" value={loading && !profile ? "-" : deliveredOrders} />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <PortalMetricCard label="Active orders" value={loading && !profile ? "-" : activeOrders} />
+          <PortalMetricCard label="Delivered orders" value={loading && !profile ? "-" : deliveredOrders} />
+          <PortalMetricCard label="Cancelled orders" value={loading && !profile ? "-" : cancelledOrders} />
+          <PortalMetricCard label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <PortalSection
+            title="Current order"
+            description="The most recent active delivery for this account."
+            action={activeOrder ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
+          >
+            {activeOrder ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                <InfoTile label={formatDisplayId(activeOrder.id, "Order")} value={formatOrderStatus(activeOrder.status)} />
+                <InfoTile label="Merchant" value={activeOrder.merchantName ?? "Not available"} />
+                <InfoTile label="Courier" value={activeOrder.driverName ?? activeOrder.driverEmail ?? "Awaiting courier assignment"} />
+                <InfoTile label="Amount" value={formatCurrencyTRY(activeOrder.totalAmount)} />
+                <InfoTile label="Created at" value={formatDateTime(activeOrder.createdAt)} />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-medium text-slate-900">No active order right now.</p>
+                <p className="mt-1 text-sm text-slate-500">Create a demo order to see the delivery flow.</p>
+              </div>
+            )}
+          </PortalSection>
+
+          <PortalSection title="Quick actions" description="Common customer workflows.">
+            <div className="grid gap-2">
+              <Button onClick={() => setModalOpen(true)}>Create demo order</Button>
+              <DetailLink href="/customer/orders" label="View orders" />
+              <DetailLink href="/customer/profile" label="Manage profile" />
+            </div>
+          </PortalSection>
         </div>
 
         <PortalSection
           title="Recent Orders"
           description="Active and recent orders for this customer account."
-          action={<Button onClick={() => setModalOpen(true)}>New Order</Button>}
+          action={<Button onClick={() => setModalOpen(true)}>Create demo order</Button>}
         >
           <OrdersTable
             orders={orders}
@@ -312,4 +355,24 @@ export default function CustomerPage() {
 
 function getDefaultMerchantId(merchants: CustomerMerchantOption[]) {
   return merchants.find((merchant) => merchant.id === demoMerchantId)?.id ?? merchants[0]?.id ?? "";
+}
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="text-xs font-medium uppercase text-slate-500">{label}</div>
+      <div className="mt-1 break-words text-sm font-semibold text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function DetailLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      {label}
+    </Link>
+  );
 }
