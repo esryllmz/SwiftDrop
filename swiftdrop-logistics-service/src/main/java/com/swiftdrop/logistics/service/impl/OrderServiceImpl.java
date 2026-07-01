@@ -238,8 +238,14 @@ public class OrderServiceImpl implements OrderService {
 
         order.setDriver(busyDriver);
         OrderStatus previousStatus = order.getStatus();
-        transitionPolicy.assertTransition(previousStatus, OrderStatus.DRIVER_ASSIGNED, OrderActorType.SYSTEM);
-        order.setStatus(OrderStatus.DRIVER_ASSIGNED);
+        // A courier can be assigned late (via retry) to an order the merchant already started
+        // preparing; only bump the status to DRIVER_ASSIGNED when it's still PLACED so we never
+        // regress merchant-side progress or violate the SYSTEM actor's transition rules.
+        OrderStatus targetStatus = previousStatus == OrderStatus.PLACED ? OrderStatus.DRIVER_ASSIGNED : previousStatus;
+        if (targetStatus != previousStatus) {
+            transitionPolicy.assertTransition(previousStatus, targetStatus, OrderActorType.SYSTEM);
+            order.setStatus(targetStatus);
+        }
         Order assignedOrder = Objects.requireNonNull(
                 orderRepository.save(order),
                 "assigned order must not be null"
@@ -247,7 +253,7 @@ public class OrderServiceImpl implements OrderService {
         saveHistory(
                 assignedOrder,
                 previousStatus,
-                OrderStatus.DRIVER_ASSIGNED,
+                targetStatus,
                 OrderActorType.SYSTEM,
                 null,
                 null
@@ -258,7 +264,7 @@ public class OrderServiceImpl implements OrderService {
                 "ORDER_DRIVER_ASSIGNED",
                 assignedOrder,
                 previousStatus,
-                OrderStatus.DRIVER_ASSIGNED,
+                targetStatus,
                 OrderActorType.SYSTEM,
                 null,
                 "Your order was accepted by a courier."
