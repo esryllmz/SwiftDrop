@@ -37,6 +37,10 @@ public interface OrderService {
 
     OrderResponse assignCourier(UUID adminUserId, UUID orderId, UUID courierId);
 
+    boolean attemptAssignment(UUID orderId);
+
+    List<UUID> findUnassignedActiveOrderIds();
+
     List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId);
 
     List<OrderResponse> findCustomerOrders(UUID customerId);

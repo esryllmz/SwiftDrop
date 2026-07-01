@@ -6,8 +6,6 @@ import java.util.UUID;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.geo.Point;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
 
-    private static final String DRIVER_GEO_KEY = "drivers:locations";
     private static final UUID BURGER_LAB_ID = uuid("11111111-1111-1111-1111-111111111111");
     private static final UUID NEAR_DRIVER_ID = uuid("22222222-2222-2222-2222-222222222222");
     private static final UUID FAR_DRIVER_ID = uuid("33333333-3333-3333-3333-333333333333");
@@ -36,7 +33,6 @@ public class DataInitializer implements CommandLineRunner {
 
     private final MerchantRepository merchantRepository;
     private final DriverRepository driverRepository;
-    private final StringRedisTemplate redisTemplate;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -62,18 +58,6 @@ public class DataInitializer implements CommandLineRunner {
                 "Besiktas",
                 this::saveFarDriver
         );
-
-        var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
-        final String nearDriverMember = Objects.requireNonNull(
-                nearDriver.getId().toString(),
-                "near driver Geo member must not be null"
-        );
-        final String farDriverMember = Objects.requireNonNull(
-                farDriver.getId().toString(),
-                "far driver Geo member must not be null"
-        );
-        geoOperations.add(DRIVER_GEO_KEY, new Point(29.0260, 41.0205), nearDriverMember);
-        geoOperations.add(DRIVER_GEO_KEY, new Point(29.2300, 40.8900), farDriverMember);
 
         log.info("Seed data loaded. merchantId={}, nearDriverId={}, farDriverId={}",
                 burgerLab.getId(), nearDriver.getId(), farDriver.getId());

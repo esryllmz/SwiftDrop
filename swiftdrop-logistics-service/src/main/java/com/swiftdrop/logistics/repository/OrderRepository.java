@@ -81,4 +81,12 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     long countByDriver_IdAndStatusNot(UUID driverId, OrderStatus status);
 
     long countByDriver_IdAndStatusIn(UUID driverId, Collection<OrderStatus> statuses);
+
+    @Query("""
+            select o.id from Order o
+            where o.driver is null
+              and o.status in :statuses
+            order by o.createdAt asc
+            """)
+    List<UUID> findUnassignedActiveOrderIds(@Param("statuses") Collection<OrderStatus> statuses);
 }

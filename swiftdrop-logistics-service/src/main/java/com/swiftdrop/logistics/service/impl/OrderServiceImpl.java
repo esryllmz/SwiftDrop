@@ -2,6 +2,7 @@ package com.swiftdrop.logistics.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,14 +11,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.GeoResult;
-import org.springframework.data.geo.GeoResults;
-import org.springframework.data.geo.Metrics;
-import org.springframework.data.geo.Point;
-import org.springframework.data.redis.connection.RedisGeoCommands;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +51,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrderServiceImpl implements OrderService {
 
-    private static final String DRIVER_GEO_KEY = "drivers:locations";
+    private static final List<OrderStatus> ACTIVE_COURIER_STATUSES = List.of(
+            OrderStatus.DRIVER_ASSIGNED,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.PICKED_UP,
+            OrderStatus.ON_THE_WAY
+    );
+    private static final List<OrderStatus> ASSIGNABLE_ORDER_STATUSES = List.of(
+            OrderStatus.PLACED,
+            OrderStatus.PREPARING,
+            OrderStatus.READY_FOR_PICKUP
+    );
 
     private final OrderRepository orderRepository;
     private final MerchantRepository merchantRepository;
@@ -66,7 +69,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final OrderStatusTransitionPolicy transitionPolicy;
     private final OutboxService outboxService;
-    private final StringRedisTemplate redisTemplate;
     private final RedissonClient redissonClient;
     private final CustomerProfileRepository customerProfileRepository;
     private final CustomerAddressRepository customerAddressRepository;
@@ -142,62 +144,83 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void assignDriverWorkflow(Order order) {
-        if (assignDriverIfAvailable(order, demoCourierId)) {
-            return;
-        }
+        attemptAssignmentFor(order);
+    }
 
+    @Override
+    @Transactional
+    public boolean attemptAssignment(UUID orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getDriver() != null || order.getStatus() == OrderStatus.CANCELLED
+                || order.getStatus() == OrderStatus.DELIVERED) {
+            return false;
+        }
+        return attemptAssignmentFor(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> findUnassignedActiveOrderIds() {
+        return orderRepository.findUnassignedActiveOrderIds(ASSIGNABLE_ORDER_STATUSES);
+    }
+
+    /**
+     * Zone/workload-aware MVP dispatch: no GPS or geo-nearest search. Candidates are couriers who are
+     * available, profile-complete, and under their max active assignments; same-zone couriers are
+     * preferred, then the least busy / longest-idle courier is picked.
+     */
+    private boolean attemptAssignmentFor(Order order) {
         Merchant merchant = order.getMerchant();
-        Point merchantLocation = new Point(merchant.getLongitude(), merchant.getLatitude());
-        Distance searchRadius = new Distance(5, Metrics.KILOMETERS);
+        List<Driver> candidates = driverRepository.findByStatus(DriverStatus.AVAILABLE).stream()
+                .filter(ProfileCompleteness::isCourierComplete)
+                .filter(driver -> activeAssignmentCount(driver.getId()) < driver.getMaxActiveAssignments())
+                .toList();
 
-        RedisGeoCommands.GeoSearchCommandArgs args = RedisGeoCommands.GeoSearchCommandArgs
-                .newGeoSearchArgs()
-                .includeCoordinates()
-                .sortAscending();
-
-        var geoOperations = Objects.requireNonNull(redisTemplate.opsForGeo(), "Redis Geo operations must not be null");
-        final GeoReference<String> merchantReference = Objects.requireNonNull(
-                GeoReference.fromCoordinate(merchantLocation),
-                "merchant Geo reference must not be null"
-        );
-        GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.search(
-                DRIVER_GEO_KEY,
-                merchantReference,
-                searchRadius,
-                args
-        );
-
-        if (results == null || results.getContent().isEmpty()) {
-            log.warn("No available nearby driver found for order {}", order.getId());
-            return;
+        if (candidates.isEmpty()) {
+            log.warn("No eligible courier found for order {}", order.getId());
+            return false;
         }
 
-        for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : results.getContent()) {
-            String driverIdValue = Objects.requireNonNull(result.getContent().getName(), "driver id must not be null");
-            final UUID parsedDriverId = UUID.fromString(driverIdValue);
-            UUID driverId = Objects.requireNonNull(parsedDriverId, "driver UUID must not be null");
+        List<Driver> zoneMatched = candidates.stream()
+                .filter(driver -> merchant.getDistrict() != null && merchant.getDistrict().equals(driver.getServiceZone()))
+                .toList();
+        List<Driver> pool = zoneMatched.isEmpty() ? candidates : zoneMatched;
+
+        List<Driver> ranked = pool.stream()
+                .sorted(Comparator
+                        .comparingLong((Driver driver) -> activeAssignmentCount(driver.getId()))
+                        .thenComparing(Driver::getLastAssignedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(Driver::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .toList();
+
+        for (Driver candidate : ranked) {
             RLock driverLock = Objects.requireNonNull(
-                    redissonClient.getLock("lock:driver:" + driverIdValue),
+                    redissonClient.getLock("lock:driver:" + candidate.getId()),
                     "driver lock must not be null"
             );
 
             try {
                 if (driverLock.tryLock(0, 3, TimeUnit.SECONDS)) {
-                    if (assignDriverIfAvailable(order, driverId)) {
-                        return;
+                    if (assignDriverIfAvailable(order, candidate.getId())) {
+                        return true;
                     }
                 }
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
-                log.error("Driver lock attempt interrupted for driver {}", driverIdValue, ex);
-            } catch (IllegalArgumentException ex) {
-                log.warn("Skipping invalid driver id in Redis Geo set: {}", driverIdValue);
+                log.error("Driver lock attempt interrupted for driver {}", candidate.getId(), ex);
             } finally {
                 if (driverLock.isHeldByCurrentThread()) {
                     driverLock.unlock();
                 }
             }
         }
+
+        log.warn("No courier could be locked/assigned for order {}", order.getId());
+        return false;
+    }
+
+    private long activeAssignmentCount(UUID driverId) {
+        return orderRepository.countByDriver_IdAndStatusIn(driverId, ACTIVE_COURIER_STATUSES);
     }
 
     private boolean assignDriverIfAvailable(Order order, UUID driverId) {
@@ -207,6 +230,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         driver.setStatus(DriverStatus.BUSY);
+        driver.setLastAssignedAt(LocalDateTime.now());
         Driver busyDriver = Objects.requireNonNull(
                 driverRepository.save(driver),
                 "busy driver must not be null"

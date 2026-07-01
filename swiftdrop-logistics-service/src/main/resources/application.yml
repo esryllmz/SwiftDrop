@@ -52,3 +52,5 @@ application:
     publisher-fixed-delay-ms: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:5000}
     publish-batch-size: ${OUTBOX_PUBLISH_BATCH_SIZE:25}
     max-retry-attempts: ${OUTBOX_MAX_RETRY_ATTEMPTS:5}
+  assignment:
+    retry-fixed-delay-ms: ${ASSIGNMENT_RETRY_FIXED_DELAY_MS:30000}
