@@ -3,7 +3,61 @@ import { EmptyState, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatDisplayId, formatMoney } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
 import { getPortalTheme, type PortalThemeKey } from "@/lib/portal-theme";
-import type { OrderResponse } from "@/types/api";
+import type { OrderResponse, OrderStatus } from "@/types/api";
+
+export function PortalOrderStepper({
+  order,
+  theme,
+  steps,
+}: {
+  order: OrderResponse;
+  theme: PortalThemeKey;
+  steps: OrderStatus[];
+}) {
+  const portalTheme = getPortalTheme(theme);
+  const displaySteps =
+    order.status === "CANCELLED" ? ([...steps.slice(0, 1), "CANCELLED"] as OrderStatus[]) : steps;
+  const currentIndex = displaySteps.indexOf(order.status);
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-slate-950">Current status</div>
+        <div className={`text-sm font-medium ${portalTheme.accentText}`}>{formatOrderStatus(order.status)}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {displaySteps.map((step, index) => {
+          const completed = order.status === "CANCELLED" ? index < displaySteps.length - 1 : index < currentIndex;
+          const current = step === order.status;
+
+          return (
+            <div
+              key={step}
+              className={`rounded-lg border px-2.5 py-2 text-xs ${
+                current
+                  ? `${portalTheme.borderStrong} ${portalTheme.surfaceStrong} ${portalTheme.accentSoftText}`
+                  : completed
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-slate-200 bg-white text-slate-500"
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                    current ? `${portalTheme.accent} text-white` : completed ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {completed ? "✓" : index + 1}
+                </span>
+                <span className="font-semibold">{formatOrderStatus(step)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function PortalMetricCard({
   label,

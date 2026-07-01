@@ -4,12 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   PortalMetricCard,
+  PortalOrderStepper,
   PortalSection,
 } from "@/components/portal/PortalDashboard";
 import { MerchantOrdersTable } from "@/components/portal/MerchantOrdersTable";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
+import { ErrorState, LoadingState, SecondaryButton, StatusBadge } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
+import { formatCurrencyTRY, formatDateTime, formatDisplayId } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import {
   getMerchantOrders,
   getMerchantProfile,
@@ -27,6 +30,7 @@ const activeMerchantStatuses: OrderStatus[] = [
   "PICKED_UP",
   "ON_THE_WAY",
 ];
+const merchantProgressSteps: OrderStatus[] = ["PLACED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP"];
 
 export default function MerchantPage() {
   const { accessToken, user } = useAuth();
@@ -84,6 +88,9 @@ export default function MerchantPage() {
   const activeOrders =
     profile?.activeOrders ??
     orders.filter((order) => activeMerchantStatuses.includes(order.status)).length;
+  const currentOrder = orders
+    .filter((order) => activeMerchantStatuses.includes(order.status))
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
 
   const handleMerchantAction = async (
     orderId: string,
@@ -136,6 +143,34 @@ export default function MerchantPage() {
           <PortalMetricCard theme="merchant" label="Total Orders" value={loading && !profile ? "-" : totalOrders} />
           <PortalMetricCard theme="merchant" label="Active Orders" value={loading && !profile ? "-" : activeOrders} />
         </div>
+
+        <PortalSection
+          compact
+          theme="merchant"
+          title="Current order"
+          description="The most recent active order for this store."
+        >
+          {currentOrder ? (
+            <div className="grid gap-3">
+              <div className="flex flex-col gap-3 rounded-lg border border-violet-200 bg-violet-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase text-violet-700">{formatDisplayId(currentOrder.id, "Order")}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={currentOrder.status} label={formatOrderStatus(currentOrder.status)} />
+                    <span className="text-xs text-violet-800">{formatDateTime(currentOrder.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="text-sm font-semibold text-violet-950">{formatCurrencyTRY(currentOrder.totalAmount)}</div>
+              </div>
+              <PortalOrderStepper order={currentOrder} theme="merchant" steps={merchantProgressSteps} />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-violet-200 bg-violet-50 p-5">
+              <p className="text-sm font-semibold text-violet-950">No active order right now.</p>
+              <p className="mt-1 text-sm text-violet-800">New orders placed at this store will appear here.</p>
+            </div>
+          )}
+        </PortalSection>
 
         <PortalSection
           theme="merchant"

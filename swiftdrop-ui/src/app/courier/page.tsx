@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   PortalMetricCard,
+  PortalOrderStepper,
   PortalSection,
 } from "@/components/portal/PortalDashboard";
 import { CourierAssignmentsTable } from "@/components/portal/CourierAssignmentsTable";
@@ -11,6 +12,8 @@ import { CourierAvailabilityCard } from "@/components/portal/CourierAvailability
 import { PortalShell } from "@/components/portal/PortalShell";
 import { ErrorState, LoadingState, SecondaryButton, StatusBadge } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
+import { formatCurrencyTRY, formatDateTime, formatDisplayId } from "@/lib/format";
+import { formatOrderStatus } from "@/lib/order-status";
 import {
   getCourierAssignments,
   getCourierProfile,
@@ -27,6 +30,13 @@ const activeCourierStatuses: OrderStatus[] = [
   "READY_FOR_PICKUP",
   "PICKED_UP",
   "ON_THE_WAY",
+];
+const courierProgressSteps: OrderStatus[] = [
+  "DRIVER_ASSIGNED",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+  "DELIVERED",
 ];
 
 export default function CourierPage() {
@@ -142,6 +152,9 @@ export default function CourierPage() {
     profile?.deliveredOrders ??
     assignments.filter((assignment) => assignment.status === "DELIVERED").length;
   const activeAssignments = assignments.filter((assignment) => activeCourierStatuses.includes(assignment.status));
+  const currentAssignment = [...activeAssignments].sort(
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+  )[0];
 
   return (
     <PortalShell
@@ -182,6 +195,34 @@ export default function CourierPage() {
             loading={availabilityLoading}
             onChange={(status) => void handleAvailabilityChange(status)}
           />
+        </PortalSection>
+
+        <PortalSection
+          compact
+          theme="courier"
+          title="Active assignment"
+          description="The most recent active delivery for this courier."
+        >
+          {currentAssignment ? (
+            <div className="grid gap-3">
+              <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase text-emerald-700">{formatDisplayId(currentAssignment.id, "Order")}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={currentAssignment.status} label={formatOrderStatus(currentAssignment.status)} />
+                    <span className="text-xs text-emerald-800">{formatDateTime(currentAssignment.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="text-sm font-semibold text-emerald-950">{formatCurrencyTRY(currentAssignment.totalAmount)}</div>
+              </div>
+              <PortalOrderStepper order={currentAssignment} theme="courier" steps={courierProgressSteps} />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50 p-5">
+              <p className="text-sm font-semibold text-emerald-950">No active assignments assigned to this courier.</p>
+              <p className="mt-1 text-sm text-emerald-800">New dispatch work will appear here when it is ready.</p>
+            </div>
+          )}
         </PortalSection>
 
         <PortalSection

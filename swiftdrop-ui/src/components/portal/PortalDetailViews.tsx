@@ -322,10 +322,14 @@ export function MerchantOrdersPage() {
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
   const [cancelOrder, setCancelOrder] = useState<OrderResponse | null>(null);
   const [filter, setFilter] = useState<"new" | "preparing" | "ready" | "courier" | "completed" | "cancelled">("new");
+  const [query, setQuery] = useState("");
   const { loading, error, reload } = usePortalLoad(async () => {
     setOrders(await getMerchantOrders(accessToken));
   }, accessToken, "Merchant orders could not be loaded.");
-  const filteredOrders = useMemo(() => filterMerchantOrders(orders, filter), [filter, orders]);
+  const filteredOrders = useMemo(() => {
+    const byStatus = filterMerchantOrders(orders, filter);
+    return searchOrders(byStatus, query);
+  }, [filter, orders, query]);
   const handleAction = useMerchantOrderAction(accessToken, setActionOrderId, reload);
   const handleCancel = useCancelOrderAction(accessToken, "merchant", setActionOrderId, reload);
 
@@ -341,8 +345,16 @@ export function MerchantOrdersPage() {
         theme="merchant"
         title="Order Workflow"
         description="Actions use the current merchant order endpoints."
-        action={<FilterTabs tone="merchant" value={filter} onChange={setFilter} options={["new", "preparing", "ready", "courier", "completed", "cancelled"]} />}
       >
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <SearchField
+            tone="merchant"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search orders by customer, courier, status or order ID"
+          />
+          <FilterTabs tone="merchant" value={filter} onChange={setFilter} options={["new", "preparing", "ready", "courier", "completed", "cancelled"]} />
+        </div>
         <MerchantOrdersTable
           orders={filteredOrders}
           actionOrderId={actionOrderId}
@@ -425,17 +437,25 @@ export function MerchantStorePage() {
           tone="merchant"
           fields={[
             ["Business Name", profile.businessName ?? profile.name ?? "Not available"],
-            ["Description", "Not available"],
-            ["Address", "Not available"],
-            ["Phone", "Not available"],
+            ["Description", <PlannedBadge key="description" />],
+            ["Address", <PlannedBadge key="address" />],
+            ["Phone", <PlannedBadge key="phone" />],
             ["Location", formatLocation(profile.latitude, profile.longitude)],
-            ["Accepting Orders", "Not available"],
-            ["Average Preparation Time", "Not available"],
-            ["Edit Store", "Store editing is not available yet."],
+            ["Accepting Orders", <PlannedBadge key="accepting-orders" />],
+            ["Average Preparation Time", <PlannedBadge key="average-preparation-time" />],
+            ["Edit Store", <PlannedBadge key="edit-store" label="Editing not available yet" />],
           ]}
         />
       )}
     />
+  );
+}
+
+function PlannedBadge({ label = "Not available yet" }: { label?: string }) {
+  return (
+    <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+      {label}
+    </span>
   );
 }
 
@@ -505,14 +525,22 @@ export function MerchantProfilePage() {
   );
 }
 
+type CourierAssignmentFilter = "all" | "active" | "ready" | "picked-up" | "on-the-way" | "delivered";
+
 export function CourierAssignmentsPage() {
   const { accessToken, user } = useAuth();
   const [assignments, setAssignments] = useState<OrderResponse[]>([]);
   const [actionOrderId, setActionOrderId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<CourierAssignmentFilter>("active");
+  const [query, setQuery] = useState("");
   const { loading, error, reload } = usePortalLoad(async () => {
     const nextAssignments = await getCourierAssignments(accessToken);
-    setAssignments(nextAssignments.filter((assignment) => activeCourierStatuses.includes(assignment.status)));
+    setAssignments(nextAssignments.filter((assignment) => assignment.status !== "CANCELLED"));
   }, accessToken, "Courier assignments could not be loaded.");
+  const filteredAssignments = useMemo(() => {
+    const byStatus = filterCourierAssignments(assignments, filter);
+    return searchOrders(byStatus, query);
+  }, [assignments, filter, query]);
   const handleAction = useCourierOrderAction(accessToken, setActionOrderId, reload);
 
   return (
@@ -523,14 +551,29 @@ export function CourierAssignmentsPage() {
       subtitle="Active delivery work assigned to this courier account."
     >
       <PageState loading={loading} error={error} onRetry={reload} />
-      <PortalSection theme="courier" title="Active Assignments" description="Delivered assignments are shown in history.">
+      <PortalSection theme="courier" title="Active Assignments" description="Completed deliveries also live in history.">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <SearchField
+            tone="courier"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search assignments by merchant, status or order ID"
+          />
+          <FilterTabs
+            tone="courier"
+            value={filter}
+            onChange={setFilter}
+            options={["all", "active", "ready", "picked-up", "on-the-way", "delivered"]}
+          />
+        </div>
         <CourierAssignmentsTable
-          assignments={assignments}
+          assignments={filteredAssignments}
           actionOrderId={actionOrderId}
           detailHrefFor={(order) => `/courier/assignments/${order.id}`}
           onPickedUp={(id) => void handleAction(id, "picked-up")}
           onOnTheWay={(id) => void handleAction(id, "on-the-way")}
           onDelivered={(id) => void handleAction(id, "delivered")}
+          emptyMessage="No active assignments assigned to this courier."
         />
       </PortalSection>
     </PortalShell>
@@ -567,10 +610,24 @@ export function CourierAssignmentDetailPage({ orderId }: { orderId: string }) {
 export function CourierHistoryPage() {
   const { accessToken, user } = useAuth();
   const [assignments, setAssignments] = useState<OrderResponse[]>([]);
+  const [filter, setFilter] = useState<"all" | "delivered" | "cancelled">("all");
+  const [query, setQuery] = useState("");
   const { loading, error, reload } = usePortalLoad(async () => {
     const nextAssignments = await getCourierAssignments(accessToken);
     setAssignments(nextAssignments.filter((assignment) => assignment.status === "DELIVERED" || assignment.status === "CANCELLED"));
   }, accessToken, "Courier history could not be loaded.");
+  const filteredAssignments = useMemo(() => {
+    const byStatus = assignments.filter((assignment) => {
+      if (filter === "delivered") {
+        return assignment.status === "DELIVERED";
+      }
+      if (filter === "cancelled") {
+        return assignment.status === "CANCELLED";
+      }
+      return true;
+    });
+    return searchOrders(byStatus, query);
+  }, [assignments, filter, query]);
 
   return (
     <PortalShell
@@ -580,9 +637,18 @@ export function CourierHistoryPage() {
       subtitle="Completed delivery assignments."
     >
       <PageState loading={loading} error={error} onRetry={reload} />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <SearchField
+          tone="courier"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search assignments by merchant, status or order ID"
+        />
+        <FilterTabs tone="courier" value={filter} onChange={setFilter} options={["all", "delivered", "cancelled"]} />
+      </div>
       <OrdersTable
         theme="courier"
-        orders={assignments}
+        orders={filteredAssignments}
         emptyMessage="No completed deliveries yet."
         columns={["order", "merchant", "status", "amount", "created", "actions"]}
         renderActions={(order) => <DetailLink tone="courier" href={`/courier/assignments/${order.id}`} label="Details" />}
@@ -935,6 +1001,51 @@ function PageState({ loading, error, onRetry }: { loading: boolean; error: strin
   return null;
 }
 
+function SearchField({
+  tone,
+  value,
+  onChange,
+  placeholder,
+}: {
+  tone: PortalKind;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const theme = getPortalTheme(tone);
+  return (
+    <label className="block w-full lg:max-w-md">
+      <span className="text-sm font-semibold text-slate-800">Search</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className={`mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 ${theme.borderStrong} ${theme.focus}`}
+      />
+    </label>
+  );
+}
+
+function searchOrders(orders: OrderResponse[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return orders;
+  }
+  return orders.filter((order) =>
+    [
+      order.id,
+      order.customerId,
+      formatDisplayId(order.id, "Order"),
+      order.merchantName,
+      order.driverName,
+      order.driverEmail,
+      formatOrderStatus(order.status),
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedQuery)),
+  );
+}
+
 function FilterTabs<T extends string>({
   value,
   onChange,
@@ -1178,6 +1289,25 @@ function filterMerchantOrders(
   return orders.filter((order) => order.status === "CANCELLED");
 }
 
+function filterCourierAssignments(assignments: OrderResponse[], filter: CourierAssignmentFilter) {
+  if (filter === "active") {
+    return assignments.filter((assignment) => activeCourierStatuses.includes(assignment.status));
+  }
+  if (filter === "ready") {
+    return assignments.filter((assignment) => assignment.status === "READY_FOR_PICKUP");
+  }
+  if (filter === "picked-up") {
+    return assignments.filter((assignment) => assignment.status === "PICKED_UP");
+  }
+  if (filter === "on-the-way") {
+    return assignments.filter((assignment) => assignment.status === "ON_THE_WAY");
+  }
+  if (filter === "delivered") {
+    return assignments.filter((assignment) => assignment.status === "DELIVERED");
+  }
+  return assignments;
+}
+
 function computeAnalytics(orders: OrderResponse[]) {
   const revenueTotal = orders.reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0);
   const statusCounts = orders.reduce<Record<string, number>>((counts, order) => {
@@ -1206,6 +1336,8 @@ function formatFilterLabel(value: string) {
     ready: "Ready for pickup",
     courier: "With courier",
     completed: "Completed",
+    "picked-up": "Picked up",
+    "on-the-way": "On the way",
   };
   return labels[value] ?? value;
 }

@@ -12,6 +12,7 @@ export function CourierAssignmentsTable({
   onDelivered,
   detailHrefFor,
   theme = "courier",
+  emptyMessage = "No active assignments assigned to this courier yet. New dispatch work will appear here when it is ready.",
 }: {
   assignments: OrderResponse[];
   actionOrderId: string | null;
@@ -20,11 +21,12 @@ export function CourierAssignmentsTable({
   onDelivered: (orderId: string) => void;
   detailHrefFor?: (order: OrderResponse) => string;
   theme?: PortalThemeKey;
+  emptyMessage?: string;
 }) {
   return (
     <OrdersTable
       orders={assignments}
-      emptyMessage="No active assignments assigned to this courier yet. New dispatch work will appear here when it is ready."
+      emptyMessage={emptyMessage}
       theme={theme}
       columns={["order", "merchant", "status", "amount", "created", "actions"]}
       renderActions={(order) => (
