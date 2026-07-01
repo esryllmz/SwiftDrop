@@ -35,6 +35,15 @@ const activeCustomerStatuses: OrderStatus[] = [
   "PICKED_UP",
   "ON_THE_WAY",
 ];
+const orderProgressSteps: OrderStatus[] = [
+  "PLACED",
+  "DRIVER_ASSIGNED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "PICKED_UP",
+  "ON_THE_WAY",
+  "DELIVERED",
+];
 const demoMerchantId = "11111111-1111-1111-1111-111111111111";
 
 export default function CustomerPage() {
@@ -172,7 +181,11 @@ export default function CustomerPage() {
     orders
       .filter((order) => activeCustomerStatuses.includes(order.status))
       .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ??
+    orders
+      .filter((order) => order.status === "CANCELLED")
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ??
     null;
+  const recentOrders = orders.slice(0, 5);
   const merchantSelectDisabled =
     creating || merchantsLoading || Boolean(merchantsError) || merchants.length === 0;
   const createDisabled =
@@ -189,7 +202,7 @@ export default function CustomerPage() {
       title="Welcome back"
       subtitle="Track your deliveries and manage your orders."
     >
-      <div className="grid gap-5">
+      <div className="grid gap-3">
         {loading ? <LoadingState /> : null}
         {error ? (
           <div className="grid gap-3">
@@ -200,42 +213,50 @@ export default function CustomerPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <PortalMetricCard tone="sunrise" label="Active orders" value={loading && !profile ? "-" : activeOrders} />
-          <PortalMetricCard tone="mint" label="Delivered orders" value={loading && !profile ? "-" : deliveredOrders} />
-          <PortalMetricCard tone="berry" label="Cancelled orders" value={loading && !profile ? "-" : cancelledOrders} />
-          <PortalMetricCard tone="ink" label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <PortalMetricCard compact tone="sunrise" label="Active orders" value={loading && !profile ? "-" : activeOrders} />
+          <PortalMetricCard compact tone="mint" label="Delivered orders" value={loading && !profile ? "-" : deliveredOrders} />
+          <PortalMetricCard compact tone="berry" label="Cancelled orders" value={loading && !profile ? "-" : cancelledOrders} />
+          <PortalMetricCard compact tone="ink" label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
           <PortalSection
             tone="customer"
+            compact
             title="Current order"
             description="The most recent active delivery for this account."
-            action={activeOrder ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
+            action={activeOrder?.id ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
           >
             {activeOrder ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
-                  <div className="text-xs font-semibold uppercase text-orange-700">{formatDisplayId(activeOrder.id, "Order")}</div>
-                  <div className="mt-2"><StatusBadge status={activeOrder.status} label={formatOrderStatus(activeOrder.status)} /></div>
+              <div className="grid gap-3">
+                <div className="flex flex-col gap-3 rounded-lg border border-orange-200 bg-orange-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <div className="text-xs font-semibold uppercase text-orange-700">{formatDisplayId(activeOrder.id, "Order")}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <StatusBadge status={activeOrder.status} label={formatOrderStatus(activeOrder.status)} />
+                      <span className="text-xs text-orange-800">{formatDateTime(activeOrder.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold text-orange-950">{formatCurrencyTRY(activeOrder.totalAmount)}</div>
                 </div>
-                <InfoTile label="Merchant" value={activeOrder.merchantName ?? "Not available"} />
-                <InfoTile label="Courier" value={activeOrder.driverName ?? activeOrder.driverEmail ?? "Awaiting courier assignment"} />
-                <InfoTile label="Amount" value={formatCurrencyTRY(activeOrder.totalAmount)} />
-                <InfoTile label="Created at" value={formatDateTime(activeOrder.createdAt)} />
+                <DashboardOrderStepper order={activeOrder} />
+                <div className="grid gap-3 md:grid-cols-2">
+                  <InfoTile label="Merchant" value={activeOrder.merchantName ?? "Not available"} />
+                  <InfoTile label="Courier" value={activeOrder.driverName ?? activeOrder.driverEmail ?? "Awaiting courier assignment"} />
+                </div>
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-5">
                 <p className="text-sm font-semibold text-orange-950">No active order right now.</p>
-                <p className="mt-1 text-sm text-orange-800">Create a demo order to see the delivery flow.</p>
+                <p className="mt-1 text-sm text-orange-800">Create an order to see the delivery flow.</p>
               </div>
             )}
           </PortalSection>
 
-          <PortalSection tone="customer" title="Quick actions" description="Common customer workflows.">
+          <PortalSection compact tone="customer" title="Quick actions" description="Start or review your delivery flow.">
             <div className="grid gap-2">
-              <Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create demo order</Button>
+              <Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create order</Button>
               <DetailLink href="/customer/orders" label="View orders" />
               <DetailLink href="/customer/profile" label="Manage profile" />
             </div>
@@ -244,15 +265,19 @@ export default function CustomerPage() {
 
         <PortalSection
           tone="customer"
+          compact
           title="Recent Orders"
           description="Active and recent orders for this customer account."
-          action={<Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create demo order</Button>}
+          action={<Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create order</Button>}
         >
           <OrdersTable
             variant="customer"
-            orders={orders}
-            emptyMessage="No orders found. Create a demo order to start."
-            columns={["order", "merchant", "driver", "status", "amount", "created"]}
+            orders={recentOrders}
+            emptyMessage="No orders found. Create an order to start."
+            columns={["order", "merchant", "driver", "status", "amount", "created", "actions"]}
+            renderActions={(order) =>
+              order.id ? <DetailLink href={`/customer/orders/${order.id}`} label="Details" /> : null
+            }
           />
         </PortalSection>
       </div>
@@ -264,7 +289,7 @@ export default function CustomerPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase text-orange-700">Customer checkout</div>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-950">Create demo order</h2>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-950">Create order</h2>
                   <p className="mt-1 text-sm leading-6 text-orange-900">
                   Choose an available merchant and enter the order total.
                   </p>
@@ -371,6 +396,56 @@ function InfoTile({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-orange-100 bg-white p-3 shadow-sm shadow-orange-100/60">
       <div className="text-xs font-semibold uppercase text-orange-700">{label}</div>
       <div className="mt-1 break-words text-sm font-semibold text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function DashboardOrderStepper({ order }: { order: OrderResponse }) {
+  const steps =
+    order.status === "CANCELLED"
+      ? ([...orderProgressSteps.slice(0, 1), "CANCELLED"] as OrderStatus[])
+      : orderProgressSteps;
+  const currentIndex = steps.indexOf(order.status);
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-slate-950">Current status</div>
+        <div className="text-sm font-medium text-orange-800">{formatOrderStatus(order.status)}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
+        {steps.map((step, index) => {
+          const completed =
+            order.status === "CANCELLED" ? index < steps.length - 1 : index < currentIndex;
+          const current = step === order.status;
+
+          return (
+            <div
+              key={step}
+              className={`rounded-lg border px-2.5 py-2 text-xs ${
+                current
+                  ? "border-orange-300 bg-orange-100 text-orange-950"
+                  : completed
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-slate-200 bg-white text-slate-500"
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                  current
+                    ? "bg-orange-600 text-white"
+                    : completed
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-100 text-slate-400"
+                }`}>
+                  {completed ? "✓" : index + 1}
+                </span>
+                <span className="font-semibold">{formatOrderStatus(step)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

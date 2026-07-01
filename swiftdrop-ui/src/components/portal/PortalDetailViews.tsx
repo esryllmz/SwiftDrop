@@ -135,17 +135,19 @@ export function CustomerOrdersPage() {
         tone="customer"
         title="Order list"
         description="Filter and review orders returned by the customer orders endpoint."
-        action={<FilterTabs tone="customer" value={filter} onChange={setFilter} options={["all", "active", "delivered", "cancelled"]} />}
       >
-        <label className="mb-4 block max-w-md">
-          <span className="text-sm font-semibold text-slate-800">Search orders</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by order, merchant, courier, or status"
-            className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-          />
-        </label>
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <label className="block w-full lg:max-w-md">
+            <span className="text-sm font-semibold text-slate-800">Search orders</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search orders by merchant, status or order ID"
+              className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+            />
+          </label>
+          <FilterTabs tone="customer" value={filter} onChange={setFilter} options={["all", "active", "delivered", "cancelled"]} />
+        </div>
         <OrdersTable
           variant="customer"
           orders={filteredOrders}
@@ -229,22 +231,34 @@ export function CustomerAddressesPage() {
     <PortalShell
       portalType="customer"
       email={user?.email ?? ""}
-      title="Addresses"
-      subtitle="Manage delivery address information for future order flows."
+      title="Delivery addresses"
+      subtitle="Manage where your orders should be delivered."
     >
       <PortalSection
         tone="customer"
         title="Address management"
-        description="This capability is planned and is not exposed by the current backend contract."
+        description="This shell is ready for the address management contract."
         action={<span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">Coming soon</span>}
       >
         <div className="grid gap-5 rounded-lg border border-dashed border-orange-200 bg-orange-50 p-6">
           <div>
-            <h3 className="text-base font-semibold text-orange-950">Addresses</h3>
+            <h3 className="text-base font-semibold text-orange-950">Address management is planned for the next iteration.</h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-orange-900">
-              Address management is planned for a future version. Geo-based courier assignment will use customer addresses,
-              merchant pickup locations and courier live location tracking.
+              It will power delivery addresses and future geo-based courier assignment.
             </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {["Add address", "Edit", "Delete"].map((label) => (
+              <button
+                key={label}
+                type="button"
+                disabled
+                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-orange-300"
+                title="Address management is planned for the next iteration."
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <div className="flex flex-wrap gap-2">
             <DetailLink tone="customer" href="/customer" label="Back to dashboard" />
@@ -264,17 +278,36 @@ export function CustomerProfilePage() {
       subtitle="Review your customer account details."
       loadProfile={getCustomerProfile}
       render={(profile) => (
-        <DetailGrid
-          tone="customer"
-          fields={[
-            ["Name or email", profile.email],
-            ["Email", profile.email],
-            ["Role", formatRole(profile.role)],
-            ["Account Status", "Active"],
-            ["Total Orders", formatCount(profile.totalOrders)],
-            ["Delivered Orders", formatCount(profile.deliveredOrders)],
-          ]}
-        />
+        <div className="grid gap-4">
+          <DetailGrid
+            tone="customer"
+            fields={[
+              ["Name", formatCustomerDisplayName(profile.email)],
+              ["Email", profile.email],
+              ["Role", formatRole(profile.role)],
+              ["Account Status", "Active"],
+              ["Total Orders", formatCount(profile.totalOrders)],
+              ["Delivered Orders", formatCount(profile.deliveredOrders)],
+            ]}
+          />
+          <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-orange-950">Profile editing is planned for the next iteration.</h3>
+                <p className="mt-1 text-sm leading-6 text-orange-900">
+                  Email is read-only. Name and phone fields will become editable when the profile update endpoint is available.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="w-fit rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-orange-300"
+              >
+                Edit profile
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     />
   );
@@ -1164,6 +1197,23 @@ function formatFilterLabel(value: string) {
 
 function formatRole(role: UserRole) {
   return role === "DRIVER" ? "Courier" : formatStatusLabel(role);
+}
+
+function formatCustomerDisplayName(email?: string | null) {
+  if (!email) {
+    return "Not available";
+  }
+
+  const localPart = email.split("@")[0]?.trim();
+  if (!localPart) {
+    return "Not available";
+  }
+
+  return localPart
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ") || "Not available";
 }
 
 function formatDateTimeOrNA(value?: string | null) {

@@ -103,7 +103,7 @@ export function PortalShell({
 
         <nav className="flex gap-1 overflow-x-auto px-3 py-4 lg:flex-1 lg:flex-col lg:overflow-y-auto">
           {config.navItems.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = isPortalNavActive(portalType, item.href, pathname);
             return (
               <Link
                 key={item.href}
@@ -148,10 +148,10 @@ export function PortalShell({
       </aside>
 
       <div className="min-w-0 flex-1 lg:flex lg:min-h-0 lg:flex-col">
-        <header className={`sticky top-0 z-30 border-b px-6 py-3 ${
+        <header className={`sticky top-0 z-30 border-b ${
           customer ? "border-orange-100 bg-white/90 backdrop-blur" : "border-slate-100 bg-white"
-        }`}>
-          <div className="flex min-h-14 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        } ${customer ? "px-4 py-2" : "px-6 py-3"}`}>
+          <div className={`flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between ${customer ? "min-h-12" : "min-h-14"}`}>
             <div>
               <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
               <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
@@ -163,12 +163,24 @@ export function PortalShell({
           </div>
         </header>
 
-        <main className="min-w-0 p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        <main className={`min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto ${customer ? "p-4" : "p-6"}`}>
           {children}
         </main>
       </div>
     </div>
   );
+}
+
+function isPortalNavActive(portalType: PortalType, href: string, pathname: string) {
+  if (portalType === "customer") {
+    if (href === "/customer") {
+      return pathname === "/customer";
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function HeaderBadge({ label, value, customer }: { label: string; value: string; customer: boolean }) {

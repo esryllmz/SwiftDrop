@@ -9,17 +9,19 @@ export function PortalMetricCard({
   value,
   hint,
   tone = "neutral",
+  compact = false,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
   tone?: "neutral" | "sunrise" | "mint" | "berry" | "ink";
+  compact?: boolean;
 }) {
   const toneClass = metricToneClass(tone);
   return (
-    <section className={`min-h-28 overflow-hidden rounded-lg border p-4 shadow-sm ${toneClass.shell}`}>
+    <section className={`${compact ? "min-h-20 p-3" : "min-h-28 p-4"} overflow-hidden rounded-lg border shadow-sm ${toneClass.shell}`}>
       <div className={`text-xs font-semibold uppercase ${toneClass.label}`}>{label}</div>
-      <div className={`mt-2 break-words text-2xl font-semibold ${toneClass.value}`}>{value}</div>
+      <div className={`${compact ? "mt-1 text-xl" : "mt-2 text-2xl"} break-words font-semibold ${toneClass.value}`}>{value}</div>
       {hint ? <div className={`mt-2 max-w-full truncate rounded-md px-2 py-1 text-xs ${toneClass.hint}`} title={hint}>{hint}</div> : null}
     </section>
   );
@@ -31,26 +33,28 @@ export function PortalSection({
   action,
   children,
   tone = "neutral",
+  compact = false,
 }: {
   title: string;
   description: string;
   action?: React.ReactNode;
   children: React.ReactNode;
   tone?: "neutral" | "customer";
+  compact?: boolean;
 }) {
   const sectionClass = tone === "customer"
     ? "border-orange-100 bg-white/95 shadow-sm shadow-orange-100/70"
     : "border-slate-200 bg-white shadow-sm shadow-slate-200/60";
   return (
     <section className={`rounded-lg border ${sectionClass}`}>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="px-5 pt-5">
-          <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+      <div className={`${compact ? "mb-3" : "mb-4"} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+        <div className={`${compact ? "px-4 pt-4" : "px-5 pt-5"}`}>
+          <h2 className={`${compact ? "text-base" : "text-lg"} font-semibold text-slate-950`}>{title}</h2>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        {action ? <div className="px-5 pt-5">{action}</div> : null}
+        {action ? <div className={`${compact ? "px-4 pt-4" : "px-5 pt-5"}`}>{action}</div> : null}
       </div>
-      <div className="px-5 pb-5">{children}</div>
+      <div className={`${compact ? "px-4 pb-4" : "px-5 pb-5"}`}>{children}</div>
     </section>
   );
 }
