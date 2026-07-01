@@ -38,14 +38,14 @@ class PasswordResetEmailEventListenerTest {
     void listenerBuildsPortalSpecificResetLink() {
         PasswordResetEmailSender sender = mock(PasswordResetEmailSender.class);
         PasswordResetEmailEventListener listener =
-                new PasswordResetEmailEventListener(sender, "http://localhost:3001");
+                new PasswordResetEmailEventListener(sender, "http://localhost:3000");
         Instant expiresAt = Instant.parse("2026-06-26T12:00:00Z");
 
         listener.handlePasswordResetTokenCreated(event(expiresAt));
 
         verify(sender).sendPasswordResetEmail(
                 eq("merchant@swiftdrop.com"),
-                eq("http://localhost:3001/reset-password?portal=merchant&token=raw-token"),
+                eq("http://localhost:3000/reset-password?portal=merchant&token=raw-token"),
                 eq(expiresAt),
                 eq("request-id")
         );
@@ -63,7 +63,7 @@ class PasswordResetEmailEventListenerTest {
                         eq("request-id")
                 );
         PasswordResetEmailEventListener listener =
-                new PasswordResetEmailEventListener(sender, "http://localhost:3001");
+                new PasswordResetEmailEventListener(sender, "http://localhost:3000");
 
         assertThatCode(() -> listener.handlePasswordResetTokenCreated(
                 event(Instant.parse("2026-06-26T12:00:00Z"))

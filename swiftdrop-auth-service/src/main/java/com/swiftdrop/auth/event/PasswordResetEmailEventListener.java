@@ -23,7 +23,7 @@ public class PasswordResetEmailEventListener {
 
     public PasswordResetEmailEventListener(
             PasswordResetEmailSender emailSender,
-            @Value("${application.password-reset.reset-password-url:http://localhost:3001}") String resetPasswordBaseUrl
+            @Value("${application.password-reset.reset-password-url:http://localhost:3000}") String resetPasswordBaseUrl
     ) {
         this.emailSender = emailSender;
         this.resetPasswordBaseUrl = resetPasswordBaseUrl;

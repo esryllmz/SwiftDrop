@@ -56,6 +56,7 @@ Containers use Docker service names, not `localhost`, for internal communication
 
 From the host machine, keep using:
 
+- Frontend: `http://localhost:3000`
 - Gateway: `http://localhost:8080`
 - Kafka UI: `http://localhost:8090`
 - Postgres: `localhost:5439`

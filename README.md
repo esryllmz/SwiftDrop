@@ -20,6 +20,7 @@ docker compose up -d
 
 Host-exposed services:
 
+- Frontend: `http://localhost:3000`
 - API Gateway: `http://localhost:8080`
 - Kafka UI: `http://localhost:8090`
 - Mailpit UI: `http://localhost:8025`
@@ -75,6 +76,7 @@ curl http://localhost:8081/api/v1/health
 ## Gateway
 
 The gateway runs on port `8080` and routes requests to backend services.
+Local CORS is configured for the frontend origin `http://localhost:3000`.
 
 ```bash
 cd swiftdrop-gateway
