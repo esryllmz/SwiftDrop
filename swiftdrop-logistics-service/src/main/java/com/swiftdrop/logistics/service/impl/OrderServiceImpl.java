@@ -389,6 +389,52 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
+    public OrderResponse assignCourier(UUID adminUserId, UUID orderId, UUID courierId) {
+        Order order = findOrderForAction(orderId);
+        if (order.getDriver() != null) {
+            return toResponse(order);
+        }
+
+        OrderStatus previousStatus = order.getStatus();
+        if (previousStatus != OrderStatus.PLACED) {
+            throw new InvalidOrderTransitionException("A courier can only be assigned to placed orders.");
+        }
+
+        Driver driver = driverRepository.findById(courierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Courier profile was not found."));
+        if (driver.getStatus() != DriverStatus.AVAILABLE) {
+            throw new InvalidOrderTransitionException("Courier must be available before assignment.");
+        }
+
+        driver.setStatus(DriverStatus.BUSY);
+        Driver busyDriver = Objects.requireNonNull(driverRepository.save(driver), "busy driver must not be null");
+        order.setDriver(busyDriver);
+        transitionPolicy.assertTransition(previousStatus, OrderStatus.DRIVER_ASSIGNED, OrderActorType.SYSTEM);
+        order.setStatus(OrderStatus.DRIVER_ASSIGNED);
+        Order assignedOrder = Objects.requireNonNull(orderRepository.save(order), "assigned order must not be null");
+        saveHistory(
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.ADMIN,
+                adminUserId,
+                "Assigned by admin."
+        );
+        saveLifecycleEvent(
+                "ORDER_DRIVER_ASSIGNED",
+                assignedOrder,
+                previousStatus,
+                OrderStatus.DRIVER_ASSIGNED,
+                OrderActorType.ADMIN,
+                "Assigned by admin.",
+                "Your order was assigned to a courier."
+        );
+
+        return toResponse(assignedOrder);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId) {
         return orderRepository.findAllForDashboard(status, merchantId, driverId).stream()

@@ -35,6 +35,8 @@ public interface OrderService {
 
     OrderResponse assignDemoCourier(UUID adminUserId, UUID orderId);
 
+    OrderResponse assignCourier(UUID adminUserId, UUID orderId, UUID courierId);
+
     List<OrderResponse> findOrders(OrderStatus status, UUID merchantId, UUID driverId);
 
     List<OrderResponse> findCustomerOrders(UUID customerId);

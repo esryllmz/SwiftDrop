@@ -63,6 +63,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
+  const [courierIdInput, setCourierIdInput] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -160,6 +161,31 @@ export default function OrdersPage() {
       );
       setOrders((current) => current.map((order) => order.id === updatedOrder.id ? updatedOrder : order));
       setSelectedOrder((current) => current?.id === updatedOrder.id ? updatedOrder : current);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Courier assignment failed.");
+    } finally {
+      setAssigningOrderId(null);
+    }
+  }
+
+  async function assignCourier(orderId: string, courierId: string) {
+    if (!courierId.trim()) {
+      setError("Enter a courier ID before assigning.");
+      return;
+    }
+    setAssigningOrderId(orderId);
+    setError(null);
+    try {
+      const updatedOrder = await postJson<OrderResponse>(
+        `/api/v1/admin/orders/${orderId}/assign-courier`,
+        { courierId: courierId.trim() },
+        undefined,
+        accessToken,
+      );
+      setOrders((current) => current.map((order) => order.id === updatedOrder.id ? updatedOrder : order));
+      setSelectedOrder((current) => current?.id === updatedOrder.id ? updatedOrder : current);
+      setCourierIdInput("");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Courier assignment failed.");
@@ -388,14 +414,32 @@ export default function OrdersPage() {
                 <DetailField label="Cancelled at" value={formatOptionalDateTime(selectedOrder.cancelledAt)} />
               </DetailGrid>
               {canAssignDemoCourier(selectedOrder) ? (
-                <AdminButton
-                  type="button"
-                  variant="secondary"
-                  disabled={assigningOrderId === selectedOrder.id}
-                  onClick={() => void assignDemoCourier(selectedOrder.id)}
-                >
-                  {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign courier"}
-                </AdminButton>
+                <div className="grid gap-3">
+                  <AdminButton
+                    type="button"
+                    variant="secondary"
+                    disabled={assigningOrderId === selectedOrder.id}
+                    onClick={() => void assignDemoCourier(selectedOrder.id)}
+                  >
+                    {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign demo courier"}
+                  </AdminButton>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Field
+                      label="Courier ID"
+                      value={courierIdInput}
+                      onChange={setCourierIdInput}
+                      placeholder="Courier UUID"
+                    />
+                    <AdminButton
+                      type="button"
+                      variant="secondary"
+                      disabled={assigningOrderId === selectedOrder.id}
+                      onClick={() => void assignCourier(selectedOrder.id, courierIdInput)}
+                    >
+                      {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign to courier"}
+                    </AdminButton>
+                  </div>
+                </div>
               ) : null}
             </>
           ) : null}

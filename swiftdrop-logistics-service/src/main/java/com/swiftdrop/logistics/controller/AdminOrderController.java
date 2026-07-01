@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.swiftdrop.logistics.dto.AssignCourierRequest;
 import com.swiftdrop.logistics.dto.CancelOrderRequest;
 import com.swiftdrop.logistics.dto.OrderResponse;
 import com.swiftdrop.logistics.security.AuthenticatedUser;
@@ -46,5 +47,15 @@ public class AdminOrderController {
     ) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, ADMIN_ROLE);
         return ResponseEntity.ok(orderService.assignDemoCourier(user.userId(), orderId));
+    }
+
+    @PostMapping("/{orderId}/assign-courier")
+    public ResponseEntity<OrderResponse> assignCourier(
+            HttpServletRequest request,
+            @PathVariable UUID orderId,
+            @Valid @RequestBody AssignCourierRequest assignRequest
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, ADMIN_ROLE);
+        return ResponseEntity.ok(orderService.assignCourier(user.userId(), orderId, assignRequest.courierId()));
     }
 }
