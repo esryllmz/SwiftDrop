@@ -14,9 +14,9 @@ export function CourierAvailabilityCard({
   const action = getAvailabilityAction(status);
 
   return (
-    <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+    <div className="grid gap-4 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
       <div>
-        <div className="text-xs font-medium uppercase text-slate-500">Current availability</div>
+        <div className="text-xs font-medium uppercase text-emerald-700">Current availability</div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {status ? <StatusBadge status={status} /> : <span className="text-sm text-slate-500">Unknown</span>}
           {status === "BUSY" ? (
@@ -29,6 +29,7 @@ export function CourierAvailabilityCard({
         <PortalActionButton
           label={action.label}
           tone={action.tone}
+          theme="courier"
           loading={loading}
           onClick={() => onChange(action.status)}
         />
@@ -50,7 +51,7 @@ function getAvailabilityAction(status?: DriverStatus) {
   }
 
   if (status === "OFFLINE") {
-    return { label: "Go available", status: "AVAILABLE" as const, tone: "success" as const };
+    return { label: "Go available", status: "AVAILABLE" as const, tone: "primary" as const };
   }
 
   return null;

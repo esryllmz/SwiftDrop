@@ -162,7 +162,7 @@ export default function OrdersPage() {
       setSelectedOrder((current) => current?.id === updatedOrder.id ? updatedOrder : current);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo courier assignment failed.");
+      setError(err instanceof Error ? err.message : "Courier assignment failed.");
     } finally {
       setAssigningOrderId(null);
     }
@@ -178,9 +178,10 @@ export default function OrdersPage() {
           <div className="flex flex-wrap gap-2">
             <SecondaryButton onClick={load}>Refresh</SecondaryButton>
             <Button
+              className="border-slate-900 bg-slate-900 hover:bg-slate-800 focus:ring-slate-500"
               onClick={() => void openCreateOrderModal()}
             >
-              Create Demo Order
+              Create Order
             </Button>
           </div>
         }
@@ -188,7 +189,7 @@ export default function OrdersPage() {
 
       <div className="grid gap-5">
           <AdminSectionCard
-            title="Create Demo Order"
+            title="Create Order"
             description="Creates a real order and refreshes this list."
             action={
               createResult ? (
@@ -239,7 +240,7 @@ export default function OrdersPage() {
               </div>
             ) : null}
             {!loading && orders.length === 0 ? (
-              <EmptyState message="No orders found. Create a demo order to start the event flow." />
+              <EmptyState message="No orders found. Create an order to start the event flow." />
             ) : null}
             {orders.length > 0 ? (
               <AdminDataTable
@@ -267,7 +268,7 @@ export default function OrdersPage() {
                             disabled={assigningOrderId === order.id}
                             onClick={() => void assignDemoCourier(order.id)}
                           >
-                            {assigningOrderId === order.id ? "Assigning..." : "Assign demo courier"}
+                            {assigningOrderId === order.id ? "Assigning..." : "Assign courier"}
                           </AdminButton>
                         ) : null}
                         <AdminViewAction
@@ -285,8 +286,8 @@ export default function OrdersPage() {
 
       <AdminModal
         open={createModalOpen}
-        title="Create Demo Order"
-        subtitle="Create a real demo order"
+        title="Create Order"
+        subtitle="Create a real order for the local operations flow"
         onClose={() => {
           if (!creating) {
             setCreateModalOpen(false);
@@ -316,8 +317,8 @@ export default function OrdersPage() {
             void createOrder();
           }}
         >
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-            Creates an order using the fixed demo customer and merchant. Use Assign demo courier if the order is not assigned automatically.
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+            Creates an order using the configured customer and merchant references. Use Assign courier if the order is not assigned automatically.
           </div>
           {createError ? <ErrorState message={createError} /> : null}
           <ModalSection>
@@ -393,7 +394,7 @@ export default function OrdersPage() {
                   disabled={assigningOrderId === selectedOrder.id}
                   onClick={() => void assignDemoCourier(selectedOrder.id)}
                 >
-                  {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign demo courier"}
+                  {assigningOrderId === selectedOrder.id ? "Assigning..." : "Assign courier"}
                 </AdminButton>
               ) : null}
             </>

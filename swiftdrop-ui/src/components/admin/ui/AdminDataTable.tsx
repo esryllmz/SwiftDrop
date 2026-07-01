@@ -1,5 +1,6 @@
 import type React from "react";
 import { EmptyState } from "@/components/ui";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 export function AdminDataTable<T>({
   columns,
@@ -14,16 +15,17 @@ export function AdminDataTable<T>({
   getRowKey: (row: T) => string;
   renderRow: (row: T) => React.ReactNode;
 }) {
+  const theme = getPortalTheme("admin");
   if (rows.length === 0) {
     return <EmptyState message={emptyMessage} />;
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+    <div className={`overflow-hidden rounded-xl border ${theme.table.wrapper}`}>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-          <tr className="border-b border-slate-100 bg-slate-50/60">
+          <tr className={theme.table.head}>
             {columns.map((heading) => (
               <th key={heading} className="whitespace-nowrap px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                 {heading}
@@ -31,9 +33,9 @@ export function AdminDataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50 bg-white">
+        <tbody className={theme.table.body}>
           {rows.map((row) => (
-            <tr key={getRowKey(row)} className="align-top transition-colors hover:bg-slate-50/60">
+            <tr key={getRowKey(row)} className={`align-top transition-colors ${theme.table.row}`}>
               {renderRow(row)}
             </tr>
           ))}

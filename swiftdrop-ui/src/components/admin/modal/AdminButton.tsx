@@ -1,11 +1,14 @@
 import type React from "react";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 type AdminButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "danger" | "success";
 };
 
+const adminTheme = getPortalTheme("admin");
+
 const variantClass = {
-  primary: "border-blue-600 bg-blue-600 text-white hover:bg-blue-700",
+  primary: adminTheme.button,
   secondary: "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
   danger: "border-red-600 bg-red-600 text-white hover:bg-red-700",
   success: "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700",

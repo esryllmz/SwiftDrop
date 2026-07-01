@@ -35,7 +35,7 @@ export default function SettingsPage() {
 
         <AdminSectionCard title="Configuration">
           <p className="text-sm leading-6 text-slate-600">
-            Settings are managed by environment variables for the local demo stack.
+            Settings are managed by environment variables for the local stack.
           </p>
           <div className="mt-4">
             <EmptyState message="Configuration is read-only in this console." />
@@ -64,7 +64,7 @@ const settingsGroups: Array<{ title: string; items: SettingsItem[] }> = [
   {
     title: "Environment",
     items: [
-      { label: "Environment", value: "Local demo stack" },
+      { label: "Environment", value: "Local stack" },
       { label: "Theme Preference", value: "Light" },
     ],
   },

@@ -96,7 +96,7 @@ export function SystemMonitoringPage() {
         title="System Monitoring"
         description="Service health and infrastructure status."
         action={
-          <Button onClick={() => void load()} disabled={loading || refreshing}>
+          <Button className="border-slate-900 bg-slate-900 hover:bg-slate-800 focus:ring-slate-500" onClick={() => void load()} disabled={loading || refreshing}>
             <span className="inline-flex items-center gap-2">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
               {refreshing ? "Refreshing..." : "Refresh"}
@@ -111,7 +111,7 @@ export function SystemMonitoringPage() {
         <AdminSectionCard>
           <ErrorState message={error} />
           {!data ? (
-            <Button className="mt-4" onClick={() => void load()} disabled={refreshing}>
+            <Button className="mt-4 border-slate-900 bg-slate-900 hover:bg-slate-800 focus:ring-slate-500" onClick={() => void load()} disabled={refreshing}>
               Retry
             </Button>
           ) : null}

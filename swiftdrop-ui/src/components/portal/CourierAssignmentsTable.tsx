@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { OrdersTable } from "@/components/portal/PortalDashboard";
 import { PortalActionButton } from "@/components/portal/PortalActionButton";
+import type { PortalThemeKey } from "@/lib/portal-theme";
 import type { OrderResponse } from "@/types/api";
 
 export function CourierAssignmentsTable({
@@ -10,6 +11,7 @@ export function CourierAssignmentsTable({
   onOnTheWay,
   onDelivered,
   detailHrefFor,
+  theme = "courier",
 }: {
   assignments: OrderResponse[];
   actionOrderId: string | null;
@@ -17,11 +19,13 @@ export function CourierAssignmentsTable({
   onOnTheWay: (orderId: string) => void;
   onDelivered: (orderId: string) => void;
   detailHrefFor?: (order: OrderResponse) => string;
+  theme?: PortalThemeKey;
 }) {
   return (
     <OrdersTable
       orders={assignments}
-      emptyMessage="No active assignments assigned to this courier. Create or assign a demo order from the Admin Orders page to see it here."
+      emptyMessage="No active assignments assigned to this courier yet. New dispatch work will appear here when it is ready."
+      theme={theme}
       columns={["order", "merchant", "status", "amount", "created", "actions"]}
       renderActions={(order) => (
         <CourierAssignmentAction
@@ -32,6 +36,7 @@ export function CourierAssignmentsTable({
           onOnTheWay={onOnTheWay}
           onDelivered={onDelivered}
           detailHref={detailHrefFor?.(order)}
+          theme={theme}
         />
       )}
     />
@@ -46,6 +51,7 @@ function CourierAssignmentAction({
   onOnTheWay,
   onDelivered,
   detailHref,
+  theme,
 }: {
   order: OrderResponse;
   loading: boolean;
@@ -54,8 +60,9 @@ function CourierAssignmentAction({
   onOnTheWay: (orderId: string) => void;
   onDelivered: (orderId: string) => void;
   detailHref?: string;
+  theme: PortalThemeKey;
 }) {
-  const action = renderCourierAction(order, loading, disabled, onPickedUp, onOnTheWay, onDelivered);
+  const action = renderCourierAction(order, loading, disabled, onPickedUp, onOnTheWay, onDelivered, theme);
 
   return (
     <span className="flex flex-wrap items-center gap-2">
@@ -76,12 +83,14 @@ function renderCourierAction(
   onPickedUp: (orderId: string) => void,
   onOnTheWay: (orderId: string) => void,
   onDelivered: (orderId: string) => void,
+  theme: PortalThemeKey,
 ) {
   if (order.status === "READY_FOR_PICKUP") {
     return (
       <PortalActionButton
         label="Pick up order"
         tone="primary"
+        theme={theme}
         loading={loading}
         disabled={disabled}
         onClick={() => onPickedUp(order.id)}
@@ -94,6 +103,7 @@ function renderCourierAction(
       <PortalActionButton
         label="Mark on the way"
         tone="primary"
+        theme={theme}
         loading={loading}
         disabled={disabled}
         onClick={() => onOnTheWay(order.id)}
@@ -105,7 +115,8 @@ function renderCourierAction(
     return (
       <PortalActionButton
         label="Mark delivered"
-        tone="success"
+        tone="primary"
+        theme={theme}
         loading={loading}
         disabled={disabled}
         onClick={() => onDelivered(order.id)}

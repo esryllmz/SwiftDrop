@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { OrdersTable } from "@/components/portal/PortalDashboard";
 import { PortalActionButton } from "@/components/portal/PortalActionButton";
+import type { PortalThemeKey } from "@/lib/portal-theme";
 import type { OrderResponse } from "@/types/api";
 
 export function MerchantOrdersTable({
@@ -10,6 +11,7 @@ export function MerchantOrdersTable({
   onReadyForPickup,
   onCancel,
   detailHrefFor,
+  theme = "merchant",
 }: {
   orders: OrderResponse[];
   actionOrderId: string | null;
@@ -17,11 +19,13 @@ export function MerchantOrdersTable({
   onReadyForPickup: (orderId: string) => void;
   onCancel?: (order: OrderResponse) => void;
   detailHrefFor?: (order: OrderResponse) => string;
+  theme?: PortalThemeKey;
 }) {
   return (
     <OrdersTable
       orders={orders}
       emptyMessage="No merchant orders found."
+      theme={theme}
       columns={["order", "customer", "driver", "status", "amount", "created", "actions"]}
       renderActions={(order) => (
         <MerchantOrderAction
@@ -32,6 +36,7 @@ export function MerchantOrdersTable({
           onReadyForPickup={onReadyForPickup}
           onCancel={onCancel}
           detailHref={detailHrefFor?.(order)}
+          theme={theme}
         />
       )}
     />
@@ -46,6 +51,7 @@ function MerchantOrderAction({
   onReadyForPickup,
   onCancel,
   detailHref,
+  theme,
 }: {
   order: OrderResponse;
   loading: boolean;
@@ -54,8 +60,9 @@ function MerchantOrderAction({
   onReadyForPickup: (orderId: string) => void;
   onCancel?: (order: OrderResponse) => void;
   detailHref?: string;
+  theme: PortalThemeKey;
 }) {
-  const action = renderMerchantAction(order, loading, disabled, onPreparing, onReadyForPickup);
+  const action = renderMerchantAction(order, loading, disabled, onPreparing, onReadyForPickup, theme);
   const canCancel = ["PLACED", "DRIVER_ASSIGNED", "PREPARING"].includes(order.status);
 
   return (
@@ -64,11 +71,11 @@ function MerchantOrderAction({
       {canCancel && onCancel ? (
         <PortalActionButton
           label="Cancel order"
-          tone="warning"
+          tone="destructive"
           loading={loading}
           disabled={disabled}
-          onClick={() => onCancel(order)}
-        />
+        onClick={() => onCancel(order)}
+      />
       ) : null}
       {detailHref ? (
         <Link className="text-xs font-medium text-slate-600 underline-offset-2 hover:text-slate-950 hover:underline" href={detailHref}>
@@ -85,12 +92,14 @@ function renderMerchantAction(
   disabled: boolean,
   onPreparing: (orderId: string) => void,
   onReadyForPickup: (orderId: string) => void,
+  theme: PortalThemeKey,
 ) {
   if (order.status === "PLACED" || order.status === "DRIVER_ASSIGNED") {
     return (
       <PortalActionButton
         label="Start preparing"
-        tone="warning"
+        tone="primary"
+        theme={theme}
         loading={loading}
         disabled={disabled}
         onClick={() => onPreparing(order.id)}
@@ -103,6 +112,7 @@ function renderMerchantAction(
       <PortalActionButton
         label="Mark ready for pickup"
         tone="primary"
+        theme={theme}
         loading={loading}
         disabled={disabled}
         onClick={() => onReadyForPickup(order.id)}

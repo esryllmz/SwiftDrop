@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type React from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { UserIdentity } from "@/components/layout/UserIdentity";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 type PortalType = "customer" | "merchant" | "courier";
 type PortalNavItem = {
@@ -24,15 +25,11 @@ type PortalShellProps = {
 const portalConfig: Record<PortalType, {
   label: string;
   homeHref: string;
-  accent: string;
-  active: string;
   navItems: PortalNavItem[];
 }> = {
   customer: {
     label: "Customer Portal",
     homeHref: "/customer",
-    accent: "bg-orange-600",
-    active: "border-orange-200 bg-orange-50 text-orange-800",
     navItems: [
       { href: "/customer", label: "Dashboard", description: "Portal overview" },
       { href: "/customer/orders", label: "Orders", description: "Order history" },
@@ -43,8 +40,6 @@ const portalConfig: Record<PortalType, {
   merchant: {
     label: "Merchant Portal",
     homeHref: "/merchant",
-    accent: "bg-violet-600",
-    active: "border-violet-200 bg-violet-50 text-violet-700",
     navItems: [
       { href: "/merchant", label: "Dashboard", description: "Store overview" },
       { href: "/merchant/orders", label: "Orders", description: "Order workflow" },
@@ -56,8 +51,6 @@ const portalConfig: Record<PortalType, {
   courier: {
     label: "Courier Portal",
     homeHref: "/courier",
-    accent: "bg-emerald-600",
-    active: "border-emerald-200 bg-emerald-50 text-emerald-700",
     navItems: [
       { href: "/courier", label: "Dashboard", description: "Courier overview" },
       { href: "/courier/assignments", label: "Assignments", description: "Active delivery work" },
@@ -78,26 +71,18 @@ export function PortalShell({
   const pathname = usePathname();
   const { logout } = useAuth();
   const config = portalConfig[portalType];
-  const customer = portalType === "customer";
+  const theme = getPortalTheme(portalType);
 
   return (
-    <div className={`flex min-h-screen flex-col text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden ${
-      customer ? "bg-orange-50" : "bg-slate-50"
-    }`}>
-      <aside className={`w-full shrink-0 border-b lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r ${
-        customer ? "border-orange-100 bg-white/95" : "border-slate-100 bg-white"
-      }`}>
-        <Link href={config.homeHref} className={`flex items-center gap-2.5 border-b px-4 py-5 transition ${
-          customer ? "border-orange-100 hover:bg-orange-50" : "border-slate-100 hover:bg-slate-50"
-        }`}>
-          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold text-white ${
-            customer ? "bg-orange-600" : config.accent
-          }`}>
+    <div className={`flex min-h-screen flex-col text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden ${theme.shell}`}>
+      <aside className={`w-full shrink-0 border-b lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r ${theme.sidebarBorder} ${theme.sidebar}`}>
+        <Link href={config.homeHref} className={`flex items-center gap-2.5 border-b px-4 py-5 transition ${theme.sidebarBorder} ${theme.brandHover}`}>
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold text-white ${theme.accent}`}>
             SD
           </span>
           <span className="min-w-0">
             <span className="mb-0.5 block text-sm font-semibold leading-none text-slate-900">SwiftDrop</span>
-            <span className={customer ? "block text-xs text-orange-700" : "block text-xs text-slate-400"}>{config.label}</span>
+            <span className={`block text-xs ${theme.accentText}`}>{config.label}</span>
           </span>
         </Link>
 
@@ -110,15 +95,13 @@ export function PortalShell({
                 href={item.href}
                 className={`min-w-[180px] rounded-lg border px-3 py-2.5 transition lg:min-w-0 ${
                   active
-                    ? config.active
-                    : customer
-                      ? "border-transparent text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-900"
-                      : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                    ? theme.navActive
+                    : theme.navHover
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border bg-white text-[11px] font-semibold ${
-                    active && customer ? "border-orange-300 text-orange-700" : "border-current"
+                    active ? `${theme.borderStrong} ${theme.accentText}` : "border-current"
                   }`}>
                     {item.label.slice(0, 2).toUpperCase()}
                   </span>
@@ -132,7 +115,7 @@ export function PortalShell({
           })}
         </nav>
 
-        <div className={`grid gap-0.5 border-t px-3 py-3 ${customer ? "border-orange-100" : "border-slate-100"}`}>
+        <div className={`grid gap-0.5 border-t px-3 py-3 ${theme.sidebarBorder}`}>
           <div className="rounded-lg px-3 py-2 text-sm text-slate-600">
             <div className="text-xs font-medium uppercase text-slate-400">Signed in</div>
             <div className="mt-1 break-all font-medium text-slate-900">{email}</div>
@@ -148,22 +131,20 @@ export function PortalShell({
       </aside>
 
       <div className="min-w-0 flex-1 lg:flex lg:min-h-0 lg:flex-col">
-        <header className={`sticky top-0 z-30 border-b ${
-          customer ? "border-orange-100 bg-white/90 backdrop-blur" : "border-slate-100 bg-white"
-        } ${customer ? "px-4 py-2" : "px-6 py-3"}`}>
-          <div className={`flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between ${customer ? "min-h-12" : "min-h-14"}`}>
+        <header className={`sticky top-0 z-30 border-b ${theme.header} px-4 py-2`}>
+          <div className="flex min-h-12 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
               <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <HeaderBadge label="Portal" value={config.label} customer={customer} />
+              <HeaderBadge label="Portal" value={config.label} portalType={portalType} />
               <UserIdentity email={email} label={config.label.replace(" Portal", "")} />
             </div>
           </div>
         </header>
 
-        <main className={`min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto ${customer ? "p-4" : "p-6"}`}>
+        <main className="min-w-0 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {children}
         </main>
       </div>
@@ -172,22 +153,17 @@ export function PortalShell({
 }
 
 function isPortalNavActive(portalType: PortalType, href: string, pathname: string) {
-  if (portalType === "customer") {
-    if (href === "/customer") {
-      return pathname === "/customer";
-    }
-
-    return pathname === href || pathname.startsWith(`${href}/`);
+  if (href === portalConfig[portalType].homeHref) {
+    return pathname === href;
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function HeaderBadge({ label, value, customer }: { label: string; value: string; customer: boolean }) {
+function HeaderBadge({ label, value, portalType }: { label: string; value: string; portalType: PortalType }) {
+  const theme = getPortalTheme(portalType);
   return (
-    <span className={`rounded-lg border px-3 py-2 text-xs ${
-      customer ? "border-orange-200 bg-orange-50 text-orange-800" : "border-slate-200 bg-slate-50 text-slate-600"
-    }`}>
+    <span className={`rounded-lg border px-3 py-2 text-xs ${theme.borderStrong} ${theme.surface} ${theme.accentSoftText}`}>
       <span className="text-slate-500">{label} </span>
       <span className="font-medium text-slate-950">{value}</span>
     </span>

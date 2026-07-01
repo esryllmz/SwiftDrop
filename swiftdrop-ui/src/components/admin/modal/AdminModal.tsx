@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect } from "react";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 type AdminModalProps = {
   open: boolean;
@@ -48,6 +49,7 @@ export function AdminModal({
   if (!open) {
     return null;
   }
+  const theme = getPortalTheme("admin");
 
   return (
     <div
@@ -63,10 +65,10 @@ export function AdminModal({
         aria-modal="true"
         role="dialog"
         aria-labelledby="admin-modal-title"
-        className={`max-h-[calc(100vh-3rem)] w-full ${maxWidthClass[maxWidth]} overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl`}
+        className={`max-h-[calc(100vh-3rem)] w-full ${maxWidthClass[maxWidth]} overflow-hidden rounded-xl border bg-white shadow-xl shadow-slate-950/20 ${theme.borderStrong}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+        <header className={`flex items-start justify-between gap-4 border-b px-5 py-4 ${theme.border} ${theme.surface}`}>
           <div>
             <h2 id="admin-modal-title" className="text-lg font-semibold text-slate-950">
               {title}

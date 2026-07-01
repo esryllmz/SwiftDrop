@@ -162,16 +162,18 @@ export default function CourierPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-4">
-          <PortalMetricCard label="Full Name" value={fullName} />
+          <PortalMetricCard theme="courier" label="Full Name" value={fullName} />
           <PortalMetricCard
+            theme="courier"
             label="Status"
             value={profile?.status ? <StatusBadge status={profile.status} /> : "-"}
           />
-          <PortalMetricCard label="Assigned Orders" value={loading && !profile ? "-" : assignedOrders} />
-          <PortalMetricCard label="Delivered Orders" value={loading && !profile ? "-" : deliveredOrders} />
+          <PortalMetricCard theme="courier" label="Assigned Orders" value={loading && !profile ? "-" : assignedOrders} />
+          <PortalMetricCard theme="courier" label="Delivered Orders" value={loading && !profile ? "-" : deliveredOrders} />
         </div>
 
         <PortalSection
+          theme="courier"
           title="Availability"
           description="Control whether new delivery work can be assigned to this courier."
         >
@@ -183,6 +185,7 @@ export default function CourierPage() {
         </PortalSection>
 
         <PortalSection
+          theme="courier"
           title="Assignments"
           description="Update pickup and delivery progress for assigned orders."
         >

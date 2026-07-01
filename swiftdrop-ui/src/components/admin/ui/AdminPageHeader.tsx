@@ -1,4 +1,5 @@
 import type React from "react";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 export function AdminPageHeader({
   icon,
@@ -11,11 +12,12 @@ export function AdminPageHeader({
   description: string;
   action?: React.ReactNode;
 }) {
+  const theme = getPortalTheme("admin");
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         {icon ? (
-          <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center text-sm font-semibold text-slate-400">
+          <span className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${theme.borderStrong} ${theme.surface} ${theme.accentText}`}>
             {icon}
           </span>
         ) : null}

@@ -104,8 +104,8 @@ export default function MerchantsPage() {
           title="Merchant List"
           description="Active merchant records."
           action={
-            <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
-              Demo merchant: {formatDisplayId(demoMerchantId, "Merchant")}
+            <span className="w-fit rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700">
+              Primary merchant: {formatDisplayId(demoMerchantId, "Merchant")}
             </span>
           }
         >
@@ -131,8 +131,8 @@ export default function MerchantsPage() {
                     <div className="flex flex-col gap-1">
                       <AdminIdChip value={merchant.id} prefix="Merchant" />
                       {merchant.id === demoMerchantId ? (
-                        <span className="w-fit rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700">
-                          Demo Order
+                        <span className="w-fit rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-xs text-violet-700">
+                          Primary Store
                         </span>
                       ) : null}
                     </div>

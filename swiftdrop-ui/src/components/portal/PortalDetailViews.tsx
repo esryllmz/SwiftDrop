@@ -24,6 +24,7 @@ import {
 import { normalizeApiError } from "@/lib/api";
 import { formatCurrencyTRY, formatDateTime, formatDisplayId, formatStatusLabel } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
+import { getPortalTheme } from "@/lib/portal-theme";
 import {
   cancelCustomerOrder,
   cancelMerchantOrder,
@@ -143,7 +144,7 @@ export function CustomerOrdersPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search orders by merchant, status or order ID"
-              className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+              className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
           </label>
           <FilterTabs tone="customer" value={filter} onChange={setFilter} options={["all", "active", "delivered", "cancelled"]} />
@@ -171,6 +172,7 @@ export function CustomerOrdersPage() {
       </PortalSection>
       <CancelOrderModal
         order={cancelOrder}
+        theme="customer"
         loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
         onClose={() => setCancelOrder(null)}
         onSubmit={async (reason) => {
@@ -211,6 +213,7 @@ export function CustomerOrderDetailPage({ orderId }: { orderId: string }) {
       />
       <CancelOrderModal
         order={cancelOrder}
+        theme="customer"
         loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
         onClose={() => setCancelOrder(null)}
         onSubmit={async (reason) => {
@@ -240,10 +243,10 @@ export function CustomerAddressesPage() {
         description="This shell is ready for the address management contract."
         action={<span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">Coming soon</span>}
       >
-        <div className="grid gap-5 rounded-lg border border-dashed border-orange-200 bg-orange-50 p-6">
+        <div className="grid gap-5 rounded-lg border border-dashed border-blue-200 bg-blue-50 p-6">
           <div>
-            <h3 className="text-base font-semibold text-orange-950">Address management is planned for the next iteration.</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-orange-900">
+            <h3 className="text-base font-semibold text-blue-950">Address management is planned for the next iteration.</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-900">
               It will power delivery addresses and future geo-based courier assignment.
             </p>
           </div>
@@ -253,7 +256,7 @@ export function CustomerAddressesPage() {
                 key={label}
                 type="button"
                 disabled
-                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-orange-300"
+                className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-300"
                 title="Address management is planned for the next iteration."
               >
                 {label}
@@ -290,18 +293,18 @@ export function CustomerProfilePage() {
               ["Delivered Orders", formatCount(profile.deliveredOrders)],
             ]}
           />
-          <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-4">
+          <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-orange-950">Profile editing is planned for the next iteration.</h3>
-                <p className="mt-1 text-sm leading-6 text-orange-900">
+                <h3 className="text-sm font-semibold text-blue-950">Profile editing is planned for the next iteration.</h3>
+                <p className="mt-1 text-sm leading-6 text-blue-900">
                   Email is read-only. Name and phone fields will become editable when the profile update endpoint is available.
                 </p>
               </div>
               <button
                 type="button"
                 disabled
-                className="w-fit rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-orange-300"
+                className="w-fit rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-300"
               >
                 Edit profile
               </button>
@@ -335,9 +338,10 @@ export function MerchantOrdersPage() {
     >
       <PageState loading={loading} error={error} onRetry={reload} />
       <PortalSection
+        theme="merchant"
         title="Order Workflow"
         description="Actions use the current merchant order endpoints."
-        action={<FilterTabs value={filter} onChange={setFilter} options={["new", "preparing", "ready", "courier", "completed", "cancelled"]} />}
+        action={<FilterTabs tone="merchant" value={filter} onChange={setFilter} options={["new", "preparing", "ready", "courier", "completed", "cancelled"]} />}
       >
         <MerchantOrdersTable
           orders={filteredOrders}
@@ -350,6 +354,7 @@ export function MerchantOrdersPage() {
       </PortalSection>
       <CancelOrderModal
         order={cancelOrder}
+        theme="merchant"
         loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
         onClose={() => setCancelOrder(null)}
         onSubmit={async (reason) => {
@@ -393,6 +398,7 @@ export function MerchantOrderDetailPage({ orderId }: { orderId: string }) {
       />
       <CancelOrderModal
         order={cancelOrder}
+        theme="merchant"
         loading={Boolean(cancelOrder && actionOrderId === cancelOrder.id)}
         onClose={() => setCancelOrder(null)}
         onSubmit={async (reason) => {
@@ -416,6 +422,7 @@ export function MerchantStorePage() {
       loadProfile={getMerchantProfile}
       render={(profile) => (
         <DetailGrid
+          tone="merchant"
           fields={[
             ["Business Name", profile.businessName ?? profile.name ?? "Not available"],
             ["Description", "Not available"],
@@ -449,20 +456,20 @@ export function MerchantAnalyticsPage() {
     >
       <PageState loading={loading} error={error} onRetry={reload} />
       <div className="grid gap-4 md:grid-cols-3">
-        <PortalMetricCard label="Total Orders" value={formatCount(analytics.totalOrders)} />
-        <PortalMetricCard label="Active Orders" value={formatCount(analytics.activeOrders)} />
-        <PortalMetricCard label="Delivered Orders" value={formatCount(analytics.deliveredOrders)} />
-        <PortalMetricCard label="Revenue Total" value={formatCurrencyTRY(analytics.revenueTotal)} />
-        <PortalMetricCard label="Average Order Value" value={formatCurrencyTRY(analytics.averageOrderValue)} />
+        <PortalMetricCard theme="merchant" label="Total Orders" value={formatCount(analytics.totalOrders)} />
+        <PortalMetricCard theme="merchant" label="Active Orders" value={formatCount(analytics.activeOrders)} />
+        <PortalMetricCard theme="merchant" label="Delivered Orders" value={formatCount(analytics.deliveredOrders)} />
+        <PortalMetricCard theme="merchant" label="Revenue Total" value={formatCurrencyTRY(analytics.revenueTotal)} />
+        <PortalMetricCard theme="merchant" label="Average Order Value" value={formatCurrencyTRY(analytics.averageOrderValue)} />
       </div>
       <div className="mt-5">
-        <PortalSection title="Status Distribution" description="Computed from the merchant order list.">
+        <PortalSection theme="merchant" title="Status Distribution" description="Computed from the merchant order list.">
           {analytics.totalOrders === 0 ? (
             <EmptyState message="No orders found." />
           ) : (
             <div className="grid gap-2">
               {analytics.statusDistribution.map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <div key={status} className="flex items-center justify-between rounded-lg border border-violet-100 bg-violet-50 px-3 py-2">
                   <StatusBadge status={status} label={formatOrderStatus(status)} />
                   <span className="text-sm font-medium text-slate-700">{formatCount(count)}</span>
                 </div>
@@ -484,6 +491,7 @@ export function MerchantProfilePage() {
       loadProfile={getMerchantProfile}
       render={(profile) => (
         <DetailGrid
+          tone="merchant"
           fields={[
             ["Business Name", profile.businessName ?? profile.name ?? "Not available"],
             ["Email", profile.email],
@@ -515,7 +523,7 @@ export function CourierAssignmentsPage() {
       subtitle="Active delivery work assigned to this courier account."
     >
       <PageState loading={loading} error={error} onRetry={reload} />
-      <PortalSection title="Active Assignments" description="Delivered assignments are shown in history.">
+      <PortalSection theme="courier" title="Active Assignments" description="Delivered assignments are shown in history.">
         <CourierAssignmentsTable
           assignments={assignments}
           actionOrderId={actionOrderId}
@@ -573,10 +581,11 @@ export function CourierHistoryPage() {
     >
       <PageState loading={loading} error={error} onRetry={reload} />
       <OrdersTable
+        theme="courier"
         orders={assignments}
         emptyMessage="No completed deliveries yet."
         columns={["order", "merchant", "status", "amount", "created", "actions"]}
-        renderActions={(order) => <DetailLink href={`/courier/assignments/${order.id}`} label="Details" />}
+        renderActions={(order) => <DetailLink tone="courier" href={`/courier/assignments/${order.id}`} label="Details" />}
       />
     </PortalShell>
   );
@@ -591,6 +600,7 @@ export function CourierProfilePage() {
       loadProfile={getCourierProfile}
       render={(profile) => (
         <DetailGrid
+          tone="courier"
           fields={[
             ["Courier Name", profile.fullName],
             ["Email", profile.email],
@@ -649,23 +659,21 @@ function OrderDetailPage({
     <PortalShell portalType={portalType} email={user?.email ?? ""} title={title} subtitle={subtitle}>
       <PageState loading={state.loading} error={state.error} onRetry={reload} />
       {!state.loading && !state.error && !order ? (
-        <div className={`rounded-lg border border-dashed p-6 ${
-          portalType === "customer" ? "border-orange-200 bg-orange-50" : "border-slate-200 bg-slate-50"
-        }`}>
+        <div className={`rounded-lg border border-dashed p-6 ${getPortalTheme(portalType).table.empty}`}>
           <EmptyState message="Order was not found for this portal." />
-          <DetailLink tone={portalType === "customer" ? "customer" : "neutral"} href={backHref} label="Back to list" />
+          <DetailLink tone={portalType} href={backHref} label="Back to list" />
         </div>
       ) : null}
       {order ? (
         <div className="grid gap-5">
           <PortalSection
-            tone={portalType === "customer" ? "customer" : "neutral"}
+            theme={portalType}
             title={formatDisplayId(order.id, portalType === "courier" ? "Assignment" : "Order")}
             description="Summary from the current order data."
-            action={<DetailLink tone={portalType === "customer" ? "customer" : "neutral"} href={backHref} label="Back to list" />}
+            action={<DetailLink tone={portalType} href={backHref} label="Back to list" />}
           >
             <DetailGrid
-              tone={portalType === "customer" ? "customer" : "neutral"}
+              tone={portalType}
               fields={[
                 ["Current status", <StatusBadge key="status" status={order.status} label={formatOrderStatus(order.status)} />],
                 ["Total Amount", formatCurrencyTRY(order.totalAmount)],
@@ -673,23 +681,23 @@ function OrderDetailPage({
               ]}
             />
           </PortalSection>
-          <PortalSection tone={portalType === "customer" ? "customer" : "neutral"} title="Timeline" description="Status history when available, otherwise a current-status fallback.">
-            <OrderTimeline order={order} tone={portalType === "customer" ? "customer" : "neutral"} />
+          <PortalSection theme={portalType} title="Timeline" description="Status history when available, otherwise a current-status fallback.">
+            <OrderTimeline order={order} tone={portalType} />
           </PortalSection>
           <div className="grid gap-5 md:grid-cols-2">
-            <PortalSection tone={portalType === "customer" ? "customer" : "neutral"} title="Merchant" description="Pickup information returned by the backend.">
+            <PortalSection theme={portalType} title="Merchant" description="Pickup information returned by the backend.">
               <DetailGrid
-                tone={portalType === "customer" ? "customer" : "neutral"}
+                tone={portalType}
                 fields={[
                   ["Name", order.merchantName ?? "Not available"],
                   ["Pickup details", "Pickup details are not available yet"],
                 ]}
               />
             </PortalSection>
-            <PortalSection tone={portalType === "customer" ? "customer" : "neutral"} title="Courier" description="Assignment information returned by the backend.">
+            <PortalSection theme={portalType} title="Courier" description="Assignment information returned by the backend.">
               {order.driverName || order.driverEmail ? (
                 <DetailGrid
-                  tone={portalType === "customer" ? "customer" : "neutral"}
+                  tone={portalType}
                   fields={[
                     ["Name", order.driverName ?? "Not available"],
                     ["Email", order.driverEmail ?? "Not available"],
@@ -701,9 +709,9 @@ function OrderDetailPage({
             </PortalSection>
           </div>
           {order.cancellationReason ? (
-            <PortalSection tone={portalType === "customer" ? "customer" : "neutral"} title="Cancellation" description="Cancellation details for this order.">
+            <PortalSection theme={portalType} title="Cancellation" description="Cancellation details for this order.">
               <DetailGrid
-                tone={portalType === "customer" ? "customer" : "neutral"}
+                tone={portalType}
                 fields={[
                   ["Reason", order.cancellationReason],
                   ["Cancelled at", formatDateTimeOrNA(order.cancelledAt)],
@@ -712,7 +720,7 @@ function OrderDetailPage({
               />
             </PortalSection>
           ) : null}
-          <PortalSection tone={portalType === "customer" ? "customer" : "neutral"} title="Actions" description="Available actions depend on the current order status.">
+          <PortalSection theme={portalType} title="Actions" description="Available actions depend on the current order status.">
             {actionRenderer(order) ?? <EmptyState message="No actions are available for this status." />}
           </PortalSection>
         </div>
@@ -767,10 +775,10 @@ function ProfilePage<TProfile extends { email: string; role: UserRole }>({
       <PageState loading={state.loading} error={state.error} onRetry={reload} />
       {state.data ? (
         <PortalSection
-          tone={portalType === "customer" ? "customer" : "neutral"}
+          theme={portalType}
           title="Account Summary"
           description="Read-only details from the current account and portal profile."
-          action={portalType === "customer" ? undefined : <DetailLink href={`/${portalType}/profile/change-password`} label="Change password" />}
+          action={portalType === "customer" ? undefined : <DetailLink tone={portalType} href={`/${portalType}/profile/change-password`} label="Change password" />}
         >
           {render(state.data)}
           {portalType === "customer" ? (
@@ -936,11 +944,12 @@ function FilterTabs<T extends string>({
   value: T;
   onChange: (value: T) => void;
   options: T[];
-  tone?: "neutral" | "customer";
+  tone?: "neutral" | PortalKind;
 }) {
+  const theme = resolvePortalTone(tone);
   return (
     <div className={`flex flex-wrap gap-1 rounded-lg border p-1 ${
-      tone === "customer" ? "border-orange-200 bg-orange-50" : "border-slate-200 bg-slate-50"
+      theme ? `${theme.borderStrong} ${theme.surface}` : "border-slate-200 bg-slate-50"
     }`}>
       {options.map((option) => (
         <button
@@ -950,8 +959,8 @@ function FilterTabs<T extends string>({
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
             option === value
               ? "bg-white text-slate-950 shadow-sm"
-              : tone === "customer"
-                ? "text-orange-700 hover:text-orange-950"
+              : theme
+                ? `${theme.accentText} hover:${theme.accentSoftText}`
                 : "text-slate-500 hover:text-slate-900"
           }`}
         >
@@ -962,14 +971,13 @@ function FilterTabs<T extends string>({
   );
 }
 
-function DetailGrid({ fields, tone = "neutral" }: { fields: Array<[string, React.ReactNode]>; tone?: "neutral" | "customer" }) {
+function DetailGrid({ fields, tone = "neutral" }: { fields: Array<[string, React.ReactNode]>; tone?: "neutral" | PortalKind }) {
+  const theme = resolvePortalTone(tone);
   return (
     <dl className="grid gap-3 md:grid-cols-2">
       {fields.map(([label, value]) => (
-        <div key={label} className={`rounded-lg border p-3 ${
-          tone === "customer" ? "border-orange-100 bg-orange-50/70" : "border-slate-200 bg-slate-50"
-        }`}>
-          <dt className={`text-xs font-semibold uppercase ${tone === "customer" ? "text-orange-700" : "text-slate-500"}`}>{label}</dt>
+        <div key={label} className={`rounded-lg border p-3 ${theme ? theme.detail : "border-slate-200 bg-slate-50"}`}>
+          <dt className={`text-xs font-semibold uppercase ${theme ? theme.accentText : "text-slate-500"}`}>{label}</dt>
           <dd className="mt-1 break-words text-sm font-medium text-slate-900">{value || "Not available"}</dd>
         </div>
       ))}
@@ -977,13 +985,14 @@ function DetailGrid({ fields, tone = "neutral" }: { fields: Array<[string, React
   );
 }
 
-function DetailLink({ href, label, tone = "neutral" }: { href: string; label: string; tone?: "neutral" | "customer" }) {
+function DetailLink({ href, label, tone = "neutral" }: { href: string; label: string; tone?: "neutral" | PortalKind }) {
+  const theme = resolvePortalTone(tone);
   return (
     <Link
       href={href}
       className={`inline-flex w-fit items-center justify-center rounded-lg border bg-white px-3 py-2 text-sm font-semibold transition ${
-        tone === "customer"
-          ? "border-orange-200 text-orange-800 hover:bg-orange-50"
+        theme
+          ? `${theme.borderStrong} ${theme.accentSoftText} ${theme.brandHover}`
           : "border-slate-200 text-slate-700 hover:bg-slate-50"
       }`}
     >
@@ -992,7 +1001,7 @@ function DetailLink({ href, label, tone = "neutral" }: { href: string; label: st
   );
 }
 
-function OrderTimeline({ order, tone = "neutral" }: { order: OrderResponse; tone?: "neutral" | "customer" }) {
+function OrderTimeline({ order, tone = "neutral" }: { order: OrderResponse; tone?: "neutral" | PortalKind }) {
   const history = Array.isArray(order.history) ? order.history : [];
   const steps: OrderStatus[] =
     order.status === "CANCELLED"
@@ -1050,14 +1059,13 @@ function TimelineItem({
   actor?: string;
   reason?: string | null;
   completed: boolean;
-  tone: "neutral" | "customer";
+  tone: "neutral" | PortalKind;
 }) {
+  const theme = resolvePortalTone(tone);
   return (
     <div className={`rounded-lg border p-3 ${
       completed
-        ? tone === "customer"
-          ? "border-orange-200 bg-orange-50"
-          : "border-blue-200 bg-blue-50"
+        ? theme?.timeline ?? "border-blue-200 bg-blue-50"
         : "border-slate-200 bg-slate-50"
     }`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1072,13 +1080,19 @@ function TimelineItem({
   );
 }
 
+function resolvePortalTone(tone: "neutral" | PortalKind) {
+  return tone === "neutral" ? null : getPortalTheme(tone);
+}
+
 function CancelOrderModal({
   order,
+  theme,
   loading,
   onClose,
   onSubmit,
 }: {
   order: OrderResponse | null;
+  theme: PortalKind;
   loading: boolean;
   onClose: () => void;
   onSubmit: (reason: string) => Promise<void>;
@@ -1098,14 +1112,15 @@ function CancelOrderModal({
   if (!order) {
     return null;
   }
+  const portalTheme = getPortalTheme(theme);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm">
-      <section className="w-full max-w-lg overflow-hidden rounded-lg border border-rose-100 bg-white shadow-2xl shadow-slate-950/20">
-        <div className="border-b border-rose-100 bg-rose-50 px-5 py-4">
-          <div className="text-xs font-semibold uppercase text-rose-700">Order action</div>
+      <section className={`w-full max-w-lg overflow-hidden rounded-lg border bg-white shadow-2xl shadow-slate-950/20 ${portalTheme.border}`}>
+        <div className={`border-b px-5 py-4 ${portalTheme.border} ${portalTheme.surface}`}>
+          <div className={`text-xs font-semibold uppercase ${portalTheme.accentText}`}>Order action</div>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">Cancel order</h2>
-          <p className="mt-1 text-sm leading-6 text-rose-900">
+          <p className={`mt-1 text-sm leading-6 ${portalTheme.accentSoftText}`}>
             Provide a cancellation reason before cancelling {formatDisplayId(order.id, "Order")}.
           </p>
         </div>

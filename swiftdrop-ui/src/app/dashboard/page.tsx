@@ -250,7 +250,7 @@ export default function DashboardPage() {
       const merchantId = firstMerchantId ?? (await fetchFirstMerchantId(accessToken));
       if (!merchantId) {
         setFirstMerchantId(null);
-        setDemoError("No merchant is available for demo order.");
+        setDemoError("No merchant is available to create an order.");
         return;
       }
 
@@ -268,7 +268,7 @@ export default function DashboardPage() {
       setLastDemoOrder(created);
       await Promise.all([loadSummary(), loadOrders(), loadOutbox()]);
     } catch (err) {
-      setDemoError(err instanceof Error ? err.message : "Demo order failed");
+      setDemoError(err instanceof Error ? err.message : "Order flow failed");
     } finally {
       setRunningDemo(false);
     }
@@ -291,10 +291,11 @@ export default function DashboardPage() {
               Refresh
             </SecondaryButton>
             <Button
+              className="border-slate-900 bg-slate-900 hover:bg-slate-800 focus:ring-slate-500"
               onClick={runDemoOrder}
               disabled={runningDemo || merchantLoading || firstMerchantId === null}
             >
-              {runningDemo ? "Running..." : "Run Demo"}
+              {runningDemo ? "Running..." : "Run Flow"}
             </Button>
           </div>
         }
@@ -359,7 +360,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-3">
         <DashboardSection
-          title="Live Demo Flow"
+          title="Live Order Flow"
           action={<AdminStatusBadge status={lastDemoOrder ? "COMPLETED" : "PENDING"} />}
         >
           <div className="flex flex-col gap-4">
@@ -374,7 +375,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                Run Demo creates a real order with the first available merchant.
+                Run Flow creates a real order with the first available merchant.
               </div>
             )}
           </div>
@@ -562,7 +563,7 @@ function SectionLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
+      className="text-sm font-medium text-slate-700 transition hover:text-slate-950"
     >
       {label}
     </Link>
@@ -585,7 +586,7 @@ function buildFlowSteps(
   return [
     {
       label: "Order Created",
-      detail: order ? `${formatDisplayId(order.id, "Order")} was created.` : "Waiting for demo order.",
+      detail: order ? `${formatDisplayId(order.id, "Order")} was created.` : "Waiting for an order.",
       completed: hasOrder,
     },
     {
@@ -600,7 +601,7 @@ function buildFlowSteps(
       label: "Outbox Stored",
       detail: hasOrder
         ? "Order creation stored an event for the pipeline."
-        : "Waiting for demo order.",
+        : "Waiting for an order.",
       completed: hasOrder,
     },
     {

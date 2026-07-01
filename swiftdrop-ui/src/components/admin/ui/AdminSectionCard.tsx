@@ -1,4 +1,5 @@
 import type React from "react";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 export function AdminSectionCard({
   title,
@@ -13,8 +14,9 @@ export function AdminSectionCard({
   children: React.ReactNode;
   className?: string;
 }) {
+  const theme = getPortalTheme("admin");
   return (
-    <section className={`rounded-xl border border-slate-100 bg-white p-5 shadow-sm ${className}`}>
+    <section className={`rounded-xl border p-5 ${theme.card} ${className}`}>
       {title || description || action ? (
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

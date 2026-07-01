@@ -130,7 +130,7 @@ export function EventStreamPage() {
         </div>
       ) : null}
       {!loading && events.length === 0 ? (
-        <EmptyState message="No outbox events found. Create a demo order from Dashboard or Orders page." />
+        <EmptyState message="No outbox events found. Create an order from Dashboard or Orders page." />
       ) : null}
 
       <div className="grid gap-4">

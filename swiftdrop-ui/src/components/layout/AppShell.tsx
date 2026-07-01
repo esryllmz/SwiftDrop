@@ -16,6 +16,7 @@ import {
   resolveRoleRedirect,
 } from "@/lib/routes";
 import { formatStatusLabel } from "@/lib/format";
+import { getPortalTheme } from "@/lib/portal-theme";
 
 const ADMIN_NAV_ITEMS: ShellNavItemConfig[] = [
   {
@@ -180,17 +181,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const normalizedPathname = ROUTE_ALIASES[pathname] ?? pathname;
+  const theme = getPortalTheme("admin");
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden">
-      <aside className="w-full shrink-0 border-b border-slate-100 bg-white lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r">
-        <Link href="/dashboard" className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-5 transition hover:bg-slate-50">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-semibold text-white">
+    <div className={`flex min-h-screen flex-col text-slate-950 lg:h-screen lg:flex-row lg:overflow-hidden ${theme.shell}`}>
+      <aside className={`w-full shrink-0 border-b ${theme.sidebarBorder} ${theme.sidebar} lg:flex lg:h-screen lg:w-60 lg:flex-col lg:border-b-0 lg:border-r`}>
+        <Link href="/dashboard" className={`flex items-center gap-2.5 border-b px-4 py-5 transition ${theme.sidebarBorder} ${theme.brandHover}`}>
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold text-white ${theme.accent}`}>
             SD
           </span>
           <span className="min-w-0">
             <span className="mb-0.5 block text-sm font-semibold leading-none text-slate-900">SwiftDrop</span>
-            <span className="block text-xs text-slate-400">Operations Console</span>
+            <span className={`block text-xs ${theme.accentText}`}>Operations Console</span>
           </span>
         </Link>
 
@@ -199,17 +201,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ShellNavItem
               key={item.href}
               item={item}
-              active={normalizedPathname.startsWith(item.href)}
+              active={isAdminNavActive(item.href, normalizedPathname)}
             />
           ))}
         </nav>
 
-        <div className="grid gap-0.5 border-t border-slate-100 px-3 py-3">
+        <div className={`grid gap-0.5 border-t px-3 py-3 ${theme.sidebarBorder}`}>
           <Link
             href="/profile"
-            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
-              normalizedPathname === "/profile"
-                ? "bg-blue-50 font-medium text-blue-700"
+            className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+              isAdminNavActive("/profile", normalizedPathname)
+                ? `${theme.navActive} font-medium`
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
@@ -226,7 +228,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1 lg:flex lg:min-h-0 lg:flex-col">
-        <header className="sticky top-0 z-30 border-b border-slate-100 bg-white px-6 py-3">
+        <header className={`sticky top-0 z-30 border-b px-6 py-3 ${theme.header}`}>
           <div className="flex min-h-14 items-center justify-end">
             <UserIdentity email={user.email} />
           </div>
@@ -238,6 +240,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+}
+
+function isAdminNavActive(href: string, pathname: string) {
+  if (href === "/dashboard" || href === "/profile") {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function FullPageState({ title, message }: { title: string; message: string }) {

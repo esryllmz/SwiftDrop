@@ -2,6 +2,7 @@ import type React from "react";
 import { EmptyState, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatDisplayId, formatMoney } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
+import { getPortalTheme, type PortalThemeKey } from "@/lib/portal-theme";
 import type { OrderResponse } from "@/types/api";
 
 export function PortalMetricCard({
@@ -9,15 +10,17 @@ export function PortalMetricCard({
   value,
   hint,
   tone = "neutral",
+  theme,
   compact = false,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
   tone?: "neutral" | "sunrise" | "mint" | "berry" | "ink";
+  theme?: PortalThemeKey;
   compact?: boolean;
 }) {
-  const toneClass = metricToneClass(tone);
+  const toneClass = theme ? themedMetricClass(theme) : metricToneClass(tone);
   return (
     <section className={`${compact ? "min-h-20 p-3" : "min-h-28 p-4"} overflow-hidden rounded-lg border shadow-sm ${toneClass.shell}`}>
       <div className={`text-xs font-semibold uppercase ${toneClass.label}`}>{label}</div>
@@ -33,6 +36,7 @@ export function PortalSection({
   action,
   children,
   tone = "neutral",
+  theme,
   compact = false,
 }: {
   title: string;
@@ -40,10 +44,12 @@ export function PortalSection({
   action?: React.ReactNode;
   children: React.ReactNode;
   tone?: "neutral" | "customer";
+  theme?: PortalThemeKey;
   compact?: boolean;
 }) {
-  const sectionClass = tone === "customer"
-    ? "border-orange-100 bg-white/95 shadow-sm shadow-orange-100/70"
+  const resolvedTheme = theme ?? (tone === "customer" ? "customer" : undefined);
+  const sectionClass = resolvedTheme
+    ? getPortalTheme(resolvedTheme).card
     : "border-slate-200 bg-white shadow-sm shadow-slate-200/60";
   return (
     <section className={`rounded-lg border ${sectionClass}`}>
@@ -65,33 +71,28 @@ export function OrdersTable({
   columns,
   renderActions,
   variant = "neutral",
+  theme,
 }: {
   orders: OrderResponse[];
   emptyMessage: string;
   columns: Array<"order" | "customer" | "merchant" | "driver" | "status" | "amount" | "created" | "actions">;
   renderActions?: (order: OrderResponse) => React.ReactNode;
   variant?: "neutral" | "customer";
+  theme?: PortalThemeKey;
 }) {
-  const tableClass = variant === "customer"
-    ? {
-        wrapper: "border-orange-100 bg-white shadow-sm shadow-orange-100/70",
-        head: "border-b border-orange-100 bg-orange-50/80",
-        body: "divide-y divide-orange-50 bg-white",
-        row: "hover:bg-orange-50/50",
-      }
+  const resolvedTheme = theme ?? (variant === "customer" ? "customer" : undefined);
+  const tableClass = resolvedTheme
+    ? getPortalTheme(resolvedTheme).table
     : {
         wrapper: "border-slate-200 bg-white",
         head: "border-b border-slate-200 bg-slate-50",
         body: "divide-y divide-slate-100 bg-white",
         row: "hover:bg-slate-50/60",
+        empty: "border-slate-200 bg-slate-50/70",
       };
   if (orders.length === 0) {
     return (
-      <div className={`rounded-lg border border-dashed p-6 ${
-        variant === "customer"
-          ? "border-orange-200 bg-orange-50/60"
-          : "border-slate-200 bg-slate-50/70"
-      }`}>
+      <div className={`rounded-lg border border-dashed p-6 ${tableClass.empty}`}>
         <EmptyState message={emptyMessage} />
       </div>
     );
@@ -125,6 +126,16 @@ export function OrdersTable({
       </div>
     </div>
   );
+}
+
+function themedMetricClass(theme: PortalThemeKey) {
+  const portalTheme = getPortalTheme(theme);
+  return {
+    shell: portalTheme.metric,
+    label: portalTheme.accentText,
+    value: portalTheme.accentSoftText,
+    hint: "bg-white/70 text-slate-700",
+  };
 }
 
 function metricToneClass(tone: "neutral" | "sunrise" | "mint" | "berry" | "ink") {

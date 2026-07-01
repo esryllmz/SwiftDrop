@@ -16,7 +16,7 @@ export function AdminMetricCard({
   label,
   value,
   hint,
-  tone = "blue",
+  tone = "slate",
   icon,
   compact = false,
   iconVariant = "square",

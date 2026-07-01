@@ -5,7 +5,7 @@ type Tone = "blue" | "violet" | "emerald" | "amber" | "slate";
 export function AdminInfoBanner({
   title,
   children,
-  tone = "blue",
+  tone = "slate",
 }: {
   title?: string;
   children: React.ReactNode;
