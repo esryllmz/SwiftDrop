@@ -8,9 +8,17 @@ import { Button, Card, ErrorState, Field, LoadingState } from "@/components/ui";
 import { forgotPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
 import { normalizeEmail } from "@/lib/normalize";
+import { getPortalTheme, type PortalThemeKey } from "@/lib/portal-theme";
 import { showErrorToast, showInfoToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
+
+const portalThemeKeys: Record<PortalKey, PortalThemeKey> = {
+  customer: "customer",
+  merchant: "merchant",
+  courier: "courier",
+  staff: "admin",
+};
 
 const GENERIC_RESET_MESSAGE =
   "If an account exists for this portal, password reset instructions will be sent.";
@@ -34,6 +42,7 @@ function ForgotPasswordContent() {
   const searchParams = useSearchParams();
   const portal = resolvePortal(searchParams.get("portal"));
   const config = portalLabels[portal];
+  const theme = getPortalTheme(portalThemeKeys[portal]);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +69,7 @@ function ForgotPasswordContent() {
 
   return (
     <AuthFrame>
-      <Card>
+      <Card className={theme.card}>
         <h1 className="text-2xl font-semibold text-slate-950">{config.title}</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           Password reset links are only sent to verified and active accounts.
@@ -71,8 +80,9 @@ function ForgotPasswordContent() {
             value={email}
             onChange={setEmail}
             placeholder="name@example.com"
+            focusRingClassName={`border-slate-200 ${theme.focus}`}
           />
-          <Button type="submit" disabled={loading} className="h-11 w-full">
+          <Button type="submit" disabled={loading} className={`h-11 w-full ${theme.button}`}>
             {loading ? "Sending..." : "Send reset instructions"}
           </Button>
         </form>
@@ -82,7 +92,7 @@ function ForgotPasswordContent() {
           </div>
         ) : null}
         {error ? <div className="mt-4"><ErrorState message={error} /></div> : null}
-        <Link href={config.loginHref} className="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700">
+        <Link href={config.loginHref} className={`mt-5 inline-flex text-sm font-semibold ${theme.accentText} hover:underline`}>
           Back to login
         </Link>
       </Card>

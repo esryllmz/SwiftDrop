@@ -8,9 +8,23 @@ import { Button, Card, ErrorState } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { normalizeApiError } from "@/lib/api";
 import { hasOuterWhitespace } from "@/lib/normalize";
+import { getPortalTheme, type PortalThemeKey } from "@/lib/portal-theme";
 import { resolveRoleRedirect } from "@/lib/routes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import type { UserRole } from "@/types/api";
+
+function themeForRole(role?: UserRole): PortalThemeKey {
+  switch (role) {
+    case "CUSTOMER":
+      return "customer";
+    case "MERCHANT":
+      return "merchant";
+    case "DRIVER":
+      return "courier";
+    default:
+      return "admin";
+  }
+}
 
 export default function ChangePasswordPage() {
   return (
@@ -37,6 +51,7 @@ function ChangePasswordForm() {
   }, [auth.isLoading, auth.user, router]);
 
   const returnTo = resolveSafeReturnTo(searchParams.get("returnTo"), auth.user?.role);
+  const theme = getPortalTheme(themeForRole(auth.user?.role));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,14 +80,14 @@ function ChangePasswordForm() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      <PublicHeader />
+      <PublicHeader accent={theme.accent} />
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center px-4 py-6">
-        <Card>
-          <h1 className="text-2xl font-semibold text-slate-950">Set a new password</h1>
+        <Card className={theme.card}>
+          <h1 className="text-2xl font-semibold text-slate-950">Change password</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {auth.user?.passwordChangeRequired
               ? "Your temporary password must be changed before continuing."
-              : "Update the password for your signed-in SwiftDrop account."}
+              : "Keep your account secure by updating your password."}
           </p>
 
           <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
@@ -86,6 +101,7 @@ function ChangePasswordForm() {
               autoComplete="current-password"
               required
               disabled={loading}
+              focusRingClassName={`border-slate-200 ${theme.focus}`}
             />
             <PasswordInput
               id="new-password"
@@ -97,6 +113,7 @@ function ChangePasswordForm() {
               autoComplete="new-password"
               required
               disabled={loading}
+              focusRingClassName={`border-slate-200 ${theme.focus}`}
             />
             <PasswordInput
               id="confirm-new-password"
@@ -108,12 +125,13 @@ function ChangePasswordForm() {
               autoComplete="new-password"
               required
               disabled={loading}
+              focusRingClassName={`border-slate-200 ${theme.focus}`}
             />
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
               At least 8 characters with uppercase, lowercase, and number.
             </div>
-            <Button type="submit" disabled={loading} className="h-11 w-full">
-              {loading ? "Changing..." : "Change password"}
+            <Button type="submit" disabled={loading} className={`h-11 w-full ${theme.button}`}>
+              {loading ? "Changing..." : "Update password"}
             </Button>
           </form>
 
@@ -122,6 +140,13 @@ function ChangePasswordForm() {
               <ErrorState message={error} />
             </div>
           ) : null}
+
+          <Link
+            href={returnTo ?? "/"}
+            className={`mt-5 inline-flex text-sm font-semibold ${theme.accentText} hover:underline`}
+          >
+            Back to profile
+          </Link>
         </Card>
       </section>
     </main>
@@ -163,12 +188,12 @@ function resolveSafeReturnTo(value: string | null, role?: UserRole) {
   return value;
 }
 
-function PublicHeader() {
+function PublicHeader({ accent = "bg-blue-600" }: { accent?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3" aria-label="SwiftDrop home">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+          <span className={`flex h-9 w-9 items-center justify-center rounded-lg text-white shadow-sm ${accent}`}>
             SD
           </span>
           <span className="text-base font-semibold text-slate-950">SwiftDrop</span>

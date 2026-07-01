@@ -8,9 +8,17 @@ import { Button, Card, ErrorState, LoadingState } from "@/components/ui";
 import { resetPassword } from "@/lib/auth";
 import { ApiError, normalizeApiError } from "@/lib/api";
 import { hasOuterWhitespace } from "@/lib/normalize";
+import { getPortalTheme, type PortalThemeKey } from "@/lib/portal-theme";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 type PortalKey = "customer" | "merchant" | "courier" | "staff";
+
+const portalThemeKeys: Record<PortalKey, PortalThemeKey> = {
+  customer: "customer",
+  merchant: "merchant",
+  courier: "courier",
+  staff: "admin",
+};
 
 export default function ResetPasswordPage() {
   return (
@@ -24,6 +32,7 @@ function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const portal = resolvePortal(searchParams.get("portal"));
+  const theme = getPortalTheme(portalThemeKeys[portal]);
   const token = searchParams.get("token") ?? "";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -57,7 +66,7 @@ function ResetPasswordContent() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-6">
-        <Card>
+        <Card className={theme.card}>
           <h1 className="text-2xl font-semibold text-slate-950">Reset password</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             Set a new password for your SwiftDrop account.
@@ -73,6 +82,7 @@ function ResetPasswordContent() {
               autoComplete="new-password"
               required
               disabled={loading}
+              focusRingClassName={`border-slate-200 ${theme.focus}`}
             />
             <PasswordInput
               id="reset-confirm-password"
@@ -84,11 +94,12 @@ function ResetPasswordContent() {
               autoComplete="new-password"
               required
               disabled={loading}
+              focusRingClassName={`border-slate-200 ${theme.focus}`}
             />
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
               At least 8 characters with uppercase, lowercase, and number.
             </div>
-            <Button type="submit" disabled={loading || !token} className="h-11 w-full">
+            <Button type="submit" disabled={loading || !token} className={`h-11 w-full ${theme.button}`}>
               {loading ? "Resetting..." : "Reset password"}
             </Button>
           </form>
@@ -96,7 +107,7 @@ function ResetPasswordContent() {
             <div className="mt-4"><ErrorState message="Reset token is missing." /></div>
           ) : null}
           {error ? <div className="mt-4"><ErrorState message={error} /></div> : null}
-          <Link href={resolveLoginHref(portal)} className="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700">
+          <Link href={resolveLoginHref(portal)} className={`mt-5 inline-flex text-sm font-semibold ${theme.accentText} hover:underline`}>
             Back to login
           </Link>
         </Card>

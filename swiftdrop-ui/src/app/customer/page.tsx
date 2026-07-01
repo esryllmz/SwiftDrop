@@ -268,7 +268,6 @@ export default function CustomerPage() {
           compact
           title="Recent Orders"
           description="Active and recent orders for this customer account."
-          action={<Button className="border-blue-600 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500" onClick={() => setModalOpen(true)}>Create order</Button>}
         >
           <OrdersTable
             variant="customer"

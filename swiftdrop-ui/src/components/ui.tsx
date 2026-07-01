@@ -73,12 +73,14 @@ export function Field({
   onChange,
   type = "text",
   placeholder,
+  focusRingClassName = "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   placeholder?: string;
+  focusRingClassName?: string;
 }) {
   return (
     <label className="block">
@@ -88,7 +90,7 @@ export function Field({
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+        className={`mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-2 ${focusRingClassName}`}
       />
     </label>
   );
