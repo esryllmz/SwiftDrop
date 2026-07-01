@@ -8,16 +8,19 @@ export function PortalMetricCard({
   label,
   value,
   hint,
+  tone = "neutral",
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
+  tone?: "neutral" | "sunrise" | "mint" | "berry" | "ink";
 }) {
+  const toneClass = metricToneClass(tone);
   return (
-    <section className="min-h-28 rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/60">
-      <div className="text-xs font-medium uppercase text-slate-500">{label}</div>
-      <div className="mt-2 break-words text-2xl font-semibold text-slate-950">{value}</div>
-      {hint ? <div className="mt-2 max-w-full truncate rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-500" title={hint}>{hint}</div> : null}
+    <section className={`min-h-28 overflow-hidden rounded-lg border p-4 shadow-sm ${toneClass.shell}`}>
+      <div className={`text-xs font-semibold uppercase ${toneClass.label}`}>{label}</div>
+      <div className={`mt-2 break-words text-2xl font-semibold ${toneClass.value}`}>{value}</div>
+      {hint ? <div className={`mt-2 max-w-full truncate rounded-md px-2 py-1 text-xs ${toneClass.hint}`} title={hint}>{hint}</div> : null}
     </section>
   );
 }
@@ -27,18 +30,23 @@ export function PortalSection({
   description,
   action,
   children,
+  tone = "neutral",
 }: {
   title: string;
   description: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  tone?: "neutral" | "customer";
 }) {
+  const sectionClass = tone === "customer"
+    ? "border-orange-100 bg-white/95 shadow-sm shadow-orange-100/70"
+    : "border-slate-200 bg-white shadow-sm shadow-slate-200/60";
   return (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
+    <section className={`rounded-lg border ${sectionClass}`}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="px-5 pt-5">
           <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
+          <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
         {action ? <div className="px-5 pt-5">{action}</div> : null}
       </div>
@@ -52,36 +60,55 @@ export function OrdersTable({
   emptyMessage,
   columns,
   renderActions,
+  variant = "neutral",
 }: {
   orders: OrderResponse[];
   emptyMessage: string;
   columns: Array<"order" | "customer" | "merchant" | "driver" | "status" | "amount" | "created" | "actions">;
   renderActions?: (order: OrderResponse) => React.ReactNode;
+  variant?: "neutral" | "customer";
 }) {
+  const tableClass = variant === "customer"
+    ? {
+        wrapper: "border-orange-100 bg-white shadow-sm shadow-orange-100/70",
+        head: "border-b border-orange-100 bg-orange-50/80",
+        body: "divide-y divide-orange-50 bg-white",
+        row: "hover:bg-orange-50/50",
+      }
+    : {
+        wrapper: "border-slate-200 bg-white",
+        head: "border-b border-slate-200 bg-slate-50",
+        body: "divide-y divide-slate-100 bg-white",
+        row: "hover:bg-slate-50/60",
+      };
   if (orders.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-6">
+      <div className={`rounded-lg border border-dashed p-6 ${
+        variant === "customer"
+          ? "border-orange-200 bg-orange-50/60"
+          : "border-slate-200 bg-slate-50/70"
+      }`}>
         <EmptyState message={emptyMessage} />
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className={`overflow-hidden rounded-lg border ${tableClass.wrapper}`}>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className={tableClass.head}>
             {columns.map((column) => (
-              <th key={column} className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+              <th key={column} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">
                 {columnLabel(column)}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className={tableClass.body}>
           {orders.map((order) => (
-            <tr key={order.id} className="align-top transition-colors hover:bg-slate-50/60">
+            <tr key={order.id} className={`align-top transition-colors ${tableClass.row}`}>
               {columns.map((column) => (
                 <td key={column} className="px-4 py-3.5 text-slate-700">
                   {column === "actions" ? renderActions?.(order) ?? "-" : renderOrderCell(order, column)}
@@ -94,6 +121,43 @@ export function OrdersTable({
       </div>
     </div>
   );
+}
+
+function metricToneClass(tone: "neutral" | "sunrise" | "mint" | "berry" | "ink") {
+  const tones = {
+    neutral: {
+      shell: "border-slate-200 bg-white shadow-slate-200/60",
+      label: "text-slate-500",
+      value: "text-slate-950",
+      hint: "bg-slate-50 text-slate-500",
+    },
+    sunrise: {
+      shell: "border-orange-200 bg-orange-50 shadow-orange-100/80",
+      label: "text-orange-700",
+      value: "text-orange-950",
+      hint: "bg-white/70 text-orange-800",
+    },
+    mint: {
+      shell: "border-emerald-200 bg-emerald-50 shadow-emerald-100/80",
+      label: "text-emerald-700",
+      value: "text-emerald-950",
+      hint: "bg-white/70 text-emerald-800",
+    },
+    berry: {
+      shell: "border-rose-200 bg-rose-50 shadow-rose-100/80",
+      label: "text-rose-700",
+      value: "text-rose-950",
+      hint: "bg-white/70 text-rose-800",
+    },
+    ink: {
+      shell: "border-indigo-200 bg-indigo-50 shadow-indigo-100/80",
+      label: "text-indigo-700",
+      value: "text-indigo-950",
+      hint: "bg-white/70 text-indigo-800",
+    },
+  };
+
+  return tones[tone];
 }
 
 function renderOrderCell(order: OrderResponse, column: string) {

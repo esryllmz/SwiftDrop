@@ -58,23 +58,23 @@ export function statusBadgeClass(status?: string) {
   const normalized = status?.toUpperCase() ?? "";
 
   if (["UP", "SENT", "AVAILABLE", "DELIVERED", "APPROVED"].includes(normalized)) {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-emerald-300 bg-emerald-100 text-emerald-800";
   }
 
   if (normalized === "PLACED") {
-    return "border-blue-200 bg-blue-50 text-blue-700";
+    return "border-orange-300 bg-orange-100 text-orange-800";
   }
 
   if (["PENDING", "PREPARING", "DEGRADED", "UNKNOWN"].includes(normalized)) {
-    return "border-yellow-200 bg-yellow-50 text-yellow-700";
+    return "border-amber-300 bg-amber-100 text-amber-800";
   }
 
   if (normalized === "READY_FOR_PICKUP") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-yellow-300 bg-yellow-100 text-yellow-800";
   }
 
   if (["FAILED", "DOWN", "REJECTED"].includes(normalized)) {
-    return "border-red-200 bg-red-50 text-red-700";
+    return "border-red-300 bg-red-100 text-red-800";
   }
 
   if (normalized === "OFFLINE") {
@@ -82,11 +82,11 @@ export function statusBadgeClass(status?: string) {
   }
 
   if (["DRIVER_ASSIGNED", "ASSIGNED", "BUSY"].includes(normalized)) {
-    return "border-violet-200 bg-violet-50 text-violet-700";
+    return "border-indigo-300 bg-indigo-100 text-indigo-800";
   }
 
   if (["PICKED_UP", "ON_THE_WAY"].includes(normalized)) {
-    return "border-sky-200 bg-sky-50 text-sky-700";
+    return "border-cyan-300 bg-cyan-100 text-cyan-800";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-600";

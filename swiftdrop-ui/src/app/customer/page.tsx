@@ -9,7 +9,7 @@ import {
   PortalSection,
 } from "@/components/portal/PortalDashboard";
 import { PortalShell } from "@/components/portal/PortalShell";
-import { Button, ErrorState, LoadingState, SecondaryButton } from "@/components/ui";
+import { Button, ErrorState, LoadingState, SecondaryButton, StatusBadge } from "@/components/ui";
 import { normalizeApiError } from "@/lib/api";
 import { formatCurrencyTRY, formatDateTime, formatDisplayId } from "@/lib/format";
 import { formatOrderStatus } from "@/lib/order-status";
@@ -201,37 +201,41 @@ export default function CustomerPage() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <PortalMetricCard label="Active orders" value={loading && !profile ? "-" : activeOrders} />
-          <PortalMetricCard label="Delivered orders" value={loading && !profile ? "-" : deliveredOrders} />
-          <PortalMetricCard label="Cancelled orders" value={loading && !profile ? "-" : cancelledOrders} />
-          <PortalMetricCard label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
+          <PortalMetricCard tone="sunrise" label="Active orders" value={loading && !profile ? "-" : activeOrders} />
+          <PortalMetricCard tone="mint" label="Delivered orders" value={loading && !profile ? "-" : deliveredOrders} />
+          <PortalMetricCard tone="berry" label="Cancelled orders" value={loading && !profile ? "-" : cancelledOrders} />
+          <PortalMetricCard tone="ink" label="Total spending" value={loading ? "-" : formatCurrencyTRY(totalSpending)} />
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <PortalSection
+            tone="customer"
             title="Current order"
             description="The most recent active delivery for this account."
             action={activeOrder ? <DetailLink href={`/customer/orders/${activeOrder.id}`} label="View details" /> : null}
           >
             {activeOrder ? (
               <div className="grid gap-4 md:grid-cols-2">
-                <InfoTile label={formatDisplayId(activeOrder.id, "Order")} value={formatOrderStatus(activeOrder.status)} />
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                  <div className="text-xs font-semibold uppercase text-orange-700">{formatDisplayId(activeOrder.id, "Order")}</div>
+                  <div className="mt-2"><StatusBadge status={activeOrder.status} label={formatOrderStatus(activeOrder.status)} /></div>
+                </div>
                 <InfoTile label="Merchant" value={activeOrder.merchantName ?? "Not available"} />
                 <InfoTile label="Courier" value={activeOrder.driverName ?? activeOrder.driverEmail ?? "Awaiting courier assignment"} />
                 <InfoTile label="Amount" value={formatCurrencyTRY(activeOrder.totalAmount)} />
                 <InfoTile label="Created at" value={formatDateTime(activeOrder.createdAt)} />
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm font-medium text-slate-900">No active order right now.</p>
-                <p className="mt-1 text-sm text-slate-500">Create a demo order to see the delivery flow.</p>
+              <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-5">
+                <p className="text-sm font-semibold text-orange-950">No active order right now.</p>
+                <p className="mt-1 text-sm text-orange-800">Create a demo order to see the delivery flow.</p>
               </div>
             )}
           </PortalSection>
 
-          <PortalSection title="Quick actions" description="Common customer workflows.">
+          <PortalSection tone="customer" title="Quick actions" description="Common customer workflows.">
             <div className="grid gap-2">
-              <Button onClick={() => setModalOpen(true)}>Create demo order</Button>
+              <Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create demo order</Button>
               <DetailLink href="/customer/orders" label="View orders" />
               <DetailLink href="/customer/profile" label="Manage profile" />
             </div>
@@ -239,11 +243,13 @@ export default function CustomerPage() {
         </div>
 
         <PortalSection
+          tone="customer"
           title="Recent Orders"
           description="Active and recent orders for this customer account."
-          action={<Button onClick={() => setModalOpen(true)}>Create demo order</Button>}
+          action={<Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" onClick={() => setModalOpen(true)}>Create demo order</Button>}
         >
           <OrdersTable
+            variant="customer"
             orders={orders}
             emptyMessage="No orders found. Create a demo order to start."
             columns={["order", "merchant", "driver", "status", "amount", "created"]}
@@ -252,29 +258,32 @@ export default function CustomerPage() {
       </div>
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-          <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-950">Create order</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm">
+          <section className="w-full max-w-lg overflow-hidden rounded-lg border border-orange-100 bg-white shadow-2xl shadow-slate-950/20">
+            <div className="border-b border-orange-100 bg-orange-50 px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase text-orange-700">Customer checkout</div>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-950">Create demo order</h2>
+                  <p className="mt-1 text-sm leading-6 text-orange-900">
                   Choose an available merchant and enter the order total.
-                </p>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={creating}
+                  className="rounded-lg border border-orange-200 bg-white px-3 py-1.5 text-sm font-semibold text-orange-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label="Close"
+                >
+                  X
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={creating}
-                className="rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-500 transition hover:bg-slate-50"
-                aria-label="Close"
-              >
-                X
-              </button>
             </div>
 
-            <form className="mt-5 grid gap-4" onSubmit={handleCreateOrder}>
+            <form className="grid gap-4 p-5" onSubmit={handleCreateOrder}>
               {merchantsLoading ? (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                <div className="rounded-lg border border-orange-100 bg-orange-50 p-3 text-sm text-orange-800">
                   Loading merchants...
                 </div>
               ) : null}
@@ -305,7 +314,7 @@ export default function CustomerPage() {
                   value={selectedMerchantId}
                   onChange={(event) => setSelectedMerchantId(event.target.value)}
                   disabled={merchantSelectDisabled}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                  className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                 >
                   {merchants.length === 0 ? (
                     <option value="">No merchants are currently available.</option>
@@ -331,7 +340,7 @@ export default function CustomerPage() {
                   value={totalAmount}
                   onChange={(event) => setTotalAmount(event.target.value)}
                   disabled={creating}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+                  className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                 />
               </label>
 
@@ -341,7 +350,7 @@ export default function CustomerPage() {
                 <SecondaryButton type="button" onClick={closeModal} disabled={creating}>
                   Cancel
                 </SecondaryButton>
-                <Button type="submit" disabled={createDisabled}>
+                <Button className="border-orange-600 bg-orange-600 hover:bg-orange-700 focus:ring-orange-500" type="submit" disabled={createDisabled}>
                   {creating ? "Creating..." : "Create Order"}
                 </Button>
               </div>
@@ -359,8 +368,8 @@ function getDefaultMerchantId(merchants: CustomerMerchantOption[]) {
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <div className="text-xs font-medium uppercase text-slate-500">{label}</div>
+    <div className="rounded-lg border border-orange-100 bg-white p-3 shadow-sm shadow-orange-100/60">
+      <div className="text-xs font-semibold uppercase text-orange-700">{label}</div>
       <div className="mt-1 break-words text-sm font-semibold text-slate-950">{value}</div>
     </div>
   );
@@ -370,7 +379,7 @@ function DetailLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+      className="inline-flex w-full items-center justify-center rounded-lg border border-orange-200 bg-white px-4 py-2 text-sm font-semibold text-orange-800 transition hover:border-orange-300 hover:bg-orange-50"
     >
       {label}
     </Link>
