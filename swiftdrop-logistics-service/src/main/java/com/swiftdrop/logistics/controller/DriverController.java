@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.swiftdrop.logistics.dto.DriverResponse;
 import com.swiftdrop.logistics.entity.DriverStatus;
+import com.swiftdrop.logistics.security.AuthenticatedUserResolver;
 import com.swiftdrop.logistics.service.DriverService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -19,12 +21,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DriverController {
 
+    private static final String ADMIN_ROLE = "ADMIN";
+
+    private final AuthenticatedUserResolver authenticatedUserResolver;
     private final DriverService driverService;
 
     @GetMapping
     public ResponseEntity<List<DriverResponse>> findDrivers(
+            HttpServletRequest request,
             @RequestParam(required = false) DriverStatus status
     ) {
+        authenticatedUserResolver.resolve(request, ADMIN_ROLE);
         return ResponseEntity.ok(driverService.findDrivers(status));
     }
 }

@@ -27,6 +27,7 @@ import com.swiftdrop.logistics.dto.OrderKafkaEvent;
 import com.swiftdrop.logistics.dto.OrderCreateRequest;
 import com.swiftdrop.logistics.dto.OrderResponse;
 import com.swiftdrop.logistics.dto.OrderStatusHistoryResponse;
+import com.swiftdrop.logistics.entity.CustomerAddress;
 import com.swiftdrop.logistics.entity.Driver;
 import com.swiftdrop.logistics.entity.DriverStatus;
 import com.swiftdrop.logistics.entity.Merchant;
@@ -36,7 +37,10 @@ import com.swiftdrop.logistics.entity.OrderStatus;
 import com.swiftdrop.logistics.entity.OrderStatusHistory;
 import com.swiftdrop.logistics.exception.ForbiddenPortalAccessException;
 import com.swiftdrop.logistics.exception.InvalidOrderTransitionException;
+import com.swiftdrop.logistics.exception.OperationalProfileIncompleteException;
 import com.swiftdrop.logistics.exception.ResourceNotFoundException;
+import com.swiftdrop.logistics.repository.CustomerAddressRepository;
+import com.swiftdrop.logistics.repository.CustomerProfileRepository;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
 import com.swiftdrop.logistics.repository.OrderRepository;
@@ -44,6 +48,7 @@ import com.swiftdrop.logistics.repository.OrderStatusHistoryRepository;
 import com.swiftdrop.logistics.service.OrderService;
 import com.swiftdrop.logistics.service.OrderStatusTransitionPolicy;
 import com.swiftdrop.logistics.service.OutboxService;
+import com.swiftdrop.logistics.service.ProfileCompleteness;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +68,8 @@ public class OrderServiceImpl implements OrderService {
     private final OutboxService outboxService;
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redissonClient;
+    private final CustomerProfileRepository customerProfileRepository;
+    private final CustomerAddressRepository customerAddressRepository;
 
     @Value("${application.demo.courier-id}")
     private UUID demoCourierId;
@@ -70,25 +77,54 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request) {
-        return createOrder(request.customerId(), request.merchantId(), request.totalAmount());
+        return createOrder(request.customerId(), request.merchantId(), request.totalAmount(), null);
     }
 
     @Override
     @Transactional
     public OrderResponse createCustomerOrder(UUID customerId, CreateCustomerOrderRequest request) {
-        return createOrder(customerId, request.merchantId(), request.totalAmount());
+        boolean hasDefaultAddress = customerAddressRepository
+                .findByCustomerIdAndIsDefaultTrueAndIsActiveTrue(customerId)
+                .isPresent();
+        var profile = customerProfileRepository.findByUserId(customerId).orElse(null);
+        if (!ProfileCompleteness.isCustomerComplete(profile, hasDefaultAddress)) {
+            throw new OperationalProfileIncompleteException(
+                    "You need to complete your profile and add a delivery address before placing an order.");
+        }
+
+        CustomerAddress deliveryAddress = request.deliveryAddressId() != null
+                ? customerAddressRepository.findByIdAndCustomerId(request.deliveryAddressId(), customerId)
+                        .filter(CustomerAddress::isActive)
+                        .orElseThrow(() -> new ResourceNotFoundException("Delivery address was not found."))
+                : customerAddressRepository.findByCustomerIdAndIsDefaultTrueAndIsActiveTrue(customerId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Delivery address was not found."));
+
+        return createOrder(customerId, request.merchantId(), request.totalAmount(), deliveryAddress);
     }
 
-    private OrderResponse createOrder(UUID customerId, UUID merchantId, BigDecimal totalAmount) {
+    private OrderResponse createOrder(UUID customerId, UUID merchantId, BigDecimal totalAmount, CustomerAddress deliveryAddress) {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new IllegalArgumentException("Merchant was not found."));
 
-        Order order = Order.builder()
+        if (!merchant.isAcceptingOrders() || !ProfileCompleteness.isMerchantComplete(merchant)) {
+            throw new OperationalProfileIncompleteException("This merchant is not currently accepting orders.");
+        }
+
+        Order.OrderBuilder orderBuilder = Order.builder()
                 .customerId(customerId)
                 .merchant(merchant)
                 .status(OrderStatus.PLACED)
-                .totalAmount(totalAmount)
-                .build();
+                .totalAmount(totalAmount);
+
+        if (deliveryAddress != null) {
+            orderBuilder
+                    .deliveryAddressId(deliveryAddress.getId())
+                    .deliveryAddressSummary(deliveryAddress.getAddressLine())
+                    .deliveryDistrict(deliveryAddress.getDistrict())
+                    .deliveryCity(deliveryAddress.getCity());
+        }
+
+        Order order = orderBuilder.build();
 
         Order savedOrder = Objects.requireNonNull(orderRepository.save(order), "saved order must not be null");
         saveHistory(savedOrder, null, OrderStatus.PLACED, OrderActorType.CUSTOMER, customerId, null);
@@ -528,6 +564,9 @@ public class OrderServiceImpl implements OrderService {
                 order.getPickedUpAt(),
                 order.getOnTheWayAt(),
                 order.getDeliveredAt(),
+                order.getDeliveryAddressSummary(),
+                order.getDeliveryDistrict(),
+                order.getDeliveryCity(),
                 findOrderHistory(order.getId())
         );
     }

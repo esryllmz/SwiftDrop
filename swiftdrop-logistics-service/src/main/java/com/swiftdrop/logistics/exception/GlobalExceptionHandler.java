@@ -31,7 +31,8 @@ public class GlobalExceptionHandler {
             DuplicateApplicationException.class,
             ApplicationEmailConflictException.class,
             ApplicationAlreadyReviewedException.class,
-            InvalidOrderTransitionException.class
+            InvalidOrderTransitionException.class,
+            OperationalProfileIncompleteException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
             RuntimeException ex,

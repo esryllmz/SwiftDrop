@@ -15,6 +15,7 @@ public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
     @Query("""
             select m.id as id, m.name as name
             from Merchant m
+            where m.acceptingOrders = true
             order by m.name asc
             """)
     List<CustomerMerchantOptionView> findCustomerMerchantOptions();

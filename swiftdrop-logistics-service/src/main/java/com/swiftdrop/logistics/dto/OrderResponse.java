@@ -24,6 +24,9 @@ public record OrderResponse(
         LocalDateTime pickedUpAt,
         LocalDateTime onTheWayAt,
         LocalDateTime deliveredAt,
+        String deliveryAddressSummary,
+        String deliveryDistrict,
+        String deliveryCity,
         List<OrderStatusHistoryResponse> history
 ) {
 }

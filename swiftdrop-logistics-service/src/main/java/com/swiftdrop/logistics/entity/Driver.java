@@ -1,6 +1,9 @@
 package com.swiftdrop.logistics.entity;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,4 +44,25 @@ public class Driver {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private DriverStatus status;
+
+    @Column(length = 30)
+    private String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type", length = 20)
+    private VehicleType vehicleType;
+
+    @Column(name = "service_zone", length = 100)
+    private String serviceZone;
+
+    @Builder.Default
+    @Column(name = "max_active_assignments", nullable = false)
+    private int maxActiveAssignments = 3;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "last_assigned_at")
+    private LocalDateTime lastAssignedAt;
 }

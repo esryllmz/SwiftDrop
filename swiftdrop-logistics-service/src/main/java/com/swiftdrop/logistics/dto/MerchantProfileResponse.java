@@ -11,6 +11,14 @@ public record MerchantProfileResponse(
         String name,
         double latitude,
         double longitude,
+        String phone,
+        String addressLine,
+        String district,
+        String city,
+        String description,
+        boolean acceptingOrders,
+        Integer averagePreparationMinutes,
+        boolean profileComplete,
         long totalOrders,
         long activeOrders
 ) {

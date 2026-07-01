@@ -309,6 +309,7 @@ public class ApplicationService {
                 .fullName(application.getFullName())
                 .email(application.getContactEmail())
                 .status(DriverStatus.OFFLINE)
+                .vehicleType(application.getVehicleType())
                 .build();
         final Driver savedDriver = Objects.requireNonNull(
                 driverRepository.save(driver),

@@ -77,4 +77,16 @@ public class Order {
     private LocalDateTime onTheWayAt;
 
     private LocalDateTime deliveredAt;
+
+    @Column(name = "delivery_address_id")
+    private UUID deliveryAddressId;
+
+    @Column(name = "delivery_address_summary", length = 250)
+    private String deliveryAddressSummary;
+
+    @Column(name = "delivery_district", length = 100)
+    private String deliveryDistrict;
+
+    @Column(name = "delivery_city", length = 100)
+    private String deliveryCity;
 }

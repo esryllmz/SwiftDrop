@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.swiftdrop.logistics.entity.Driver;
 import com.swiftdrop.logistics.entity.DriverStatus;
 import com.swiftdrop.logistics.entity.Merchant;
+import com.swiftdrop.logistics.entity.VehicleType;
 import com.swiftdrop.logistics.repository.DriverRepository;
 import com.swiftdrop.logistics.repository.MerchantRepository;
 
@@ -46,6 +47,9 @@ public class DataInitializer implements CommandLineRunner {
                 DEMO_COURIER_USER_ID,
                 "Demo Courier",
                 "courier@swiftdrop.demo",
+                "+90 555 111 11 11",
+                VehicleType.MOTORBIKE,
+                "Kadikoy",
                 this::saveNearDriver
         );
         final Driver farDriver = findOrCreateDriver(
@@ -53,6 +57,9 @@ public class DataInitializer implements CommandLineRunner {
                 uuid("77777777-7777-7777-7777-777777777777"),
                 "Backup Demo Courier",
                 "demo.courier.far@swiftdrop.local",
+                "+90 555 222 22 22",
+                VehicleType.CAR,
+                "Besiktas",
                 this::saveFarDriver
         );
 
@@ -90,6 +97,30 @@ public class DataInitializer implements CommandLineRunner {
                 merchant.setName("SwiftDrop Demo Merchant");
                 changed = true;
             }
+            if (merchant.getPhone() == null || merchant.getPhone().isBlank()) {
+                merchant.setPhone("+90 555 000 00 00");
+                changed = true;
+            }
+            if (merchant.getAddressLine() == null || merchant.getAddressLine().isBlank()) {
+                merchant.setAddressLine("Bahariye Caddesi No:1");
+                changed = true;
+            }
+            if (merchant.getDistrict() == null || merchant.getDistrict().isBlank()) {
+                merchant.setDistrict("Kadikoy");
+                changed = true;
+            }
+            if (merchant.getCity() == null || merchant.getCity().isBlank()) {
+                merchant.setCity("Istanbul");
+                changed = true;
+            }
+            if (merchant.getAveragePreparationMinutes() == null) {
+                merchant.setAveragePreparationMinutes(20);
+                changed = true;
+            }
+            if (!merchant.isAcceptingOrders()) {
+                merchant.setAcceptingOrders(true);
+                changed = true;
+            }
             if (changed) {
                 return Objects.requireNonNull(merchantRepository.save(merchant), "updated seed merchant must not be null");
             }
@@ -103,6 +134,9 @@ public class DataInitializer implements CommandLineRunner {
             UUID userId,
             String fullName,
             String email,
+            String phone,
+            VehicleType vehicleType,
+            String serviceZone,
             java.util.function.Supplier<Driver> creator
     ) {
         final Optional<Driver> existingDriver = driverRepository.findById(driverId);
@@ -125,6 +159,22 @@ public class DataInitializer implements CommandLineRunner {
                 driver.setStatus(DriverStatus.AVAILABLE);
                 changed = true;
             }
+            if (driver.getPhone() == null || driver.getPhone().isBlank()) {
+                driver.setPhone(phone);
+                changed = true;
+            }
+            if (driver.getVehicleType() == null) {
+                driver.setVehicleType(vehicleType);
+                changed = true;
+            }
+            if (driver.getServiceZone() == null || driver.getServiceZone().isBlank()) {
+                driver.setServiceZone(serviceZone);
+                changed = true;
+            }
+            if (driver.getMaxActiveAssignments() <= 0) {
+                driver.setMaxActiveAssignments(3);
+                changed = true;
+            }
             if (changed) {
                 return Objects.requireNonNull(driverRepository.save(driver), "updated seed driver must not be null");
             }
@@ -140,14 +190,27 @@ public class DataInitializer implements CommandLineRunner {
                 .name("SwiftDrop Demo Merchant")
                 .latitude(41.0200)
                 .longitude(29.0250)
+                .phone("+90 555 000 00 00")
+                .addressLine("Bahariye Caddesi No:1")
+                .district("Kadikoy")
+                .city("Istanbul")
+                .averagePreparationMinutes(20)
+                .acceptingOrders(true)
                 .build();
         jdbcTemplate.update(
-                "INSERT INTO merchants (id, user_id, name, latitude, longitude) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO merchants (id, user_id, name, latitude, longitude, phone, address_line, district, "
+                        + "city, average_preparation_minutes, accepting_orders) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 merchant.getId(),
                 merchant.getUserId(),
                 merchant.getName(),
                 merchant.getLatitude(),
-                merchant.getLongitude()
+                merchant.getLongitude(),
+                merchant.getPhone(),
+                merchant.getAddressLine(),
+                merchant.getDistrict(),
+                merchant.getCity(),
+                merchant.getAveragePreparationMinutes(),
+                merchant.isAcceptingOrders()
         );
         return merchant;
     }
@@ -159,6 +222,10 @@ public class DataInitializer implements CommandLineRunner {
                 .fullName("Demo Courier")
                 .email("courier@swiftdrop.demo")
                 .status(DriverStatus.AVAILABLE)
+                .phone("+90 555 111 11 11")
+                .vehicleType(VehicleType.MOTORBIKE)
+                .serviceZone("Kadikoy")
+                .maxActiveAssignments(3)
                 .build();
         insertDriver(driver);
         return driver;
@@ -171,6 +238,10 @@ public class DataInitializer implements CommandLineRunner {
                 .fullName("Backup Demo Courier")
                 .email("demo.courier.far@swiftdrop.local")
                 .status(DriverStatus.AVAILABLE)
+                .phone("+90 555 222 22 22")
+                .vehicleType(VehicleType.CAR)
+                .serviceZone("Besiktas")
+                .maxActiveAssignments(3)
                 .build();
         insertDriver(driver);
         return driver;
@@ -178,12 +249,17 @@ public class DataInitializer implements CommandLineRunner {
 
     private void insertDriver(Driver driver) {
         jdbcTemplate.update(
-                "INSERT INTO drivers (id, user_id, full_name, email, status) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO drivers (id, user_id, full_name, email, status, phone, vehicle_type, "
+                        + "service_zone, max_active_assignments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 driver.getId(),
                 driver.getUserId(),
                 driver.getFullName(),
                 driver.getEmail(),
-                driver.getStatus().name()
+                driver.getStatus().name(),
+                driver.getPhone(),
+                driver.getVehicleType().name(),
+                driver.getServiceZone(),
+                driver.getMaxActiveAssignments()
         );
     }
 }

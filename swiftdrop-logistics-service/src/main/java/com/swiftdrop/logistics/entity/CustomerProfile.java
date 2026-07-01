@@ -1,6 +1,10 @@
 package com.swiftdrop.logistics.entity;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,13 +19,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "merchants")
+@Table(name = "customer_profiles")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Merchant {
+public class CustomerProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,33 +34,14 @@ public class Merchant {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
 
-    @Column(nullable = false, length = 100)
-    private String name;
-
-    @Column(nullable = false)
-    private double latitude;
-
-    @Column(nullable = false)
-    private double longitude;
-
     @Column(length = 30)
     private String phone;
 
-    @Column(name = "address_line", length = 250)
-    private String addressLine;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(length = 100)
-    private String district;
-
-    @Column(length = 100)
-    private String city;
-
-    @Column(length = 500)
-    private String description;
-
-    @Column(name = "accepting_orders", nullable = false)
-    private boolean acceptingOrders;
-
-    @Column(name = "average_preparation_minutes")
-    private Integer averagePreparationMinutes;
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

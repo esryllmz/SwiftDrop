@@ -9,6 +9,8 @@ public record DriverResponse(
         UUID userId,
         String fullName,
         String email,
-        DriverStatus status
+        DriverStatus status,
+        String serviceZone,
+        long activeAssignmentCount
 ) {
 }

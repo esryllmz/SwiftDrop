@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.swiftdrop.logistics.dto.CancelOrderRequest;
 import com.swiftdrop.logistics.dto.MerchantProfileResponse;
 import com.swiftdrop.logistics.dto.OrderResponse;
+import com.swiftdrop.logistics.dto.UpdateMerchantProfileRequest;
 import com.swiftdrop.logistics.security.AuthenticatedUser;
 import com.swiftdrop.logistics.security.AuthenticatedUserResolver;
 import com.swiftdrop.logistics.service.PortalService;
@@ -36,6 +38,15 @@ public class MerchantPortalController {
     public ResponseEntity<MerchantProfileResponse> getProfile(HttpServletRequest request) {
         AuthenticatedUser user = authenticatedUserResolver.resolve(request, MERCHANT_ROLE);
         return ResponseEntity.ok(portalService.getMerchantProfile(user));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<MerchantProfileResponse> updateProfile(
+            HttpServletRequest request,
+            @Valid @RequestBody UpdateMerchantProfileRequest profileRequest
+    ) {
+        AuthenticatedUser user = authenticatedUserResolver.resolve(request, MERCHANT_ROLE);
+        return ResponseEntity.ok(portalService.updateMerchantProfile(user, profileRequest));
     }
 
     @GetMapping("/orders")

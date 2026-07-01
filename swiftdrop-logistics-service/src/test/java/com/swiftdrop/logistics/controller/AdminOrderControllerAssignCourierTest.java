@@ -109,6 +109,9 @@ class AdminOrderControllerAssignCourierTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
                 null
         );
         when(orderService.assignCourier(eq(adminUserId), eq(orderId), eq(courierId))).thenReturn(response);

@@ -12,6 +12,8 @@ public record CreateCustomerOrderRequest(
 
         @NotNull(message = "Amount is required.")
         @Positive(message = "Amount must be positive.")
-        BigDecimal totalAmount
+        BigDecimal totalAmount,
+
+        UUID deliveryAddressId
 ) {
 }
